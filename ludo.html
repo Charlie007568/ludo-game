@@ -114,11 +114,19 @@
             }
         };
 
-        window.dismissAnnouncement = function() {
+        let dismissedAnnounceMessage = null; // tracks the exact message the user last closed
+
+        function hideAnnouncementBanner() {
             const banner = document.getElementById('announce-banner');
             const text = document.getElementById('announce-banner-text');
             if (banner) banner.style.display = 'none';
-            try { if (text) sessionStorage.setItem('ludo_dismissed_announce', text.textContent); } catch(e) {}
+            if (text) text.textContent = '';
+        }
+
+        window.dismissAnnouncement = function() {
+            const text = document.getElementById('announce-banner-text');
+            dismissedAnnounceMessage = text ? text.textContent : null;
+            hideAnnouncementBanner();
         };
 
         function applyMasterControl(data) {
@@ -146,17 +154,17 @@
             const announceBanner = document.getElementById('announce-banner');
             const announceText = document.getElementById('announce-banner-text');
             if (announceBanner && announceText) {
-                if (data.announcementActive && data.announcementMessage) {
-                    let dismissed = null;
-                    try { dismissed = sessionStorage.getItem('ludo_dismissed_announce'); } catch(e) {}
-                    if (dismissed !== data.announcementMessage) {
-                        announceText.textContent = data.announcementMessage;
+                const announceMsg = (data.announcementActive && data.announcementMessage) ? String(data.announcementMessage) : '';
+                if (announceMsg) {
+                    if (dismissedAnnounceMessage !== announceMsg) {
+                        announceText.textContent = announceMsg;
                         announceBanner.style.display = 'flex';
                     } else {
-                        announceBanner.style.display = 'none';
+                        hideAnnouncementBanner();
                     }
                 } else {
-                    announceBanner.style.display = 'none';
+                    hideAnnouncementBanner();
+                    dismissedAnnounceMessage = null; // admin turned it off — next announcement should always show fresh
                 }
             }
 
