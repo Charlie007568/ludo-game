@@ -14,7 +14,7 @@
     <!-- Firebase SDK Scripts & Master Control Integration -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -41,7 +41,45 @@
         //   version        (string)  -> change this (e.g. "1.0.1") any time you push real updates
         //   updateMessage  (string)  -> text shown inside the update banner
         //   forceUpdate    (boolean) -> true = banner can't be dismissed without reloading
+        //   adsEnabled     (boolean) -> true = shows the bottom banner ad below
+        //   bannerAdCode   (string)  -> the full HTML/script snippet Monetag gives you for a
+        //                               Banner ad format — pasted as-is into the bottom bar
         let wasLockedByAdmin = false;
+        let lastBannerCode = null; // avoids re-rendering (and re-firing ad scripts) on every snapshot
+
+        function renderBannerAdCode(html) {
+            const slot = document.getElementById('ad-banner-slot');
+            if (!slot) return;
+            slot.innerHTML = html;
+            // innerHTML-inserted <script> tags never execute on their own — rebuild each one
+            // as a real script element so Monetag's ad code actually runs.
+            slot.querySelectorAll('script').forEach(oldScript => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.textContent = oldScript.textContent;
+                oldScript.replaceWith(newScript);
+            });
+        }
+
+        function applyBannerAd(data) {
+            const slot = document.getElementById('ad-banner-slot');
+            if (!slot) return;
+            const code = (data && data.adsEnabled && data.bannerAdCode) ? String(data.bannerAdCode).trim() : '';
+
+            if (code) {
+                if (code !== lastBannerCode) {
+                    renderBannerAdCode(code);
+                    lastBannerCode = code;
+                }
+                slot.style.display = 'flex';
+                document.documentElement.style.setProperty('--ad-space', '58px');
+            } else {
+                slot.style.display = 'none';
+                slot.innerHTML = '';
+                lastBannerCode = null;
+                document.documentElement.style.setProperty('--ad-space', '0px');
+            }
+        }
 
         function showUpdateBanner(msg, forceUpdate, version, link) {
             const banner = document.getElementById('update-banner');
@@ -76,6 +114,13 @@
             }
         };
 
+        window.dismissAnnouncement = function() {
+            const banner = document.getElementById('announce-banner');
+            const text = document.getElementById('announce-banner-text');
+            if (banner) banner.style.display = 'none';
+            try { if (text) sessionStorage.setItem('ludo_dismissed_announce', text.textContent); } catch(e) {}
+        };
+
         function applyMasterControl(data) {
             if (!data) return;
 
@@ -95,6 +140,26 @@
             // Admin just re-enabled the game while this tab was showing the lock screen — reload for a clean state.
             if (wasLockedByAdmin) { location.reload(); return; }
 
+            applyBannerAd(data);
+
+            // Announcement banner — independent of the update-banner system above.
+            const announceBanner = document.getElementById('announce-banner');
+            const announceText = document.getElementById('announce-banner-text');
+            if (announceBanner && announceText) {
+                if (data.announcementActive && data.announcementMessage) {
+                    let dismissed = null;
+                    try { dismissed = sessionStorage.getItem('ludo_dismissed_announce'); } catch(e) {}
+                    if (dismissed !== data.announcementMessage) {
+                        announceText.textContent = data.announcementMessage;
+                        announceBanner.style.display = 'flex';
+                    } else {
+                        announceBanner.style.display = 'none';
+                    }
+                } else {
+                    announceBanner.style.display = 'none';
+                }
+            }
+
             if (data.version) {
                 let seenVersion = null;
                 try { seenVersion = localStorage.getItem('ludo_seen_version'); } catch(e) {}
@@ -106,31 +171,30 @@
             }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            // Wait for anonymous sign-in to actually finish before attaching the listener —
-            // attaching it too early can silently fail against Firestore rules that require
-            // request.auth to be set. onAuthStateChanged fires once auth is truly ready.
-            onAuthStateChanged(auth, (user) => {
-                if (!user) return;
-                try {
-                    const docRef = doc(db, "master_controls", "ludo_game");
-                    onSnapshot(docRef, (docSnap) => {
-                        if (docSnap.exists()) {
-                            console.log("[MasterControl] Update received from admin panel:", docSnap.data());
-                            applyMasterControl(docSnap.data());
-                        } else {
-                            console.log("[MasterControl] No master_controls/ludo_game document found yet.");
-                        }
-                    }, (error) => {
-                        // This fires most commonly when Firestore Security Rules block reads
-                        // for this (anonymous) user — check the Rules tab in Firebase Console.
-                        console.error("[MasterControl] Listener error — likely a Firestore rules permission issue:", error);
-                    });
-                } catch (e) {
-                    console.error("[MasterControl] Error setting up listener: ", e);
-                }
-            });
-        });
+        function startMasterControlListener() {
+            try {
+                const docRef = doc(db, "master_controls", "ludo_game");
+                onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        console.log("[MasterControl] Update received from admin panel:", docSnap.data());
+                        applyMasterControl(docSnap.data());
+                    } else {
+                        console.log("[MasterControl] No master_controls/ludo_game document found yet.");
+                    }
+                }, (error) => {
+                    // This fires most commonly when Firestore Security Rules block reads —
+                    // check the Rules tab in Firebase Console.
+                    console.error("[MasterControl] Listener error — likely a Firestore rules permission issue:", error);
+                });
+            } catch (e) {
+                console.error("[MasterControl] Error setting up listener: ", e);
+            }
+        }
+
+        // Start reading master_controls IMMEDIATELY — Firestore rules allow public read on
+        // this collection (allow read: if true), so this must never wait on, or depend on,
+        // anonymous auth succeeding.
+        startMasterControlListener();
 
         window.saveGameScoreToFirebase = async function(winnerName, color) {
             try {
@@ -149,6 +213,7 @@
     <style>
         :root {
             --speed-factor: 1; /* Dynamic speed factor */
+            --ad-space: 0px; /* Reserved height for bottom banner ad — set by JS when ads are active */
             --walnut-900: #170f0a; --walnut-800: #241609; --walnut-700: #2f1c0e; --walnut-600: #3c2513;
             --ivory: #ffffff; --ivory-dim: #d9cbac; --brass: #c9a24b; --brass-light: #edcd7e;
             --brass-dark: #8a6a2c; --ink: #201409;
@@ -281,12 +346,13 @@
 
         #game-screen { 
             display: none; position: fixed; inset: 0; flex-direction: column; align-items: center; width: 100vw; height: 100vh; 
-            padding: calc(45px + env(safe-area-inset-top)) 10px calc(45px + env(safe-area-inset-bottom)); 
+            padding: calc(45px + env(safe-area-inset-top)) 10px calc(45px + env(safe-area-inset-bottom) + var(--ad-space)); 
             background:
                 radial-gradient(ellipse at 50% 0%, rgba(237,205,126,0.10), transparent 45%),
                 radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.5), transparent 55%),
                 repeating-linear-gradient(115deg, rgba(0,0,0,0.09) 0px, rgba(0,0,0,0.09) 1px, transparent 1px, transparent 4px),
                 linear-gradient(160deg, var(--walnut-800), var(--walnut-900) 55%, #0a0603 100%);
+            transition: padding-bottom 0.25s ease;
         }
         
         .shell-inner { width: 100%; max-width: 480px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
@@ -294,7 +360,7 @@
         .game-header { display: flex; width: 100%; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-shrink: 0; gap: 6px; }
         .header-controls { display: flex; align-items: center; gap: 6px; }
         .board-stage { flex: 1 1 auto; width: 100%; min-height: 0; display: flex; align-items: center; justify-content: center; }
-        .board-column { width: min(100%, 480px, calc(100vh - 220px)); display: flex; flex-direction: column; align-items: stretch; gap: 5px; }
+        .board-column { width: min(100%, 480px, calc(100vh - 220px - var(--ad-space))); display: flex; flex-direction: column; align-items: stretch; gap: 5px; }
         .corner-row { display: flex; justify-content: space-between; padding: 0 2px; gap: 6px; margin-top: 26px; }
         .game-footer { width: 100%; flex-shrink: 0; padding-top: 4px; text-align: center; }
         .player-tag { position: relative; display: flex; align-items: center; gap: 8px; flex: 1; height: 44px; padding: 6px 10px; border-radius: 12px; background: linear-gradient(135deg, rgba(30,25,20,0.9), rgba(15,10,5,0.98)); border: 1.5px solid rgba(201,162,75,0.3); box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease, filter 0.25s ease; overflow: visible; min-width: 0; box-sizing: border-box; }
@@ -388,16 +454,18 @@
 
         /* ===== Chat & Voice (Online Mode) ===== */
         .chat-fab {
-            position: fixed; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); width: 46px; height: 46px;
+            position: fixed; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom) + var(--ad-space)); width: 46px; height: 46px;
             border-radius: 50%; background: linear-gradient(150deg, var(--brass-light), var(--brass-dark));
             border: 2px solid rgba(255,255,255,0.25); color: var(--walnut-900); font-size: 1.2rem; cursor: pointer;
             z-index: 90; box-shadow: 0 8px 18px rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center;
+            transition: bottom 0.25s ease;
         }
         .chat-fab.has-unread::after { content: ''; position: absolute; top: 1px; right: 1px; width: 11px; height: 11px; border-radius: 50%; background: var(--red); border: 2px solid var(--walnut-900); }
         .chat-panel {
-            position: fixed; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); width: min(300px, 86vw); max-height: 62vh;
+            position: fixed; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom) + var(--ad-space)); width: min(300px, 86vw); max-height: 62vh;
             background: linear-gradient(160deg, rgba(30,22,14,0.97), rgba(15,10,5,0.98)); border: 1px solid rgba(201,162,75,0.35);
             border-radius: 14px; box-shadow: 0 20px 45px rgba(0,0,0,0.6); z-index: 91; display: none; flex-direction: column; overflow: hidden;
+            transition: bottom 0.25s ease;
         }
         .chat-panel-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid rgba(201,162,75,0.25); flex-shrink: 0; }
         .chat-panel-title { font-size: 0.7rem; font-weight: 800; color: var(--brass-light); letter-spacing: 0.5px; }
@@ -441,6 +509,34 @@
         .update-banner-dismiss { flex-shrink: 0; background: none; border: none; color: var(--walnut-900); font-size: 0.9rem; font-weight: 900; cursor: pointer; padding: 2px 4px; opacity: 0.75; }
         #update-banner.force .update-banner-dismiss { display: none; }
 
+        /* ===== Announcement Banner (driven by Firestore master_controls/ludo_game) ===== */
+        #announce-banner {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 490; display: none;
+            align-items: center; justify-content: center; gap: 10px;
+            padding: 9px 14px calc(9px + env(safe-area-inset-top)) 14px;
+            padding-top: calc(9px + env(safe-area-inset-top));
+            background: linear-gradient(90deg, var(--yellow-deep), var(--yellow) 50%, var(--yellow-deep));
+            color: var(--ink); box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+            font-size: 0.72rem; font-weight: 800; text-align: center; flex-wrap: wrap;
+        }
+        #announce-banner-text { flex: 1 1 auto; min-width: 140px; }
+        .announce-banner-dismiss { flex-shrink: 0; background: none; border: none; color: var(--ink); font-size: 0.9rem; font-weight: 900; cursor: pointer; padding: 2px 4px; opacity: 0.75; }
+        /* When both banners show at once, stack the announcement below the update banner */
+        #update-banner[style*="flex"] ~ #announce-banner { top: 42px; }
+
+        /* ===== Bottom Banner Ad slot (driven by Firestore master_controls/ludo_game -> bannerAdCode) ===== */
+        /* Fixed to the very bottom, below everything gameplay-related. Its reserved height is
+           tracked via --ad-space, which the board and other bottom-anchored UI (chat button) read
+           from so nothing ever renders underneath it. */
+        #ad-banner-slot {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; display: none;
+            align-items: center; justify-content: center; overflow: hidden;
+            height: var(--ad-space);
+            padding-bottom: env(safe-area-inset-bottom);
+            background: rgba(10,6,3,0.95); border-top: 1px solid rgba(201,162,75,0.3);
+            box-shadow: 0 -6px 16px rgba(0,0,0,0.4);
+        }
+
     </style>
 </head>
 <body>
@@ -450,6 +546,13 @@
         <button class="update-banner-btn" onclick="reloadForUpdate()">🔄 Reload Now</button>
         <button class="update-banner-dismiss" onclick="dismissUpdateBanner()" title="Dismiss">✕</button>
     </div>
+
+    <div id="announce-banner">
+        <span id="announce-banner-text"></span>
+        <button class="announce-banner-dismiss" onclick="dismissAnnouncement()" title="Dismiss">✕</button>
+    </div>
+
+    <div id="ad-banner-slot"></div>
 
     <div class="background-shapes">
         <div class="shape-1"></div>
