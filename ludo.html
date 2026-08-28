@@ -360,18 +360,6 @@
 
         <div class="dash-card">
             <div class="dash-card-head">
-                <span class="dash-card-title">🤖 Computer Difficulty</span>
-            </div>
-            <div class="difficulty-pills">
-                <div class="diff-pill active" id="diff-easy" onclick="setDifficulty('easy', this)">Easy</div>
-                <div class="diff-pill" id="diff-medium" onclick="setDifficulty('medium', this)">Medium</div>
-                <div class="diff-pill" id="diff-hard" onclick="setDifficulty('hard', this)">Hard</div>
-            </div>
-
-        </div>
-
-        <div class="dash-card">
-            <div class="dash-card-head">
                 <span class="dash-card-title">👥 Player Names</span>
             </div>
             <div class="player-grid">
@@ -832,7 +820,6 @@
 
     <script>
         let gameSpeed = 1;
-        let botDifficulty = 'medium';
         let players = [];
         let currentPlayerIndex = 0;
         let botMode = false;
@@ -1048,33 +1035,6 @@
             }
         });
 
-        function setDifficulty(lvl, el) {
-            botDifficulty = lvl;
-            document.querySelectorAll('#menu-screen > .dash-card .diff-pill:not(.partner-pill):not(.barrier-pill)').forEach(p => p.classList.remove('active'));
-            el.classList.add('active');
-
-            // Computer Difficulty only matters in Vs Computer mode, which never has a
-            // partner — so choosing any difficulty here forces Partner Mode back to Off.
-            partnerModeSetting = 'off';
-            document.querySelectorAll('.partner-pill').forEach(p => p.classList.remove('active'));
-            const offPill = document.getElementById('partner-off');
-            if (offPill) offPill.classList.add('active');
-
-            // BUG FIX: the "Barrier: Partner" option forces Full Control partner mode
-            // as a side effect — leaving it selected here (after we just forced Partner
-            // back to Off above) would silently mismatch the on-screen Barrier pill
-            // with the real Partner setting and could glitch a Vs Computer game. If
-            // that combo pill is active, drop it down to plain "Barrier: On" instead —
-            // the Barrier feature itself stays on, only its forced-partner side effect
-            // is undone.
-            if (barrierModeSetting === 'partner') {
-                barrierModeSetting = 'on';
-                document.querySelectorAll('.barrier-pill').forEach(p => p.classList.remove('active'));
-                const onPill = document.getElementById('barrier-on');
-                if (onPill) onPill.classList.add('active');
-            }
-        }
-
         function setPartnerMode(mode, el) {
             // BUG FIX: tapping the pill that is ALREADY active used to do
             // nothing (same mode just got reassigned to itself) — so an
@@ -1090,14 +1050,7 @@
             document.querySelectorAll('.partner-pill').forEach(p => p.classList.remove('active'));
             el.classList.add('active');
 
-            // Partner Mode only matters in the 4-player Full Table (no bot involved),
-            // so Computer Difficulty is simply not applicable while it's on. Turning
-            // Partner on (Assist/Full Control) now just clears every Difficulty pill —
-            // it must NOT light up "Easy" (or any other) as if it were also selected;
-            // only the pill you actually tapped should ever show as active.
-            if (mode !== 'off') {
-                document.querySelectorAll('#menu-screen > .dash-card .diff-pill:not(.partner-pill):not(.barrier-pill)').forEach(p => p.classList.remove('active'));
-            } else {
+            if (mode === 'off') {
                 const lockMsg = document.getElementById('mode-lock-msg');
                 if (lockMsg) lockMsg.style.display = 'none';
 
@@ -1133,21 +1086,17 @@
             // "Partner" barrier option is a one-tap combo: turn Barrier on AND
             // switch Partner Mode to Full Control (4 Players only), mirroring
             // the same restriction Partner Mode already enforces on its own.
-            // Computer Difficulty isn't applicable here either — clear its pills
-            // instead of lighting up "Easy" as a misleading side effect.
             if (mode === 'partner') {
                 partnerModeSetting = 'full';
                 document.querySelectorAll('.partner-pill').forEach(p => p.classList.remove('active'));
                 const fullPill = document.getElementById('partner-full');
                 if (fullPill) fullPill.classList.add('active');
-                document.querySelectorAll('#menu-screen > .dash-card .diff-pill:not(.partner-pill):not(.barrier-pill)').forEach(p => p.classList.remove('active'));
             } else if (mode === 'on') {
                 // BUG FIX: plain "Barrier: On" is meant for Vs Computer / non-partner
                 // tables. If Partner Mode (Assist or Full Control) was left active from
                 // before, running it together with a plain Barrier toggle is an
-                // untested combination that can glitch turn handling — so, exactly
-                // like picking a Computer Difficulty does, tapping plain Barrier On
-                // now automatically turns Partner Mode back to Off.
+                // untested combination that can glitch turn handling — so tapping
+                // plain Barrier On now automatically turns Partner Mode back to Off.
                 if (partnerModeSetting !== 'off') {
                     partnerModeSetting = 'off';
                     document.querySelectorAll('.partner-pill').forEach(p => p.classList.remove('active'));
@@ -1478,6 +1427,13 @@
         // up), it stops there right away instead of continuing on; the
         // Keep/Break choice for that Barrier is then offered the next time
         // an even roll tries to move it (see initiateMove).
+        //
+        // Star-crossing rule: a Barrier normally blocks every opposing lone
+        // token from passing through or landing on its cell — EXCEPT when
+        // that Barrier is resting on a star. On a star, an opposing lone
+        // token can freely cross over or land on it (see
+        // pathCrossesEnemyBarrier). Off a star, the Barrier fully blocks the
+        // route as usual.
 
         function barrierMoveSteps(roll) {
             if (roll === 6) return 3;
@@ -1528,10 +1484,13 @@
         }
 
         // A single (non-Barrier) token can NEVER cross over a cell held by an
-        // ENEMY Barrier — not just land on it. This checks every square the
-        // move would pass through, not only the final destination. A token
-        // that is itself part of a Barrier is exempt (a Barrier can freely
-        // cross, and cut, another Barrier).
+        // ENEMY Barrier — not just land on it — UNLESS that Barrier is resting
+        // on a star. A Barrier sitting on a star can be freely crossed (and
+        // landed on) by a lone opposing token; a Barrier anywhere off a star
+        // still blocks the route entirely, exactly as before. This checks
+        // every square the move would pass through, not only the final
+        // destination. A token that is itself part of a Barrier is exempt (a
+        // Barrier can freely cross, and cut, another Barrier).
         function pathCrossesEnemyBarrier(token, eff) {
             if (token.status !== 'PATH' || token.barrier) return false;
             for (let s = token.step + 1; s <= token.step + eff; s++) {
@@ -1539,7 +1498,8 @@
                 if (!pos) continue; // reached Home along the way — nothing further to check
                 const blockColor = barrierOwnerAt(pos[0], pos[1]);
                 if (blockColor && blockColor !== token.color && !isPartnerColor(token.color, blockColor)) {
-                    return true; // an enemy Barrier blocks this route entirely
+                    if (safeSpots.includes(`${pos[0]}-${pos[1]}`)) continue; // on a star — crossing is allowed
+                    return true; // an enemy Barrier off a star blocks this route entirely
                 }
             }
             return false;
@@ -2117,4 +2077,3 @@
 
 </body>
 </html>
-
