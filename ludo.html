@@ -143,6 +143,53 @@
 
         #game-screen.online-locked .player-tag:not(.my-online-color) .dice-box-tag { pointer-events: none; opacity: 0.72; }
 
+        /* ── Online in-match chat + emoji — real-time ─────────────────────── */
+        .chat-toggle-btn { display: none; position: relative; padding: 9px 14px; min-height: 36px; border-radius: 18px; border: 1px solid rgba(180,140,255,0.45); cursor: pointer; background: rgba(94,53,177,0.25); color: var(--ivory); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .chat-toggle-btn.visible { display: inline-flex; align-items: center; gap: 5px; }
+        .chat-unread-dot { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 9px; background: #ff4d4d; color: #fff; font-size: 0.58rem; font-weight: 900; display: none; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #0f0c29; }
+        .chat-unread-dot.show { display: flex; }
+
+        #online-chat-panel {
+            display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 265;
+            background: linear-gradient(180deg, rgba(20,14,10,0.98), rgba(8,5,3,0.99));
+            border-top: 1px solid rgba(180,140,255,0.35);
+            border-radius: 18px 18px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
+            flex-direction: column; max-height: 62vh; padding-bottom: env(safe-area-inset-bottom);
+        }
+        #online-chat-panel.open { display: flex; }
+        .chat-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .chat-panel-title { font-size: 0.78rem; font-weight: 800; color: var(--brass-light); text-transform: uppercase; letter-spacing: 0.6px; }
+        .chat-panel-close { background: none; border: none; color: var(--ivory-dim); font-size: 1.2rem; cursor: pointer; line-height: 1; padding: 4px 6px; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; }
+        .chat-msg-row { display: flex; flex-direction: column; max-width: 80%; }
+        .chat-msg-row.mine { align-self: flex-end; align-items: flex-end; }
+        .chat-msg-row.theirs { align-self: flex-start; align-items: flex-start; }
+        .chat-msg-name { font-size: 0.56rem; color: var(--ivory-dim); margin-bottom: 2px; padding: 0 4px; }
+        .chat-msg-bubble { padding: 7px 12px; border-radius: 14px; font-size: 0.76rem; line-height: 1.4; word-break: break-word; }
+        .chat-msg-row.mine .chat-msg-bubble { background: linear-gradient(135deg, var(--brass-light), var(--brass) 70%); color: #1a1206; font-weight: 700; border-bottom-right-radius: 4px; }
+        .chat-msg-row.theirs .chat-msg-bubble { background: rgba(255,255,255,0.08); color: var(--ivory); border: 1px solid rgba(255,255,255,0.1); border-bottom-left-radius: 4px; }
+        .chat-msg-bubble.is-emoji { background: none !important; border: none !important; font-size: 1.8rem; padding: 0; }
+        .chat-empty-hint { text-align: center; font-size: 0.66rem; color: var(--ivory-dim); padding: 18px 8px; }
+        .chat-emoji-strip { display: flex; gap: 6px; padding: 8px 12px; overflow-x: auto; border-top: 1px solid rgba(255,255,255,0.06); }
+        .chat-emoji-strip button { flex-shrink: 0; font-size: 1.3rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 4px 8px; cursor: pointer; }
+        .chat-input-row { display: flex; gap: 8px; padding: 10px 12px; }
+        .chat-input-row input { flex: 1; padding: 9px 12px; border-radius: 20px; border: 1px solid rgba(201,162,75,0.28); background: rgba(255,255,255,0.05); color: var(--ivory); outline: none; font-size: 0.76rem; }
+        .chat-input-row button { padding: 9px 16px; border-radius: 20px; border: none; background: linear-gradient(135deg, var(--brass-light), var(--brass) 60%, var(--brass-dark)); color: #1a1206; font-weight: 900; font-size: 0.72rem; cursor: pointer; }
+
+        /* Floating emoji reaction — pops briefly over the sender's scoreboard
+           tag when they send a lone emoji, so it reads in real time on the
+           board itself, not just inside the (possibly closed) chat panel. */
+        .floating-emoji-pop {
+            position: absolute; font-size: 1.7rem; pointer-events: none; z-index: 40;
+            animation: floatEmojiPop 1.6s ease-out forwards;
+        }
+        @keyframes floatEmojiPop {
+            0%   { transform: translateY(0) scale(0.6); opacity: 0; }
+            15%  { transform: translateY(-6px) scale(1.15); opacity: 1; }
+            75%  { transform: translateY(-34px) scale(1); opacity: 1; }
+            100% { transform: translateY(-46px) scale(0.9); opacity: 0; }
+        }
+
         #game-screen {
             display: none; position: fixed; inset: 0; flex-direction: column; align-items: center; width: 100vw; height: 100vh;
             /* Extra fixed offset on top of the real safe-area inset — some
@@ -161,7 +208,7 @@
            tags and easy to tap with a thumb. */
         .game-header { display: flex; flex-direction: column; width: 100%; align-items: center; gap: 8px; margin-bottom: 10px; }
         .mini-brand { width: 100%; text-align: center; font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 800; color: var(--brass-light); letter-spacing: 0.8px; text-shadow: 0 2px 10px rgba(201,162,75,0.25); }
-        .header-actions { width: 100%; display: flex; justify-content: flex-end; padding-right: 2px; }
+        .header-actions { width: 100%; display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding-right: 2px; }
 
         .board-stage { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; min-height: 0; }
         .board-column { width: min(100%, 520px, calc(100vh - 118px - var(--ad-space))); display: flex; flex-direction: column; gap: 9px; }
@@ -378,6 +425,17 @@
         }
         #publish-gate-overlay .lock-inner h1 { color: var(--brass-light); }
 
+        /* Full-screen "you've been blocked" overlay — a per-DEVICE block
+           set by the Admin Panel (separate from #lock-overlay, which is the
+           whole-game on/off switch). Highest z-index of the three so a
+           block always wins if it and a lock somehow overlap. */
+        #blocked-overlay {
+            display: none; position: fixed; inset: 0; z-index: 10000;
+            background: #0f0c29; flex-direction: column; justify-content: center;
+            align-items: center; text-align: center; padding: 20px;
+        }
+        #blocked-overlay .lock-inner h1 { color: #ff4d4d; }
+
     </style>
 </head>
 <body>
@@ -573,12 +631,46 @@
         </div>
     </div>
 
+    <!-- ONLINE: in-match chat + emoji panel — real-time, only ever shown
+         while an online match is active (toggled from the 💬 Chat button in
+         the game header). Kept top-level like the popups above so it can
+         float over the board regardless of anything else on screen. -->
+    <div id="online-chat-panel">
+        <div class="chat-panel-head">
+            <span class="chat-panel-title">💬 Match Chat</span>
+            <button class="chat-panel-close" onclick="toggleOnlineChat()">✕</button>
+        </div>
+        <div class="chat-messages" id="online-chat-messages">
+            <p class="chat-empty-hint">Say hi! Messages are only visible to you and your opponent.</p>
+        </div>
+        <div class="chat-emoji-strip">
+            <button onclick="sendOnlineEmoji('👍')">👍</button>
+            <button onclick="sendOnlineEmoji('😂')">😂</button>
+            <button onclick="sendOnlineEmoji('😮')">😮</button>
+            <button onclick="sendOnlineEmoji('😢')">😢</button>
+            <button onclick="sendOnlineEmoji('🔥')">🔥</button>
+            <button onclick="sendOnlineEmoji('👏')">👏</button>
+            <button onclick="sendOnlineEmoji('🎲')">🎲</button>
+            <button onclick="sendOnlineEmoji('🏆')">🏆</button>
+            <button onclick="sendOnlineEmoji('😡')">😡</button>
+            <button onclick="sendOnlineEmoji('🤝')">🤝</button>
+        </div>
+        <div class="chat-input-row">
+            <input type="text" id="online-chat-input" placeholder="Type a message…" maxlength="200" onkeydown="if(event.key==='Enter') sendOnlineChatText();">
+            <button onclick="sendOnlineChatText()">Send</button>
+        </div>
+    </div>
+
     <!-- GAME BOARD SCREEN -->
     <div id="game-screen">
         <div class="shell-inner">
             <div class="game-header">
                 <div class="mini-brand" id="game-title-label">Ludo Master Pro</div>
                 <div class="header-actions">
+                    <button class="chat-toggle-btn" id="online-chat-toggle-btn" onclick="toggleOnlineChat()">
+                        💬 Chat
+                        <span class="chat-unread-dot" id="online-chat-unread">0</span>
+                    </button>
                     <button class="btn-exit" onclick="handleExitTap()">Exit</button>
                 </div>
             </div>
@@ -663,7 +755,7 @@
         import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getDatabase, ref, set, update, remove, onDisconnect, serverTimestamp, onValue, get, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, update, remove, onDisconnect, serverTimestamp, onValue, get, off, push, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey:            "AIzaSyDPYuTSyVY5_I9DoAUg6NCkZ_3ERpZ705M",
@@ -732,6 +824,34 @@
         }
         const deviceId   = getOrCreateDeviceId();
         const deviceName = getDeviceName();
+
+        // ─── Per-device Block / Unblock (Admin Panel) — real-time ──────────
+        // Independent of the whole-game lock/publish-gate below: the moment
+        // an admin flips devices/{deviceId}/blocked to true in the Admin
+        // Panel's device list, THIS device is stopped immediately — even
+        // mid-game — with no action needed from the player and no reload
+        // needed on the admin side. Listens from the very start (doesn't
+        // wait for auth/menu) so a block can never have a gap where it
+        // doesn't apply.
+        let wasBlocked = false;
+        onValue(ref(rtdb, 'devices/' + deviceId + '/blocked'), (snap) => {
+            const blocked = snap.val() === true;
+            const el = document.getElementById('blocked-overlay');
+            if (blocked) {
+                wasBlocked = true;
+                if (el) el.style.display = 'flex';
+                return;
+            }
+            if (el) el.style.display = 'none';
+            if (wasBlocked) {
+                // Was blocked, now unblocked by the admin — reload for a
+                // clean, trustworthy state. The resume-state feature
+                // elsewhere in this file means an in-progress game (if any)
+                // comes right back after this, not lost.
+                wasBlocked = false;
+                location.reload();
+            }
+        }, (err) => console.error('[Block check] Error:', err));
 
         // ─── Approximate location (for Admin Panel's device list) ──────────
         // IP-based, city-level only — this does NOT use the browser's GPS/
@@ -1191,6 +1311,31 @@
                 onDisconnect(endRef).set({ reason: 'disconnected', by: onlineUid, ts: serverTimestamp() }).catch(err => _onlineReportError('write', err));
             },
 
+            // ─── In-match chat + emoji — real-time ──────────────────────────
+            // Lives at rooms/{roomId}/chat/{messageId}, capped to the most
+            // recent 50 messages per room (limitToLast) so a long match
+            // never turns into an ever-growing read on every listener fire.
+            sendChatMessage(roomId, text) {
+                if (!roomId || !text) return;
+                text = String(text).slice(0, 200); // keep messages short — this is in-game chat, not email
+                const msgRef = push(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/chat`));
+                set(msgRef, { from: onlineUid, name: onlineName, text, ts: serverTimestamp() })
+                    .catch(err => _onlineReportError('write', err));
+            },
+
+            listenChat(roomId, cb) {
+                if (!roomId) return () => {};
+                const q = query(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/chat`), limitToLast(50));
+                const handler = onValue(q, snap => {
+                    const val = snap.val() || {};
+                    const list = Object.keys(val).map(id => Object.assign({ id }, val[id]));
+                    list.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+                    cb(list);
+                }, err => _onlineReportError(`read:chat/${roomId}`, err));
+                _onlineListenerRefs[`chat/${roomId}`] = q;
+                return () => { try { off(q); } catch (e) {} delete _onlineListenerRefs[`chat/${roomId}`]; };
+            },
+
             getUid() { return onlineUid; }
         };
     </script>
@@ -1230,6 +1375,10 @@
         let onlineModeSetting = 'normal'; // lobby pill: mode used for requests I SEND ('normal'|'barrier')
         let onlinePendingReq = null;      // { reqId, roomId, targetUid, targetName } while awaiting a response
         let onlineDetachFns = [];         // active Firebase listener detach callbacks for the current room
+        let onlineChatDetach = null;      // detach fn for the current room's chat listener
+        let onlineChatOpen = false;       // is the chat panel currently open?
+        let onlineChatSeenIds = new Set();// message ids already rendered — lets us tell which are NEW on each update
+        let onlineChatUnread = 0;         // unread count shown on the 💬 button while the panel is closed
 
         const colors = [
             { name: "Red", hex: "#dc2626" },
@@ -1314,6 +1463,15 @@
                     g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
                     o.start(t0); o.stop(t0 + 0.22);
                 });
+            } else if (type === 'chat') {
+                // A quiet two-note "pop" — deliberately much softer/shorter
+                // than the game sounds above, since this can fire mid-match
+                // any time the opponent sends something.
+                osc.type = 'sine'; osc.frequency.setValueAtTime(700, now);
+                osc.frequency.exponentialRampToValueAtTime(920, now + 0.09);
+                gain.gain.setValueAtTime(0.22, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                osc.start(now); osc.stop(now + 0.12);
             }
         }
 
@@ -1324,8 +1482,17 @@
             window._menuRevealed = true;
             const l = document.getElementById('loading-screen');
             if (l) { l.style.opacity = '0'; setTimeout(() => { l.style.display = 'none'; }, 400); }
-            const m = document.getElementById('menu-screen');
-            if (m && m.style.display !== 'block') m.style.display = 'block';
+
+            // If a game was in progress when the page got reloaded (most
+            // often: an accidental ad click navigated the same tab away and
+            // back — see saveResumeState()/tryRestoreResumeState() above),
+            // put the player right back into it instead of dropping them on
+            // the menu as if nothing had happened.
+            if (!tryRestoreResumeState()) {
+                const m = document.getElementById('menu-screen');
+                if (m && m.style.display !== 'block') m.style.display = 'block';
+            }
+
             // Player has actually reached the playable menu — count them in
             // the Admin Panel's live player count (see the presence setup
             // in the Firebase module script above).
@@ -1427,6 +1594,88 @@
             }
         });
 
+        // ─── SURVIVING A FULL RELOAD AFTER AN AD (not just a bfcache one) ────
+        // The pageshow handler above only helps when the browser actually
+        // restores this exact page from memory. Many ad formats — a
+        // same-tab redirect-style ad in particular — cause a genuine fresh
+        // reload on return instead (ev.persisted stays false), which wipes
+        // every JS variable and, without this, dropped the player straight
+        // back on the menu even though a game was clearly in progress. None
+        // of this touches the ad code itself — it just makes OUR page
+        // remember where it was, in sessionStorage, so a reload can put it
+        // right back. sessionStorage specifically (not localStorage)
+        // because it should only resume within the same tab/session, not
+        // reopen an old match days later.
+        const RESUME_KEY = 'lm_resume_v1';
+
+        function saveResumeState() {
+            try {
+                const gameEl = document.getElementById('game-screen');
+                const winnerEl = document.getElementById('winner-modal');
+                const gameVisible = gameEl && gameEl.style.display === 'flex';
+                const winnerShown = winnerEl && winnerEl.style.display === 'flex';
+                if (!gameVisible || winnerShown) {
+                    // No game in progress (or it just finished) — nothing
+                    // worth resuming into, so don't resurrect a stale match
+                    // on the next load.
+                    sessionStorage.removeItem(RESUME_KEY);
+                    return;
+                }
+                sessionStorage.setItem(RESUME_KEY, JSON.stringify({
+                    players, tokens, currentPlayerIndex, consecutiveSixes,
+                    winnersList, activeBarrierMode, activePartnerMode, botMode,
+                    currentRoll, isOnlineMode, onlineRoomId, onlineMyColor
+                }));
+            } catch (e) { /* storage full/unavailable — resuming is a nicety, never fatal */ }
+        }
+
+        // Returns true if an in-progress game was found and restored.
+        // Called once, right as the menu would otherwise be revealed (see
+        // revealMenu() below) — i.e. only after the admin lock/publish-gate
+        // checks have already passed, exactly like a normal cold start.
+        function tryRestoreResumeState() {
+            let raw;
+            try { raw = sessionStorage.getItem(RESUME_KEY); } catch (e) { return false; }
+            if (!raw) return false;
+            let r;
+            try { r = JSON.parse(raw); } catch (e) { sessionStorage.removeItem(RESUME_KEY); return false; }
+            if (!r || !Array.isArray(r.players) || !r.tokens) { sessionStorage.removeItem(RESUME_KEY); return false; }
+
+            try {
+                players = r.players; tokens = r.tokens;
+                currentPlayerIndex = r.currentPlayerIndex || 0;
+                consecutiveSixes = r.consecutiveSixes || 0;
+                winnersList = r.winnersList || [];
+                activeBarrierMode = r.activeBarrierMode || 'off';
+                activePartnerMode = r.activePartnerMode || 'off';
+                botMode = !!r.botMode;
+                currentRoll = r.currentRoll || 0;
+                isOnlineMode = !!r.isOnlineMode;
+                onlineRoomId = r.onlineRoomId || null;
+                onlineMyColor = r.onlineMyColor || null;
+                gameState = 'IDLE';
+
+                document.getElementById('menu-screen').style.display = 'none';
+                document.getElementById('game-screen').style.display = 'flex';
+                createBoard();
+                renderScoreboard();
+                updateTurnUI();
+
+                // An online match's true state lives in Firebase, not in
+                // this snapshot (which could be a move or two stale by the
+                // time the player gets back) — re-attach so the board
+                // immediately syncs up to whatever actually happened while
+                // they were away, instead of trusting the stale copy.
+                if (isOnlineMode && onlineRoomId && window.LudoOnline) {
+                    attachOnlineRoomListeners(onlineRoomId);
+                }
+                return true;
+            } catch (e) {
+                sessionStorage.removeItem(RESUME_KEY);
+                return false;
+            }
+        }
+
         function setPartnerMode(mode, el) {
             // BUG FIX: tapping the pill that is ALREADY active used to do
             // nothing (same mode just got reassigned to itself) — so an
@@ -1521,6 +1770,7 @@
             if (forfeitSub) forfeitSub.remove(); // clear the one-off "opponent left/forfeited" line, if shown
             document.getElementById('menu-screen').style.display = 'block';
             gameState = 'IDLE';
+            saveResumeState(); // game-screen is hidden now, so this clears the saved snapshot
         }
 
         // Wraps the in-game Exit button: local/bot/hotseat games exit straight
@@ -1784,6 +2034,7 @@
             }
 
             syncOnlineStateIfNeeded();
+            saveResumeState();
         }
 
         function onDiceClick(color) {
@@ -2468,6 +2719,7 @@
             });
 
             syncOnlineStateIfNeeded();
+            saveResumeState();
         }
 
         function createTokenElement(t) {
@@ -2502,6 +2754,10 @@
             // the same winner popup — without this they'd be left staring at
             // a board that just stopped responding.
             if (isOnlineMode) syncOnlineStateIfNeeded();
+            // A finished game has nothing left to resume into after an ad —
+            // let the next reload land back on the menu instead of
+            // re-opening an already-won board.
+            saveResumeState();
         }
 
         // =====================================================================
@@ -2597,6 +2853,14 @@
             // a clean exit, the other player still gets told (see
             // armRoomDisconnectGuard for details).
             window.LudoOnline.armRoomDisconnectGuard(roomId);
+
+            // ─── Chat + emoji — real-time ────────────────────────────────
+            onlineChatSeenIds = new Set();
+            onlineChatUnread = 0;
+            updateOnlineChatBadge();
+            document.getElementById('online-chat-toggle-btn').classList.add('visible');
+            if (onlineChatDetach) { try { onlineChatDetach(); } catch (e) {} onlineChatDetach = null; }
+            onlineChatDetach = window.LudoOnline.listenChat(roomId, renderOnlineChatMessages);
         }
 
         // Called when the room's endEvent fires for a reason that ISN'T a
@@ -2631,6 +2895,8 @@
             isOnlineMode = false;
             onlineDetachFns.forEach(fn => { try { fn(); } catch (e) {} });
             onlineDetachFns = [];
+            teardownOnlineChat();
+            saveResumeState(); // winner-modal is showing now, so this clears the saved snapshot
         }
 
         // Tears down listeners + tells Firebase we've left, WITHOUT touching
@@ -2642,6 +2908,7 @@
             if (onlineRoomId && window.LudoOnline) window.LudoOnline.leaveRoom(onlineRoomId, reason || 'left');
             onlineDetachFns.forEach(fn => { try { fn(); } catch (e) {} });
             onlineDetachFns = [];
+            teardownOnlineChat();
             isOnlineMode = false;
             onlineRoomId = null;
             onlineMyColor = null;
@@ -2686,6 +2953,129 @@
             renderScoreboard();
             updateTurnUI();
             attachOnlineRoomListeners(roomId);
+        }
+
+        // ─── In-match chat + emoji — real-time ─────────────────────────────
+        function teardownOnlineChat() {
+            if (onlineChatDetach) { try { onlineChatDetach(); } catch (e) {} onlineChatDetach = null; }
+            document.getElementById('online-chat-toggle-btn').classList.remove('visible');
+            document.getElementById('online-chat-panel').classList.remove('open');
+            onlineChatOpen = false;
+            onlineChatSeenIds = new Set();
+            onlineChatUnread = 0;
+            updateOnlineChatBadge();
+            document.getElementById('online-chat-messages').innerHTML =
+                '<p class="chat-empty-hint">Say hi! Messages are only visible to you and your opponent.</p>';
+        }
+
+        function updateOnlineChatBadge() {
+            const badge = document.getElementById('online-chat-unread');
+            if (!badge) return;
+            if (onlineChatUnread > 0) {
+                badge.textContent = onlineChatUnread > 9 ? '9+' : String(onlineChatUnread);
+                badge.classList.add('show');
+            } else {
+                badge.classList.remove('show');
+            }
+        }
+
+        function toggleOnlineChat() {
+            const panel = document.getElementById('online-chat-panel');
+            onlineChatOpen = !panel.classList.contains('open');
+            panel.classList.toggle('open', onlineChatOpen);
+            if (onlineChatOpen) {
+                onlineChatUnread = 0;
+                updateOnlineChatBadge();
+                const box = document.getElementById('online-chat-messages');
+                box.scrollTop = box.scrollHeight;
+                setTimeout(() => document.getElementById('online-chat-input').focus(), 150);
+            }
+        }
+
+        function sendOnlineChatText() {
+            const input = document.getElementById('online-chat-input');
+            const text = (input.value || '').trim();
+            if (!text || !isOnlineMode || !onlineRoomId) return;
+            window.LudoOnline.sendChatMessage(onlineRoomId, text);
+            input.value = '';
+        }
+
+        function sendOnlineEmoji(emoji) {
+            if (!isOnlineMode || !onlineRoomId) return;
+            window.LudoOnline.sendChatMessage(onlineRoomId, emoji);
+        }
+
+        // A message counts as "just an emoji" for the bigger bubble style +
+        // floating board pop when it's short and has no plain letters/digits
+        // in it (keeps this simple and dependency-free rather than pulling
+        // in a full emoji-detection regex library for a cosmetic touch).
+        function isLikelyEmojiOnly(text) {
+            return text.length <= 8 && !/[a-zA-Z0-9]/.test(text);
+        }
+
+        function renderOnlineChatMessages(list) {
+            if (!isOnlineMode) return;
+            const box = document.getElementById('online-chat-messages');
+            const myUid = window.LudoOnline && window.LudoOnline.getUid();
+            if (!list || list.length === 0) {
+                box.innerHTML = '<p class="chat-empty-hint">Say hi! Messages are only visible to you and your opponent.</p>';
+                onlineChatSeenIds = new Set();
+                return;
+            }
+
+            box.innerHTML = list.map(m => {
+                const mine = m.from === myUid;
+                const emojiOnly = isLikelyEmojiOnly(m.text || '');
+                return `
+                    <div class="chat-msg-row ${mine ? 'mine' : 'theirs'}">
+                        <span class="chat-msg-name">${mine ? 'You' : escapeHtmlChat(m.name || 'Opponent')}</span>
+                        <div class="chat-msg-bubble ${emojiOnly ? 'is-emoji' : ''}">${escapeHtmlChat(m.text || '')}</div>
+                    </div>`;
+            }).join('');
+            box.scrollTop = box.scrollHeight;
+
+            // Work out which messages are brand new since the last render —
+            // used for the unread badge AND the floating board reaction.
+            list.forEach(m => {
+                if (onlineChatSeenIds.has(m.id)) return;
+                onlineChatSeenIds.add(m.id);
+                const myUid2 = window.LudoOnline && window.LudoOnline.getUid();
+                const fromOpponent = m.from !== myUid2;
+                // Skip the very first render (e.g. re-opening the panel, or
+                // reconnecting mid-match) — only react to messages that
+                // arrive WHILE we're already watching, not the whole history.
+                if (!onlineChatSeenIds._primed) return;
+                if (fromOpponent) {
+                    if (!onlineChatOpen) { onlineChatUnread++; updateOnlineChatBadge(); playSound('chat'); }
+                    if (isLikelyEmojiOnly(m.text || '')) showFloatingEmojiPop(m.text);
+                }
+            });
+            onlineChatSeenIds._primed = true;
+        }
+
+        function escapeHtmlChat(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        // Pops a brief floating emoji over the OPPONENT's scoreboard tag —
+        // a lightweight, real-time "reaction" on the board itself, so it
+        // reads even if the recipient hasn't opened the chat panel.
+        function showFloatingEmojiPop(emoji) {
+            const opponent = players.find(p => p.color !== onlineMyColor);
+            if (!opponent) return;
+            const tag = document.getElementById('tag-' + opponent.color);
+            if (!tag) return;
+            const pop = document.createElement('span');
+            pop.className = 'floating-emoji-pop';
+            pop.textContent = emoji;
+            pop.style.left = '50%';
+            pop.style.top = '-6px';
+            pop.style.transform = 'translateX(-50%)';
+            tag.style.position = tag.style.position || 'relative';
+            tag.appendChild(pop);
+            setTimeout(() => pop.remove(), 1700);
         }
 
         // ─── Online lobby screen wiring ─────────────────────────────────────
@@ -2943,6 +3333,17 @@
         <div class="lock-inner">
             <h1>⏳ Not Published Yet</h1>
             <p>This build is waiting for admin approval. It will start automatically once approved in the Admin Panel — no action needed here.</p>
+        </div>
+    </div>
+
+    <!-- Full-screen "you've been blocked" overlay — a per-DEVICE block set
+         from the Admin Panel's device list, separate from the whole-game
+         lock above. See the devices/{deviceId}/blocked listener in the
+         Firebase script block above for details. -->
+    <div id="blocked-overlay">
+        <div class="lock-inner">
+            <h1>🚫 Access Blocked</h1>
+            <p>An administrator has blocked this device from playing. Please contact support if you believe this is a mistake.</p>
         </div>
     </div>
 
