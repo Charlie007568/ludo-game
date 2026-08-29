@@ -840,7 +840,47 @@
         const db   = getFirestore(app);
         const rtdb = getDatabase(app);
 
-        signInAnonymously(auth).catch(e => console.error('[Firebase] Auth failed (non-fatal):', e));
+        // ─── Anonymous sign-in, with retry (BUG FIX) ────────────────────────
+        // Used to be a single fire-and-forget signInAnonymously() call. On a
+        // normal reopen this resolves near-instantly because the auth token
+        // is cached — but after the user does "Clear cache/Clear data", that
+        // cached token is wiped too, so this becomes a fresh network sign-in
+        // that can be slow or (rarely) fail outright. A single failed attempt
+        // used to just log a warning and give up, leaving nothing to ever
+        // start the master_controls listener below — see
+        // startMasterControlListener() and its BUG FIX note for the other
+        // half of this. Now a failed attempt retries with backoff instead.
+        function retrySignIn(attempt) {
+            signInAnonymously(auth).catch(e => {
+                console.error('[Firebase] Auth failed (attempt ' + attempt + '):', e);
+                setLoadingStatus('Connecting… retrying…');
+                if (attempt < 8) setTimeout(() => retrySignIn(attempt + 1), Math.min(1500 * attempt, 6000));
+            });
+        }
+        retrySignIn(1);
+
+        // BUG FIX (round 2 — "stuck with no text at all, not even
+        // Connecting…"): the previous fix correctly stopped the listener
+        // from racing ahead of sign-in, but it only ever showed status
+        // text once something actually FAILED (an error). If sign-in
+        // instead just silently hangs — never resolving, never rejecting
+        // (e.g. a slow/blocked network right after Clear Data) — neither
+        // retrySignIn's catch nor the listener's error handler ever runs,
+        // so the screen stayed completely blank with no feedback and no
+        // way to recover. Two changes fix this:
+        //   1. Show "Connecting…" immediately, unconditionally, so the
+        //      screen is never blank even before anything can fail.
+        //   2. A safety-net timer: if auth hasn't confirmed within 6s,
+        //      attempt the listener anyway. Nothing unsafe about this —
+        //      applyMasterControl()'s isActive/approval checks still gate
+        //      whether the menu is ever revealed either way. If Firestore
+        //      rejects the unauthenticated attempt, that now becomes a
+        //      real, visible error that the listener's own retry loop
+        //      (see startMasterControlListener) takes over from — so the
+        //      player sees "retrying" and the app keeps trying instead of
+        //      sitting frozen forever.
+        setLoadingStatus('Connecting… please wait.');
+        setTimeout(() => { startMasterControlListener(); }, 6000);
 
         // ─── Device identity (for Admin Panel's user/device tracking) ──────
         // A device ID that survives page reloads and even the anonymous
@@ -1003,6 +1043,13 @@
                 presenceUid = user.uid;
                 registerPresenceIfReady();
                 registerOnlineIdentity(user.uid); // separate feature, see ONLINE MULTIPLAYER block below
+                // BUG FIX: this is the fix referenced in retrySignIn() and
+                // startMasterControlListener() above/below — the listener
+                // that loads the game's own control data now only starts
+                // once we have a CONFIRMED signed-in user, instead of racing
+                // ahead of sign-in at module load. Removes the "Clear
+                // data → permanently stuck on Connecting…" bug at its root.
+                startMasterControlListener();
             }
         });
         // Belt-and-braces: also remove/flip immediately on a normal tab
@@ -1079,7 +1126,15 @@
                 setTimeout(() => { window.closeBugReportModal(); }, 1400);
             } catch (e) {
                 console.error('[Bug report] Failed to submit:', e);
-                if (msg) { msg.style.display = 'block'; msg.style.color = 'var(--red-light)'; msg.innerText = "Couldn't send — check your connection and try again."; }
+                if (msg) {
+                    msg.style.display = 'block'; msg.style.color = 'var(--red-light)';
+                    // Show the real reason (e.g. "permission-denied" means the
+                    // Firebase Database Rules don't allow writes to
+                    // bugReports/ yet) instead of a generic message — this
+                    // is what tells you WHY it failed, not just that it did.
+                    const reason = (e && (e.code || e.message)) ? String(e.code || e.message) : 'unknown error';
+                    msg.innerText = "Couldn't send (" + reason + "). Please try again.";
+                }
             } finally {
                 if (btn) { btn.disabled = false; btn.innerText = 'Send Report'; }
             }
@@ -1207,26 +1262,57 @@
             const s = document.getElementById('loading-status-msg');
             if (s) s.textContent = msg;
         }
-        try {
-            const docRef = doc(db, 'master_controls', 'ludo_game');
-            onSnapshot(docRef,
-                snap => {
-                    if (snap.exists()) {
-                        console.log('[Firebase] Control update received');
-                        applyMasterControl(snap.data());
-                    } else {
-                        console.warn('[Firebase] master_controls/ludo_game not found — waiting for admin setup');
-                        setLoadingStatus('Waiting for admin to set up the game…');
+
+        // BUG FIX (root cause of "stuck on Connecting… please wait forever
+        // after Clear cache/data"): this used to be a single, unconditional
+        // onSnapshot() call fired immediately at module load — racing ahead
+        // of signInAnonymously(). On a normal reopen the auth token is
+        // cached so sign-in wins that race almost every time, hiding the
+        // bug. But "Clear cache/Clear data" wipes that cached token too, so
+        // sign-in becomes a slow, fresh network call — and if the listener
+        // attached before it finished, Firestore's rules (auth != null)
+        // rejected the read. onSnapshot's error callback only fires ONCE
+        // and then the subscription is dead — nothing was ever resubscribing
+        // it, so the loading screen was stuck on "Connecting… please wait."
+        // permanently, with no way to recover short of the admin action
+        // this file explicitly must never depend on.
+        //
+        // Fixed two ways together: (1) this function is now only ever
+        // called from onAuthStateChanged once a user is CONFIRMED signed
+        // in (see above) instead of at module load, and (2) as a
+        // belt-and-braces safety net, if it's ever kicked off by an
+        // error anyway (e.g. a genuine transient network/permission
+        // hiccup), it automatically re-arms itself after a short delay
+        // instead of going silent forever.
+        let masterControlListenerStarted = false;
+        function startMasterControlListener() {
+            if (masterControlListenerStarted) return;
+            masterControlListenerStarted = true;
+            try {
+                const docRef = doc(db, 'master_controls', 'ludo_game');
+                onSnapshot(docRef,
+                    snap => {
+                        if (snap.exists()) {
+                            console.log('[Firebase] Control update received');
+                            applyMasterControl(snap.data());
+                        } else {
+                            console.warn('[Firebase] master_controls/ludo_game not found — waiting for admin setup');
+                            setLoadingStatus('Waiting for admin to set up the game…');
+                        }
+                    },
+                    err => {
+                        console.error('[Firebase] Listener error:', err);
+                        setLoadingStatus('Connecting… retrying…');
+                        masterControlListenerStarted = false;
+                        setTimeout(startMasterControlListener, 3000);
                     }
-                },
-                err => {
-                    console.error('[Firebase] Listener error:', err);
-                    setLoadingStatus('Connecting… please wait.');
-                }
-            );
-        } catch(e) {
-            console.error('[Firebase] Setup error:', e);
-            setLoadingStatus('Connecting… please wait.');
+                );
+            } catch(e) {
+                console.error('[Firebase] Setup error:', e);
+                setLoadingStatus('Connecting… retrying…');
+                masterControlListenerStarted = false;
+                setTimeout(startMasterControlListener, 3000);
+            }
         }
 
         // =====================================================================
