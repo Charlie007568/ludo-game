@@ -1007,14 +1007,25 @@
             set(userRef, {
                 uid: onlineUid, name: onlineName, publicId: onlinePublicId,
                 online: true, status: 'idle', roomId: null, updatedAt: serverTimestamp()
-            }).catch(() => {});
-            set(ref(rtdb, `${ONLINE_ROOT}/idIndex/${onlinePublicId}`), onlineUid).catch(() => {});
+            }).catch(err => _onlineReportError('write:users', err));
+            set(ref(rtdb, `${ONLINE_ROOT}/idIndex/${onlinePublicId}`), onlineUid).catch(err => _onlineReportError('write:idIndex', err));
             // If the tab/app dies without a clean goodbye, the server itself
             // flips us to offline the instant the connection drops.
             onDisconnect(userRef).update({ online: false, status: 'offline' }).catch(() => {});
             window.dispatchEvent(new CustomEvent('lm-online-ready', {
                 detail: { uid: onlineUid, name: onlineName, publicId: onlinePublicId }
             }));
+        }
+
+        // Surfaces a Firebase error instead of letting it fail silently
+        // (every write above used to just .catch(()=>{}), which is exactly
+        // why a security-rules problem on the new `lm_online/` path could
+        // leave the whole online feature stuck forever with no visible
+        // clue why — e.g. the players list just sitting on "Searching…").
+        function _onlineReportError(where, err) {
+            const msg = (err && err.message) || String(err);
+            console.error(`[LudoOnline] ${where} failed:`, msg);
+            window.dispatchEvent(new CustomEvent('lm-online-error', { detail: { where, message: msg } }));
         }
 
         // Best-effort cleanup on a normal tab close (mirrors the existing
@@ -1027,7 +1038,7 @@
 
         function _onlineListen(path, cb) {
             const r = ref(rtdb, path);
-            const handler = onValue(r, snap => cb(snap.val()));
+            onValue(r, snap => cb(snap.val()), err => _onlineReportError(`read:${path}`, err));
             _onlineListenerRefs[path] = r;
             return () => { try { off(r); } catch (e) {} delete _onlineListenerRefs[path]; };
         }
@@ -1041,7 +1052,7 @@
                 newName = String(newName || '').trim().slice(0, 18) || onlineName;
                 onlineName = newName;
                 _onlineSave('lm_online_name', onlineName);
-                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { name: onlineName }).catch(() => {});
+                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { name: onlineName }).catch(err => _onlineReportError('write', err));
             },
 
             // Live list of other online, idle (not already in a match) players.
@@ -1083,14 +1094,14 @@
                     fromUid: onlineUid, fromName: onlineName, fromPublicId: onlinePublicId,
                     mode: mode === 'barrier' ? 'barrier' : 'normal', roomId, createdAt: serverTimestamp()
                 };
-                set(ref(rtdb, `${ONLINE_ROOT}/requests/${targetUid}/${reqId}`), payload).catch(() => {});
-                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'pending' }).catch(() => {});
+                set(ref(rtdb, `${ONLINE_ROOT}/requests/${targetUid}/${reqId}`), payload).catch(err => _onlineReportError('write', err));
+                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'pending' }).catch(err => _onlineReportError('write', err));
                 return { reqId, roomId };
             },
 
             cancelRequest(targetUid, reqId) {
-                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${targetUid}/${reqId}`)).catch(() => {});
-                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle' }).catch(() => {});
+                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${targetUid}/${reqId}`)).catch(err => _onlineReportError('write', err));
+                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle' }).catch(err => _onlineReportError('write', err));
             },
 
             // Listens for match requests addressed to ME.
@@ -1112,16 +1123,16 @@
                     },
                     status: 'active', createdAt: serverTimestamp()
                 };
-                set(ref(rtdb, `${ONLINE_ROOT}/rooms/${req.roomId}`), room).catch(() => {});
-                set(ref(rtdb, `${ONLINE_ROOT}/requestResponses/${req.fromUid}/${reqId}`), { status: 'accepted', roomId: req.roomId }).catch(() => {});
-                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(() => {});
-                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'in_game', roomId: req.roomId }).catch(() => {});
-                update(ref(rtdb, `${ONLINE_ROOT}/users/${req.fromUid}`), { status: 'in_game', roomId: req.roomId }).catch(() => {});
+                set(ref(rtdb, `${ONLINE_ROOT}/rooms/${req.roomId}`), room).catch(err => _onlineReportError('write', err));
+                set(ref(rtdb, `${ONLINE_ROOT}/requestResponses/${req.fromUid}/${reqId}`), { status: 'accepted', roomId: req.roomId }).catch(err => _onlineReportError('write', err));
+                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(err => _onlineReportError('write', err));
+                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'in_game', roomId: req.roomId }).catch(err => _onlineReportError('write', err));
+                update(ref(rtdb, `${ONLINE_ROOT}/users/${req.fromUid}`), { status: 'in_game', roomId: req.roomId }).catch(err => _onlineReportError('write', err));
             },
 
             declineRequest(reqId, req, reason) {
-                set(ref(rtdb, `${ONLINE_ROOT}/requestResponses/${req.fromUid}/${reqId}`), { status: 'declined', reason: reason || 'declined' }).catch(() => {});
-                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(() => {});
+                set(ref(rtdb, `${ONLINE_ROOT}/requestResponses/${req.fromUid}/${reqId}`), { status: 'declined', reason: reason || 'declined' }).catch(err => _onlineReportError('write', err));
+                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(err => _onlineReportError('write', err));
             },
 
             listenRoomState(roomId, cb) {
@@ -1132,7 +1143,7 @@
                 if (!roomId) return;
                 set(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/state`), Object.assign({}, stateObj, {
                     writer: onlineUid, ts: serverTimestamp()
-                })).catch(() => {});
+                })).catch(err => _onlineReportError('write', err));
             },
 
             listenDiceEvent(roomId, cb) {
@@ -1143,7 +1154,7 @@
                 if (!roomId) return;
                 set(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/diceEvent`), Object.assign({}, evt, {
                     writer: onlineUid, ts: serverTimestamp()
-                })).catch(() => {});
+                })).catch(err => _onlineReportError('write', err));
             },
 
             // Fires once the room ends for a reason OTHER than a normal
@@ -1158,14 +1169,14 @@
             leaveRoom(roomId, reason) {
                 if (!roomId) return;
                 const endRef = ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/endEvent`);
-                set(endRef, { reason: reason || 'left', by: onlineUid, ts: serverTimestamp() }).catch(() => {});
-                update(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`), { status: 'ended' }).catch(() => {});
+                set(endRef, { reason: reason || 'left', by: onlineUid, ts: serverTimestamp() }).catch(err => _onlineReportError('write', err));
+                update(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`), { status: 'ended' }).catch(err => _onlineReportError('write', err));
                 // We're leaving cleanly, so cancel our own pending
                 // "disconnected" write for this room — otherwise it would
                 // still fire later (overwriting this clean reason) the
                 // moment this tab/connection actually closes.
-                onDisconnect(endRef).cancel().catch(() => {});
-                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle', roomId: null }).catch(() => {});
+                onDisconnect(endRef).cancel().catch(err => _onlineReportError('write', err));
+                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle', roomId: null }).catch(err => _onlineReportError('write', err));
             },
 
             // Arms a server-side dead-man's switch for THIS device's
@@ -1177,7 +1188,7 @@
             armRoomDisconnectGuard(roomId) {
                 if (!roomId) return;
                 const endRef = ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/endEvent`);
-                onDisconnect(endRef).set({ reason: 'disconnected', by: onlineUid, ts: serverTimestamp() }).catch(() => {});
+                onDisconnect(endRef).set({ reason: 'disconnected', by: onlineUid, ts: serverTimestamp() }).catch(err => _onlineReportError('write', err));
             },
 
             getUid() { return onlineUid; }
@@ -2715,6 +2726,23 @@
             waitForProfile();
         }
 
+        // If ANY Firebase call under the online feature fails (most often:
+        // the Realtime Database security rules don't grant access to the
+        // `lm_online/` path yet), show it plainly right where the player
+        // would otherwise be stuck staring at "Searching for online
+        // players…" forever with no clue why.
+        window.addEventListener('lm-online-error', (e) => {
+            const box = document.getElementById('onl-player-list');
+            if (box && document.getElementById('online-screen').style.display !== 'none') {
+                box.innerHTML = '';
+                const p = document.createElement('p');
+                p.className = 'onl-empty';
+                p.style.color = 'var(--red-light)';
+                p.textContent = '⚠️ Could not reach the online lobby (' + (e.detail && e.detail.message ? e.detail.message : 'connection error') + '). This is usually a Firebase Realtime Database rules issue — the "lm_online" path needs read/write access added.';
+                box.appendChild(p);
+            }
+        });
+
         function closeOnlineScreen() {
             document.getElementById('online-screen').style.display = 'none';
             document.getElementById('menu-screen').style.display = 'block';
@@ -2775,7 +2803,7 @@
 
                 const btn = document.createElement('button');
                 btn.className = 'onl-invite-btn';
-                btn.textContent = 'Invite';
+                btn.textContent = 'Send';
                 btn.addEventListener('click', () => sendOnlineInvite(u.uid, u.name || 'Player'));
 
                 row.appendChild(dot);
