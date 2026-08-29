@@ -20,7 +20,7 @@
             --blue: #2563eb; --blue-dark: #1e40af; --blue-light: #60a5fa; --blue-bg: #dbeafe;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Manrope', sans-serif; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-        html, body { width: 100vw; height: 100vh; overflow: hidden; position: fixed; background: var(--walnut-900); color: var(--ivory); }
+        html, body { width: 100vw; height: 100vh; height: calc(var(--app-vh, 1vh) * 100); overflow: hidden; position: fixed; top: 0; left: 0; background: var(--walnut-900); color: var(--ivory); }
         body {
             display: flex; justify-content: center; align-items: center;
             background:
@@ -173,7 +173,7 @@
             background: linear-gradient(180deg, rgba(20,14,10,0.98), rgba(8,5,3,0.99));
             border-top: 1px solid rgba(180,140,255,0.35);
             border-radius: 18px 18px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
-            flex-direction: column; max-height: 62vh; padding-bottom: env(safe-area-inset-bottom);
+            flex-direction: column; max-height: 62vh; max-height: calc(var(--app-vh, 1vh) * 62); padding-bottom: env(safe-area-inset-bottom);
         }
         #online-chat-panel.open { display: flex; }
         .chat-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
@@ -744,7 +744,7 @@
 
             <div class="board-stage">
                 <div class="board-column">
-                    <div class="corner-row">
+                    <div class="corner-row" id="corner-row-top">
                         <div class="player-tag" id="tag-Red" style="--tag-accent: var(--red);"></div>
                         <div class="player-tag" id="tag-Green" style="--tag-accent: var(--green);"></div>
                     </div>
@@ -753,7 +753,7 @@
                         <div class="ludo-board" id="board"></div>
                     </div>
 
-                    <div class="corner-row">
+                    <div class="corner-row" id="corner-row-bottom">
                         <div class="player-tag" id="tag-Blue" style="--tag-accent: var(--blue);"></div>
                         <div class="player-tag" id="tag-Yellow" style="--tag-accent: var(--yellow);"></div>
                     </div>
@@ -1569,6 +1569,39 @@
     </script>
 
     <script>
+        // ─── Viewport lock (bug fix) ─────────────────────────────────────
+        // The whole app is one fixed-height screen and is never meant to
+        // scroll. Previously, opening the match chat (or just tapping an
+        // emoji in it) auto-focused the message input, which popped the
+        // mobile keyboard and made the entire page visibly jump upward —
+        // because `100vh` is computed before the keyboard opens and
+        // doesn't shrink to match. Two changes fix this together:
+        //  1) --app-vh tracks the REAL visible height (via visualViewport
+        //     when available) so html/body never sit taller than what's
+        //     actually visible.
+        //  2) Any stray scroll offset that still creeps in (keyboard
+        //     open/close, a tap near the bottom edge, etc.) is snapped
+        //     back to (0,0) immediately instead of staying visible.
+        (function setupViewportLock() {
+            function setAppVh() {
+                const h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+                document.documentElement.style.setProperty('--app-vh', (h / 100) + 'px');
+            }
+            function pinScroll() {
+                if (window.scrollX !== 0 || window.scrollY !== 0) window.scrollTo(0, 0);
+            }
+            setAppVh();
+            window.addEventListener('resize', () => { setAppVh(); pinScroll(); });
+            window.addEventListener('orientationchange', () => { setAppVh(); pinScroll(); });
+            window.addEventListener('scroll', pinScroll, { passive: true });
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', () => { setAppVh(); pinScroll(); });
+                window.visualViewport.addEventListener('scroll', pinScroll);
+            }
+            document.addEventListener('focusin', () => setTimeout(pinScroll, 60));
+            document.addEventListener('focusout', () => setTimeout(pinScroll, 60));
+        })();
+
         let gameSpeed = 1;
         let players = [];
         let currentPlayerIndex = 0;
@@ -1887,6 +1920,7 @@
                 document.getElementById('game-screen').style.display = 'flex';
                 createBoard();
                 applyBoardRotation(isOnlineMode ? onlineMyColor : null);
+                applyTagLayout();
                 renderScoreboard();
                 updateTurnUI();
 
@@ -2073,6 +2107,7 @@
             initTokens();
             createBoard();
             applyBoardRotation(null); // local/hotseat/bot: never rotated, one shared screen
+            applyTagLayout();
             renderScoreboard();
             updateTurnUI();
         }
@@ -2112,6 +2147,48 @@
             boardEl.classList.remove('board-rot-90', 'board-rot-180', 'board-rot-270');
             const cls = boardRotationClassFor(color);
             if (cls) boardEl.classList.add(cls);
+        }
+
+        // ─── Player-tag (name + dice) layout — keeps the corner cards in
+        // sync with the board rotation above. Bug fix: previously the four
+        // .player-tag cards stayed hard-wired to their PHYSICAL corner
+        // (tag-Red/tag-Green always in the top row, tag-Blue/tag-Yellow
+        // always in the bottom row) even in an online match, so BOTH
+        // devices always saw "Red on top, Yellow on bottom" no matter which
+        // colour was actually theirs — it only ever looked personalised
+        // because of the "(You)" label, not because the card had actually
+        // moved to sit under/near their own rotated base. applyBoardRotation()
+        // always brings the local colour to the bottom-left of the board, so
+        // this mirrors that: the LOCAL player's tag+dice card is moved into
+        // the bottom row, the opponent's into the top row, on every device,
+        // independently — exactly matching where each player's base now
+        // visually sits after rotation.
+        function applyTagLayout() {
+            const topRow = document.getElementById('corner-row-top');
+            const bottomRow = document.getElementById('corner-row-bottom');
+            if (!topRow || !bottomRow) return;
+
+            if (isOnlineMode && onlineMyColor) {
+                const myTag = document.getElementById('tag-' + onlineMyColor);
+                const opponent = players.find(p => p.color !== onlineMyColor);
+                const otherTag = opponent ? document.getElementById('tag-' + opponent.color) : null;
+                // My own colour's card always sits bottom-left — right where
+                // my base now sits after the board rotation.
+                if (myTag) bottomRow.insertBefore(myTag, bottomRow.firstChild);
+                if (otherTag) topRow.insertBefore(otherTag, topRow.firstChild);
+            } else {
+                // Local/hotseat/bot: board is never rotated, so restore the
+                // fixed default layout (Red/Green top, Blue/Yellow bottom)
+                // matching the board's fixed physical quadrants.
+                const tagRed = document.getElementById('tag-Red');
+                const tagGreen = document.getElementById('tag-Green');
+                const tagBlue = document.getElementById('tag-Blue');
+                const tagYellow = document.getElementById('tag-Yellow');
+                if (tagRed) topRow.appendChild(tagRed);
+                if (tagGreen) topRow.appendChild(tagGreen);
+                if (tagBlue) bottomRow.appendChild(tagBlue);
+                if (tagYellow) bottomRow.appendChild(tagYellow);
+            }
         }
 
         function createBoard() {
@@ -3212,6 +3289,7 @@
             initTokens();
             createBoard();
             applyBoardRotation(myColor); // this device's own colour always lands bottom-left
+            applyTagLayout();
             renderScoreboard();
             updateTurnUI();
             attachOnlineRoomListeners(roomId);
@@ -3250,7 +3328,12 @@
                 updateOnlineChatBadge();
                 const box = document.getElementById('online-chat-messages');
                 box.scrollTop = box.scrollHeight;
-                setTimeout(() => document.getElementById('online-chat-input').focus(), 150);
+                // NOTE: intentionally NOT auto-focusing the text input here
+                // anymore — doing so popped the mobile keyboard the instant
+                // the panel opened (even if the player only wanted to tap an
+                // emoji), which is what made the screen jump upward. The
+                // keyboard now only opens if the player deliberately taps
+                // the input field themselves.
             }
         }
 
