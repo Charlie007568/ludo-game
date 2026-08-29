@@ -907,7 +907,12 @@
             // list (not just who's online right now).
             try {
                 const devRef = ref(rtdb, 'devices/' + deviceId);
-                set(devRef, {
+                // FIX: was set() before, which overwrites the ENTIRE node —
+                // that wiped out an admin's `blocked: true` flag every time
+                // this device reopened the game, silently un-blocking it.
+                // update() only touches the fields listed here, so `blocked`
+                // (and `blockedAt`) written by the Admin Panel now survive.
+                update(devRef, {
                     deviceName: deviceName,
                     userId:     presenceUid,
                     online:     true,
