@@ -273,6 +273,21 @@
             border: 2px solid #0f172a; position: relative;
             box-shadow: inset 0 0 24px rgba(0,0,0,0.15);
         }
+        /* ── Online per-player board orientation ─────────────────────────────
+           Applied only for online matches (see applyBoardRotation() in JS) so
+           that whichever colour the LOCAL device is playing always appears
+           bottom-left on THAT device's screen — the opponent's device does
+           the same independently for their own colour. Purely visual: the
+           underlying 15x15 grid/coordinates never change, so all game logic,
+           taps, and the Admin/other modes are completely unaffected. Local
+           hotseat/bot/pass-and-play games are never rotated (rotation is
+           cleared whenever a local game starts), since everyone shares one
+           physical screen there and a fixed orientation is correct for that.
+           The board is a perfect square, so 90°/270° rotation never distorts
+           layout or clips content. */
+        .ludo-board.board-rot-90  { transform: rotate(90deg); }
+        .ludo-board.board-rot-180 { transform: rotate(180deg); }
+        .ludo-board.board-rot-270 { transform: rotate(270deg); }
 
         /* 6x6 BASE QUADRANTS (NO INNER CELL LINES) */
         .base-quadrant {
@@ -1663,6 +1678,7 @@
                 document.getElementById('menu-screen').style.display = 'none';
                 document.getElementById('game-screen').style.display = 'flex';
                 createBoard();
+                applyBoardRotation(isOnlineMode ? onlineMyColor : null);
                 renderScoreboard();
                 updateTurnUI();
 
@@ -1848,6 +1864,7 @@
 
             initTokens();
             createBoard();
+            applyBoardRotation(null); // local/hotseat/bot: never rotated, one shared screen
             renderScoreboard();
             updateTurnUI();
         }
@@ -1865,6 +1882,30 @@
         }
 
         // CREATES CLEAN AUTHENTIC BOARD WITHOUT BASE LINING
+        // ─── Online per-player board orientation ────────────────────────────
+        // Each base's TRUE physical position on the 15x15 grid never changes
+        // (Red = top-left, Green = top-right, Blue = bottom-left, Yellow =
+        // bottom-right — see the `quadrants` array in createBoard() below).
+        // For online matches we visually rotate the whole board with CSS so
+        // that whichever colour THIS device is playing lands bottom-left on
+        // THIS screen. boardRotationClassFor() returns how far a given
+        // colour's base needs to rotate (clockwise) to reach that corner.
+        function boardRotationClassFor(color) {
+            switch (color) {
+                case 'Red':    return 'board-rot-270'; // top-left    → bottom-left
+                case 'Yellow': return 'board-rot-90';   // bottom-right → bottom-left
+                case 'Green':  return 'board-rot-180';  // top-right   → bottom-left
+                default:       return '';               // Blue is already bottom-left
+            }
+        }
+        function applyBoardRotation(color) {
+            const boardEl = document.getElementById('board');
+            if (!boardEl) return;
+            boardEl.classList.remove('board-rot-90', 'board-rot-180', 'board-rot-270');
+            const cls = boardRotationClassFor(color);
+            if (cls) boardEl.classList.add(cls);
+        }
+
         function createBoard() {
             const board = document.getElementById('board');
             board.innerHTML = '';
@@ -1982,10 +2023,17 @@
                     const partnerBadge = (activePartnerMode !== 'off' && players.some(pl => pl.color === partnerColor))
                         ? `<span style="margin-left:5px; opacity:0.85;" title="Partnered with ${partnerColor}">🤝</span>`
                         : '';
+                    // In an online match, tag the local device's own colour
+                    // "(You)" — makes it obvious at a glance which base is
+                    // yours now that the board also rotates to put it
+                    // bottom-left on your own screen.
+                    const youBadge = (isOnlineMode && onlineMyColor === c.name)
+                        ? `<span style="margin-left:5px; opacity:0.85; font-size:0.62em; font-weight:800; color:var(--brass-light);">(You)</span>`
+                        : '';
                     tag.innerHTML = `
                         <div class="tag-avatar">${initial}</div>
                         <div class="tag-info">
-                            <span class="tag-name">${p.name}${partnerBadge}</span>
+                            <span class="tag-name">${p.name}${partnerBadge}${youBadge}</span>
                             <span class="tag-status" id="status-${c.name}">Waiting</span>
                         </div>
                         <div class="dice-box-tag" id="dice-${c.name}" onclick="onDiceClick('${c.name}')">${pipGrid(1)}</div>
@@ -2955,6 +3003,7 @@
 
             initTokens();
             createBoard();
+            applyBoardRotation(myColor); // this device's own colour always lands bottom-left
             renderScoreboard();
             updateTurnUI();
             attachOnlineRoomListeners(roomId);
