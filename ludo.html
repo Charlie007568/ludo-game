@@ -101,6 +101,47 @@
             background: linear-gradient(140deg, rgba(142,36,170,0.35), rgba(94,53,177,0.35));
             border: 1px solid rgba(180,140,255,0.4); color: var(--ivory); text-align: left;
         }
+        .online-tile .mode-icon-badge { background: linear-gradient(150deg, #b48cff, rgba(0,0,0,0.3)); flex-shrink: 0; }
+
+        /* =================================================================
+           ONLINE MULTIPLAYER — Lobby screen, request popups, player list.
+           Kept in its own namespace (.onl-*, #online-*) so nothing here can
+           collide with the existing menu/game/admin styles above.
+           ================================================================= */
+        #online-screen { padding: 22px 22px calc(18px + env(safe-area-inset-bottom)); max-width: 420px; width: 92%; display: none; max-height: 94vh; overflow-y: auto; margin-top: var(--banner-space); }
+        .onl-back-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+        .onl-back-btn { padding: 7px 14px; border-radius: 14px; border: 1px solid rgba(201,162,75,0.4); background: rgba(0,0,0,0.4); color: var(--brass-light); font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; cursor: pointer; }
+        .onl-id-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .onl-id-pill { font-family: 'Manrope', sans-serif; font-weight: 900; letter-spacing: 1.5px; font-size: 0.82rem; color: var(--brass-light); background: rgba(0,0,0,0.4); border: 1px dashed rgba(201,162,75,0.4); border-radius: 8px; padding: 6px 10px; }
+        .onl-copy-btn { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(201,162,75,0.35); background: rgba(255,255,255,0.06); color: var(--ivory-dim); font-size: 0.6rem; font-weight: 800; text-transform: uppercase; cursor: pointer; }
+        .onl-name-input { width: 100%; margin-top: 8px; padding: 7px 9px; border-radius: 8px; border: 1px solid rgba(201,162,75,0.28); background: rgba(0,0,0,0.42); color: var(--ivory); outline: none; font-size: 0.72rem; font-weight: 700; }
+        .onl-hint { font-size: 0.56rem; color: var(--ivory-dim); margin-top: 6px; line-height: 1.5; }
+        .onl-invite-row { display: flex; gap: 6px; margin-top: 8px; }
+        .onl-invite-row input { flex: 1; padding: 7px 9px; border-radius: 8px; border: 1px solid rgba(201,162,75,0.28); background: rgba(0,0,0,0.42); color: var(--ivory); outline: none; font-size: 0.72rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        .onl-invite-row button { padding: 7px 14px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--brass-light), var(--brass) 60%, var(--brass-dark)); color: #1a1206; font-weight: 900; font-size: 0.66rem; cursor: pointer; white-space: nowrap; }
+        .onl-list { max-height: 220px; overflow-y: auto; margin-top: 4px; }
+        .onl-player-row { display: flex; align-items: center; gap: 8px; padding: 8px 6px; border-bottom: 1px solid rgba(201,162,75,0.12); }
+        .onl-player-row:last-child { border-bottom: none; }
+        .onl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-light); box-shadow: 0 0 6px var(--green-light); flex-shrink: 0; }
+        .onl-player-info { flex: 1; min-width: 0; }
+        .onl-player-name { font-size: 0.7rem; font-weight: 800; color: var(--ivory); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .onl-player-id { font-size: 0.56rem; color: var(--ivory-dim); letter-spacing: 0.6px; }
+        .onl-invite-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(180,140,255,0.45); background: linear-gradient(140deg, rgba(142,36,170,0.5), rgba(94,53,177,0.5)); color: var(--ivory); font-weight: 800; font-size: 0.6rem; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+        .onl-empty { font-size: 0.64rem; color: var(--ivory-dim); text-align: center; padding: 14px 6px; line-height: 1.6; }
+
+        #online-request-modal, #online-waiting-modal, #online-notice-modal {
+            display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 270; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+        }
+        #online-request-modal .btn, #online-waiting-modal .btn, #online-notice-modal .btn { display: inline-block; width: 100%; }
+        .onl-modal-card { background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); border: 1px solid rgba(180,140,255,0.4); border-radius: 20px; padding: 26px 24px; max-width: 300px; width: 100%; text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.7); animation: slideIn 0.4s cubic-bezier(.2,.8,.2,1); }
+        .onl-modal-icon { font-size: 2rem; margin-bottom: 8px; }
+        .onl-modal-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--brass-light); margin-bottom: 6px; font-weight: 800; }
+        .onl-modal-sub { font-size: 0.72rem; color: var(--ivory-dim); margin-bottom: 16px; line-height: 1.5; }
+        .onl-spinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(180,140,255,0.25); border-top-color: #b48cff; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
+
+        #online-screen .online-tile-static { margin-top: 2px; }
+
+        #game-screen.online-locked .player-tag:not(.my-online-color) .dice-box-tag { pointer-events: none; opacity: 0.72; }
 
         #game-screen {
             display: none; position: fixed; inset: 0; flex-direction: column; align-items: center; width: 100vw; height: 100vh;
@@ -424,7 +465,112 @@
             </p>
         </div>
 
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🌐 Play With Friends</span>
+            </div>
+            <div class="online-tile" onclick="openOnlineScreen()">
+                <span class="mode-icon-badge">🌐</span>
+                <span style="flex:1;">
+                    <span class="mode-name" style="display:block;">Play Online</span>
+                    <span class="mode-sub">Find a real player &amp; send a match request</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+        </div>
+
         <p class="dev-credit">Designed &amp; Developed by <span>Rahbar Waris</span></p>
+    </div>
+
+    <!-- ONLINE MULTIPLAYER LOBBY -->
+    <div id="online-screen" class="glass-panel">
+        <div class="onl-back-row">
+            <p class="brand-eyebrow" style="margin:0;">Online Lobby</p>
+            <button class="onl-back-btn" onclick="closeOnlineScreen()">← Menu</button>
+        </div>
+        <h1 class="title-text" style="font-size:1.35rem;">Play Online</h1>
+        <div class="title-rule"></div>
+
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🪪 Your Player ID</span>
+            </div>
+            <div class="onl-id-row">
+                <span class="onl-id-pill" id="onl-my-id">——————</span>
+                <button class="onl-copy-btn" onclick="copyOnlineId()">Copy</button>
+            </div>
+            <input type="text" id="onl-name-input" class="onl-name-input" placeholder="Your display name" maxlength="18" onchange="updateOnlineProfileName()">
+            <p class="onl-hint">Share your ID with a friend, or find anyone currently online below.</p>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🚧 Match Type (for requests you send)</span>
+            </div>
+            <div class="difficulty-pills">
+                <div class="diff-pill onl-mode-pill active" id="onl-mode-normal" onclick="setOnlineModeSetting('normal', this)">Normal</div>
+                <div class="diff-pill onl-mode-pill" id="onl-mode-barrier" onclick="setOnlineModeSetting('barrier', this)">Barrier</div>
+            </div>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">✉️ Invite By ID</span>
+            </div>
+            <div class="onl-invite-row">
+                <input type="text" id="onl-invite-id-input" placeholder="e.g. AB12CD" maxlength="8">
+                <button onclick="sendOnlineInviteById()">Send</button>
+            </div>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">👥 Players Online</span>
+            </div>
+            <div class="onl-list" id="onl-player-list">
+                <p class="onl-empty">Searching for online players…</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ONLINE MULTIPLAYER POPUPS — kept OUTSIDE every screen div (menu/
+         online-screen/game-screen) on purpose: these use position:fixed to
+         float above whichever screen is active, but a fixed-position
+         element still inherits display:none from a hidden ancestor, so if
+         these lived inside e.g. #game-screen they'd be invisible any time a
+         request/response arrives while the player is still in the lobby
+         (i.e. before a game has started) — which is exactly when most of
+         them need to appear. -->
+
+    <!-- ONLINE: incoming match request popup -->
+    <div id="online-request-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-icon">🎮</div>
+            <div class="onl-modal-title">Match Request</div>
+            <div class="onl-modal-sub" id="online-request-text">Someone wants to play with you.</div>
+            <button class="btn btn-green" id="online-request-accept-btn">Accept</button>
+            <button class="btn btn-primary" id="online-request-decline-btn">Decline</button>
+        </div>
+    </div>
+
+    <!-- ONLINE: waiting for the other player to accept -->
+    <div id="online-waiting-modal">
+        <div class="onl-modal-card">
+            <div class="onl-spinner"></div>
+            <div class="onl-modal-title" id="online-waiting-title">Waiting for response…</div>
+            <div class="onl-modal-sub" id="online-waiting-sub">Sent your request. Hang tight.</div>
+            <button class="btn btn-primary" id="online-waiting-cancel-btn">Cancel</button>
+        </div>
+    </div>
+
+    <!-- ONLINE: generic notice (opponent left / declined / disconnected) -->
+    <div id="online-notice-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-icon" id="online-notice-icon">⚠️</div>
+            <div class="onl-modal-title" id="online-notice-title">Notice</div>
+            <div class="onl-modal-sub" id="online-notice-text"></div>
+            <button class="btn btn-green" id="online-notice-ok-btn">OK</button>
+        </div>
     </div>
 
     <!-- GAME BOARD SCREEN -->
@@ -433,7 +579,7 @@
             <div class="game-header">
                 <div class="mini-brand" id="game-title-label">Ludo Master Pro</div>
                 <div class="header-actions">
-                    <button class="btn-exit" onclick="goToMenu()">Exit</button>
+                    <button class="btn-exit" onclick="handleExitTap()">Exit</button>
                 </div>
             </div>
 
@@ -517,7 +663,7 @@
         import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getDatabase, ref, set, update, remove, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, update, remove, onDisconnect, serverTimestamp, onValue, get, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey:            "AIzaSyDPYuTSyVY5_I9DoAUg6NCkZ_3ERpZ705M",
@@ -661,7 +807,11 @@
         }
         window.registerPresenceIfReady = registerPresenceIfReady; // called from revealMenu() below
         onAuthStateChanged(auth, (user) => {
-            if (user) { presenceUid = user.uid; registerPresenceIfReady(); }
+            if (user) {
+                presenceUid = user.uid;
+                registerPresenceIfReady();
+                registerOnlineIdentity(user.uid); // separate feature, see ONLINE MULTIPLAYER block below
+            }
         });
         // Belt-and-braces: also remove/flip immediately on a normal tab
         // close, so status updates right away instead of waiting for the
@@ -816,6 +966,222 @@
             console.error('[Firebase] Setup error:', e);
             setLoadingStatus('Connecting… please wait.');
         }
+
+        // =====================================================================
+        // ONLINE MULTIPLAYER (Realtime Database) — brand-new feature.
+        // Lives entirely under its own root node, `lm_online/`, completely
+        // separate from presence/, devices/, and master_controls/ used above
+        // — nothing here can ever read, overwrite, or race with that existing
+        // admin-control data. Everything the classic game-logic block
+        // below needs is exposed through the single `window.LudoOnline`
+        // object so the two scripts stay cleanly separated (this one owns
+        // all Firebase calls; the other owns all game rules/rendering).
+        // =====================================================================
+        const ONLINE_ROOT = 'lm_online';
+        let onlineUid = null;
+        let onlineName = '';
+        let onlinePublicId = '';
+        const _onlineListenerRefs = {}; // path -> {ref, cb} so we can detach cleanly
+
+        function _onlineLoad(key, fallback) {
+            try { return localStorage.getItem(key) || fallback; } catch (e) { return fallback; }
+        }
+        function _onlineSave(key, val) {
+            try { localStorage.setItem(key, val); } catch (e) {}
+        }
+        function _genPublicId() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I mix-ups
+            let id = '';
+            for (let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
+            return id;
+        }
+        onlinePublicId = _onlineLoad('lm_online_id', '');
+        onlineName     = _onlineLoad('lm_online_name', '');
+        if (!onlinePublicId) { onlinePublicId = _genPublicId(); _onlineSave('lm_online_id', onlinePublicId); }
+        if (!onlineName)     { onlineName = 'Player' + Math.floor(1000 + Math.random() * 9000); _onlineSave('lm_online_name', onlineName); }
+
+        function registerOnlineIdentity(uid) {
+            if (!uid) return;
+            onlineUid = uid;
+            const userRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`);
+            set(userRef, {
+                uid: onlineUid, name: onlineName, publicId: onlinePublicId,
+                online: true, status: 'idle', roomId: null, updatedAt: serverTimestamp()
+            }).catch(() => {});
+            set(ref(rtdb, `${ONLINE_ROOT}/idIndex/${onlinePublicId}`), onlineUid).catch(() => {});
+            // If the tab/app dies without a clean goodbye, the server itself
+            // flips us to offline the instant the connection drops.
+            onDisconnect(userRef).update({ online: false, status: 'offline' }).catch(() => {});
+            window.dispatchEvent(new CustomEvent('lm-online-ready', {
+                detail: { uid: onlineUid, name: onlineName, publicId: onlinePublicId }
+            }));
+        }
+
+        // Best-effort cleanup on a normal tab close (mirrors the existing
+        // presence pagehide handler above — onDisconnect still covers the
+        // crash/network-loss case where this event never fires).
+        window.addEventListener('pagehide', () => {
+            if (!onlineUid) return;
+            try { update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { online: false, status: 'offline' }); } catch (e) {}
+        });
+
+        function _onlineListen(path, cb) {
+            const r = ref(rtdb, path);
+            const handler = onValue(r, snap => cb(snap.val()));
+            _onlineListenerRefs[path] = r;
+            return () => { try { off(r); } catch (e) {} delete _onlineListenerRefs[path]; };
+        }
+
+        window.LudoOnline = {
+            getProfile() {
+                return { uid: onlineUid, name: onlineName, publicId: onlinePublicId };
+            },
+
+            setName(newName) {
+                newName = String(newName || '').trim().slice(0, 18) || onlineName;
+                onlineName = newName;
+                _onlineSave('lm_online_name', onlineName);
+                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { name: onlineName }).catch(() => {});
+            },
+
+            // Live list of other online, idle (not already in a match) players.
+            listenOnlineUsers(cb) {
+                return _onlineListen(`${ONLINE_ROOT}/users`, all => {
+                    const list = [];
+                    if (all) {
+                        Object.keys(all).forEach(uid => {
+                            const u = all[uid];
+                            if (uid !== onlineUid && u && u.online && u.status === 'idle') {
+                                list.push({ uid, name: u.name, publicId: u.publicId });
+                            }
+                        });
+                    }
+                    cb(list);
+                });
+            },
+
+            async lookupByPublicId(publicId) {
+                publicId = String(publicId || '').trim().toUpperCase();
+                if (!publicId) return null;
+                try {
+                    const snap = await get(ref(rtdb, `${ONLINE_ROOT}/idIndex/${publicId}`));
+                    const uid = snap.exists() ? snap.val() : null;
+                    if (!uid) return null;
+                    const uSnap = await get(ref(rtdb, `${ONLINE_ROOT}/users/${uid}`));
+                    const u = uSnap.exists() ? uSnap.val() : null;
+                    if (!u) return null;
+                    return { uid, name: u.name, publicId: u.publicId, online: !!u.online, status: u.status };
+                } catch (e) { return null; }
+            },
+
+            // Sends a match request to targetUid. Returns the requestId so the
+            // caller can listen for the response / cancel it later.
+            sendRequest(targetUid, mode) {
+                const reqId = 'r' + Date.now() + '_' + Math.floor(Math.random() * 9999);
+                const roomId = 'room_' + onlineUid.slice(0, 6) + '_' + Date.now();
+                const payload = {
+                    fromUid: onlineUid, fromName: onlineName, fromPublicId: onlinePublicId,
+                    mode: mode === 'barrier' ? 'barrier' : 'normal', roomId, createdAt: serverTimestamp()
+                };
+                set(ref(rtdb, `${ONLINE_ROOT}/requests/${targetUid}/${reqId}`), payload).catch(() => {});
+                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'pending' }).catch(() => {});
+                return { reqId, roomId };
+            },
+
+            cancelRequest(targetUid, reqId) {
+                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${targetUid}/${reqId}`)).catch(() => {});
+                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle' }).catch(() => {});
+            },
+
+            // Listens for match requests addressed to ME.
+            listenIncomingRequests(cb) {
+                return _onlineListen(`${ONLINE_ROOT}/requests/${onlineUid}`, reqs => cb(reqs || {}));
+            },
+
+            // Listens for a response (accepted/declined) to a request I sent.
+            listenRequestResponse(reqId, cb) {
+                return _onlineListen(`${ONLINE_ROOT}/requestResponses/${onlineUid}/${reqId}`, data => { if (data) cb(data); });
+            },
+
+            acceptRequest(reqId, req) {
+                const room = {
+                    mode: req.mode,
+                    players: {
+                        Red:    { uid: req.fromUid, name: req.fromName },
+                        Yellow: { uid: onlineUid,   name: onlineName }
+                    },
+                    status: 'active', createdAt: serverTimestamp()
+                };
+                set(ref(rtdb, `${ONLINE_ROOT}/rooms/${req.roomId}`), room).catch(() => {});
+                set(ref(rtdb, `${ONLINE_ROOT}/requestResponses/${req.fromUid}/${reqId}`), { status: 'accepted', roomId: req.roomId }).catch(() => {});
+                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(() => {});
+                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'in_game', roomId: req.roomId }).catch(() => {});
+                update(ref(rtdb, `${ONLINE_ROOT}/users/${req.fromUid}`), { status: 'in_game', roomId: req.roomId }).catch(() => {});
+            },
+
+            declineRequest(reqId, req, reason) {
+                set(ref(rtdb, `${ONLINE_ROOT}/requestResponses/${req.fromUid}/${reqId}`), { status: 'declined', reason: reason || 'declined' }).catch(() => {});
+                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(() => {});
+            },
+
+            listenRoomState(roomId, cb) {
+                return _onlineListen(`${ONLINE_ROOT}/rooms/${roomId}/state`, data => { if (data) cb(data); });
+            },
+
+            pushRoomState(roomId, stateObj) {
+                if (!roomId) return;
+                set(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/state`), Object.assign({}, stateObj, {
+                    writer: onlineUid, ts: serverTimestamp()
+                })).catch(() => {});
+            },
+
+            listenDiceEvent(roomId, cb) {
+                return _onlineListen(`${ONLINE_ROOT}/rooms/${roomId}/diceEvent`, data => { if (data) cb(data); });
+            },
+
+            pushDiceEvent(roomId, evt) {
+                if (!roomId) return;
+                set(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/diceEvent`), Object.assign({}, evt, {
+                    writer: onlineUid, ts: serverTimestamp()
+                })).catch(() => {});
+            },
+
+            // Fires once the room ends for a reason OTHER than a normal
+            // finished game: 'left' (opponent tapped Exit), 'forfeit'
+            // (opponent accepted a different request or started a local
+            // game instead), or 'disconnected' (their connection/tab died
+            // without a clean goodbye — see armRoomDisconnectGuard below).
+            listenRoomStatus(roomId, cb) {
+                return _onlineListen(`${ONLINE_ROOT}/rooms/${roomId}/endEvent`, data => { if (data) cb(data); });
+            },
+
+            leaveRoom(roomId, reason) {
+                if (!roomId) return;
+                const endRef = ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/endEvent`);
+                set(endRef, { reason: reason || 'left', by: onlineUid, ts: serverTimestamp() }).catch(() => {});
+                update(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`), { status: 'ended' }).catch(() => {});
+                // We're leaving cleanly, so cancel our own pending
+                // "disconnected" write for this room — otherwise it would
+                // still fire later (overwriting this clean reason) the
+                // moment this tab/connection actually closes.
+                onDisconnect(endRef).cancel().catch(() => {});
+                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle', roomId: null }).catch(() => {});
+            },
+
+            // Arms a server-side dead-man's switch for THIS device's
+            // connection to this room: if the app/tab disappears without
+            // ever calling leaveRoom() (crash, network loss, force-close),
+            // Firebase itself writes the 'disconnected' endEvent so the
+            // other player isn't left staring at a board that just stopped
+            // responding, forever.
+            armRoomDisconnectGuard(roomId) {
+                if (!roomId) return;
+                const endRef = ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/endEvent`);
+                onDisconnect(endRef).set({ reason: 'disconnected', by: onlineUid, ts: serverTimestamp() }).catch(() => {});
+            },
+
+            getUid() { return onlineUid; }
+        };
     </script>
 
     <script>
@@ -838,6 +1204,21 @@
         // 2/3/4 Players, and stacks on top of Partner Mode too.
         let barrierModeSetting = 'off';   // menu selection: 'off' | 'on'
         let activeBarrierMode = 'off';    // effective setting for the running game
+
+        // ─── ONLINE MULTIPLAYER state (additive — all local/hotseat/bot code
+        // above and below is untouched; these stay at their default/false
+        // values for every non-online game, so nothing here can overwrite or
+        // overlap with the existing single-device modes). ───────────────────
+        let isOnlineMode = false;         // true only while playing a live online match
+        let onlineRoomId = null;          // Firebase room key for the current match
+        let onlineMyColor = null;         // 'Red' or 'Yellow' — the color THIS device controls
+        let onlineApplyingRemote = false; // re-entrancy guard: true while applying a state snapshot
+                                           // that arrived from the opponent, so that redraw never
+                                           // gets broadcast right back out (which would ping-pong)
+        let onlineLeavingSelf = false;    // true while I'm the one intentionally leaving the room
+        let onlineModeSetting = 'normal'; // lobby pill: mode used for requests I SEND ('normal'|'barrier')
+        let onlinePendingReq = null;      // { reqId, roomId, targetUid, targetName } while awaiting a response
+        let onlineDetachFns = [];         // active Firebase listener detach callbacks for the current room
 
         const colors = [
             { name: "Red", hex: "#dc2626" },
@@ -1122,13 +1503,32 @@
         }
 
         function goToMenu() {
+            if (isOnlineMode) cleanupOnlineGame('left'); // best-effort: tell Firebase we've left, detach listeners
             document.getElementById('game-screen').style.display = 'none';
             document.getElementById('winner-modal').style.display = 'none';
+            const forfeitSub = document.querySelector('.online-forfeit-sub');
+            if (forfeitSub) forfeitSub.remove(); // clear the one-off "opponent left/forfeited" line, if shown
             document.getElementById('menu-screen').style.display = 'block';
             gameState = 'IDLE';
         }
 
+        // Wraps the in-game Exit button: local/bot/hotseat games exit straight
+        // away as before; an online match asks for confirmation first, since
+        // exiting also ends the match for the other, real, player.
+        function handleExitTap() {
+            if (isOnlineMode) {
+                if (confirm('Leave this online match? It will end the game for both players.')) goToMenu();
+                return;
+            }
+            goToMenu();
+        }
+
         function startGame(mode) {
+            // Starting any local/bot/hotseat game always leaves online mode
+            // behind cleanly, in case the player came here from an online
+            // match or the online lobby. The old opponent (if any) gets a
+            // clear "forfeit" win screen instead of the sync just stopping.
+            if (isOnlineMode) cleanupOnlineGame('forfeit');
             // Partner Mode (Assist / Full Control) only makes sense in the 4-player Full
             // Table — block any other mode from opening while it's active, instead of
             // silently starting a game partner mode can't apply to.
@@ -1371,9 +1771,17 @@
             if (cp.isBot) {
                 setTimeout(botPlay, 600 / gameSpeed);
             }
+
+            syncOnlineStateIfNeeded();
         }
 
         function onDiceClick(color) {
+            // ONLINE GUARD: this device only ever controls ONE color. Even if
+            // it happens to visually be the opponent's turn to roll, this
+            // client must never be able to trigger it — their roll can only
+            // ever come from THEIR device, synced in over the network.
+            if (isOnlineMode && color !== onlineMyColor) return;
+
             const cp = players[currentPlayerIndex];
             if (cp.color !== color || gameState !== 'IDLE') return;
 
@@ -1381,6 +1789,10 @@
             playSound('roll');
             const dice = document.getElementById(`dice-${color}`);
             dice.classList.add('rolling');
+
+            // Let the opponent's screen play the same tumbling animation live,
+            // in real time, while the actual result is still being decided.
+            if (isOnlineMode && window.LudoOnline) window.LudoOnline.pushDiceEvent(onlineRoomId, { color });
 
             // Cycle random faces while the dice visually tumbles, so it reads as an
             // actual roll settling on a result rather than an instant flip.
@@ -1399,6 +1811,12 @@
                 } else {
                     consecutiveSixes = 0;
                 }
+
+                // Broadcast the settled number immediately so the opponent's
+                // screen shows exactly what was rolled, even before any token
+                // has moved (e.g. while this player is still deciding which
+                // token to tap).
+                if (isOnlineMode) syncOnlineStateIfNeeded({ lastRoll: { color, value: currentRoll } });
 
                 if (consecutiveSixes === 3) {
                     consecutiveSixes = 0;
@@ -1658,6 +2076,12 @@
         }
 
         function handleTokenClick(tokenObj) {
+            // ONLINE GUARD: never let this device move a token belonging to
+            // the turn it does NOT control — without this, tapping the
+            // opponent's already-highlighted token during their turn would
+            // otherwise pass the normal "is it movable" check below and move
+            // it right out from under them.
+            if (isOnlineMode && players[currentPlayerIndex] && players[currentPlayerIndex].color !== onlineMyColor) return;
             const cp = players[currentPlayerIndex];
             if (gameState !== 'AWAITING_MOVE') return;
             // Membership in the effective movable set (not raw color match) decides whether a
@@ -1667,12 +2091,27 @@
             initiateMove(tokenObj, currentRoll);
         }
 
-        // Runs right before a move actually happens. Its only extra job: if
-        // the tapped token is a Barrier currently resting on a star (either
-        // because it landed there directly, or because it was auto-parked
-        // there mid-move earlier — see performMove below), the player gets
-        // one more chance, on THIS roll, to decide whether to keep moving it
-        // as a locked Barrier or break it apart here and move on alone.
+        // Runs right before a move actually happens. Two extra jobs:
+        //
+        // 1) If the tapped token is a Barrier currently resting on a star
+        // (either because it landed there directly, or because it was
+        // auto-parked there mid-move earlier — see performMove below), the
+        // player gets one more chance, on THIS roll, to decide whether to
+        // keep moving it as a locked Barrier or break it apart here and
+        // move on alone.
+        //
+        // 2) BUG FIX: forming a brand-new Barrier used to be offered the
+        // INSTANT two same-colour tokens ended up sharing a cell — right
+        // after the arriving token's move finished (see resolveBarrierDecision
+        // below), on WHATEVER roll caused that arrival, even an odd one, and
+        // even when the second token had simply come out of Base on a 6
+        // (so two 6s in a row could pop the Form-Barrier prompt immediately,
+        // and landing on a star with a token already parked there did too).
+        // That's wrong: the Form-Barrier choice must never appear on the
+        // arrival move itself. It's now offered here instead, right before
+        // the NEXT time either token is about to move — and only when that
+        // next roll is even (2, 4, or 6), same as every other Barrier move
+        // rule. Until then the two tokens simply sit together, unlocked.
         function initiateMove(token, roll) {
             if (activeBarrierMode === 'on' && token.status === 'PATH' && token.barrier) {
                 const key = `${token.pos[0]}-${token.pos[1]}`;
@@ -1692,6 +2131,30 @@
                     return;
                 }
             }
+
+            if (activeBarrierMode === 'on' && token.status === 'PATH' && !token.barrier) {
+                const candidates = detectBarrierGroupCandidates(token);
+                if (candidates.length > 0 && barrierMoveSteps(roll) !== null) {
+                    const cp = players[currentPlayerIndex];
+                    const groupSize = candidates.length + 1;
+                    const formBarrier = () => {
+                        token.barrier = true;
+                        candidates.forEach(c => { c.barrier = true; });
+                        renderTokens();
+                        document.getElementById('msg-log').innerText = `🚧 ${token.color} formed a ${groupSize}-token Barrier!`;
+                        performMove(token, roll);
+                    };
+                    const skipBarrier = () => performMove(token, roll);
+
+                    if (cp.isBot) { formBarrier(); return; }
+                    showBarrierChoice(
+                        `${token.color} has ${groupSize} tokens together here. Lock them into a Barrier?`,
+                        'Yes, Form Barrier', 'No, Keep Separate', formBarrier, skipBarrier
+                    );
+                    return;
+                }
+            }
+
             performMove(token, roll);
         }
 
@@ -1789,43 +2252,14 @@
         }
 
         // Runs after every move once captures + the automatic Barrier-cut check are
-        // done. Handles the two moments where Barrier Mode hands the choice to the
-        // player instead of deciding automatically: (1) forming a brand-new Barrier
-        // when a token lands on its own twin, and (2) breaking an existing Barrier
-        // apart when it lands on a star. Bots decide instantly on their own turn;
-        // a human player gets a popup either way.
+        // done. Handles the one moment where Barrier Mode still hands a choice to
+        // the player right after a move finishes: breaking an existing Barrier
+        // apart when it lands on a star. (Forming a brand-new Barrier out of two
+        // freshly-met tokens is deliberately NOT offered here anymore — see the
+        // BUG FIX note above initiateMove. That choice now only appears right
+        // before the next move of one of those tokens, on an even roll.)
         function resolveBarrierDecision(token, movers, captured, roll) {
-            const cp = players[currentPlayerIndex];
             const mover = movers[0];
-            // Only a freshly-arrived, still-unlocked token can trigger a NEW
-            // Barrier — and only on an even roll (2, 4, or 6), same as the
-            // rule that governs moving one. The group can end up being 2, 3,
-            // or 4 tokens total once locked.
-            const candidates = (movers.length === 1) ? detectBarrierGroupCandidates(mover) : [];
-            const canFormNow = candidates.length > 0 && barrierMoveSteps(roll) !== null;
-
-            if (canFormNow) {
-                const groupSize = candidates.length + 1;
-                const formBarrier = () => {
-                    mover.barrier = true;
-                    candidates.forEach(c => { c.barrier = true; });
-                    renderTokens();
-                    document.getElementById('msg-log').innerText = `🚧 ${mover.color} formed a ${groupSize}-token Barrier!`;
-                    setTimeout(() => resolveStarBreakDecision(mover, () => finishMoveResolution(token, captured)), 450 / gameSpeed);
-                };
-                const skipBarrier = () => resolveStarBreakDecision(mover, () => finishMoveResolution(token, captured));
-
-                if (cp.isBot) {
-                    formBarrier();
-                } else {
-                    showBarrierChoice(
-                        `${mover.color} has ${groupSize} tokens together here. Lock them into a Barrier?`,
-                        'Yes, Form Barrier', 'No, Keep Separate', formBarrier, skipBarrier
-                    );
-                }
-                return;
-            }
-
             resolveStarBreakDecision(mover, () => finishMoveResolution(token, captured));
         }
 
@@ -2021,6 +2455,8 @@
                     cellEl.appendChild(tEl);
                 });
             });
+
+            syncOnlineStateIfNeeded();
         }
 
         function createTokenElement(t) {
@@ -2050,6 +2486,414 @@
                 title = `${winner ? winner.name : 'Player'} Wins! 🎉`;
             }
             document.getElementById('winner-title').innerText = title;
+
+            // Let the opponent's device know the match is over and show them
+            // the same winner popup — without this they'd be left staring at
+            // a board that just stopped responding.
+            if (isOnlineMode) syncOnlineStateIfNeeded();
+        }
+
+        // =====================================================================
+        // ONLINE MULTIPLAYER — game-side glue.
+        // Everything below is purely ADDITIVE: it only runs when isOnlineMode
+        // is true (set solely by startOnlineGame()), reads/writes only the
+        // online-* variables declared near the top of this script, and never
+        // modifies any of the local/bot/hotseat functions above beyond the
+        // few small guard lines already marked "ONLINE GUARD" / calls to
+        // syncOnlineStateIfNeeded() marked inline. This keeps the two feature
+        // sets from ever overwriting or overlapping each other.
+        // =====================================================================
+
+        // Pushes a full snapshot of the authoritative game state to Firebase.
+        // Called from renderTokens()/updateTurnUI()/endGame() (i.e. every
+        // moment the local board actually changes) plus right after a dice
+        // roll settles. No-ops instantly for every non-online game.
+        function syncOnlineStateIfNeeded(extra) {
+            if (!isOnlineMode || !onlineRoomId || onlineApplyingRemote) return;
+            if (!window.LudoOnline) return;
+            const winnerModal = document.getElementById('winner-modal');
+            const finished = !!(winnerModal && winnerModal.style.display === 'flex');
+            const winnerTitle = finished ? (document.getElementById('winner-title').innerText || '') : '';
+            const payload = Object.assign({
+                tokens, currentPlayerIndex, consecutiveSixes, winnersList,
+                activeBarrierMode, currentRoll, gameState, finished, winnerTitle
+            }, extra || {});
+            window.LudoOnline.pushRoomState(onlineRoomId, payload);
+        }
+
+        // Applies a state snapshot that arrived from the OPPONENT's device.
+        // Never called for a snapshot this same device wrote itself (the
+        // `writer` tag added by pushRoomState is checked first).
+        function applyRemoteOnlineState(data) {
+            if (!data || !isOnlineMode) return;
+            if (data.writer && window.LudoOnline && data.writer === window.LudoOnline.getUid()) return;
+
+            onlineApplyingRemote = true;
+            try {
+                if (data.tokens) tokens = data.tokens;
+                if (typeof data.currentPlayerIndex === 'number') currentPlayerIndex = data.currentPlayerIndex;
+                if (typeof data.consecutiveSixes === 'number') consecutiveSixes = data.consecutiveSixes;
+                if (Array.isArray(data.winnersList)) winnersList = data.winnersList;
+                if (data.activeBarrierMode) activeBarrierMode = data.activeBarrierMode;
+                if (typeof data.currentRoll === 'number') currentRoll = data.currentRoll;
+
+                renderTokens();
+                updateTurnUI();
+
+                // renderTokens()/updateTurnUI() don't touch dice pips directly —
+                // reflect the exact number the opponent just rolled, on their
+                // dice, so it reads correctly instead of staying on "1".
+                if (data.lastRoll && data.lastRoll.color) {
+                    const d = document.getElementById(`dice-${data.lastRoll.color}`);
+                    if (d) d.innerHTML = pipGrid(data.lastRoll.value);
+                }
+
+                if (data.finished) {
+                    document.getElementById('winner-title').innerText = data.winnerTitle || 'Game Over';
+                    document.getElementById('winner-modal').style.display = 'flex';
+                }
+            } finally {
+                onlineApplyingRemote = false;
+            }
+        }
+
+        // Cosmetic-only: replays the opponent's dice tumbling live, so this
+        // device visually SEES the roll happen instead of jumping straight to
+        // a final number a moment later (that final number arrives right
+        // after via applyRemoteOnlineState's data.lastRoll, above).
+        function applyRemoteDiceEvent(data) {
+            if (!data || !isOnlineMode) return;
+            if (data.writer && window.LudoOnline && data.writer === window.LudoOnline.getUid()) return;
+            const dice = document.getElementById(`dice-${data.color}`);
+            if (!dice) return;
+            dice.classList.add('rolling');
+            const cycle = setInterval(() => { dice.innerHTML = pipGrid(Math.floor(Math.random() * 6) + 1); }, 65);
+            setTimeout(() => { clearInterval(cycle); dice.classList.remove('rolling'); }, 600 / gameSpeed);
+        }
+
+        function attachOnlineRoomListeners(roomId) {
+            onlineDetachFns.forEach(fn => { try { fn(); } catch (e) {} });
+            onlineDetachFns = [];
+            onlineDetachFns.push(window.LudoOnline.listenRoomState(roomId, applyRemoteOnlineState));
+            onlineDetachFns.push(window.LudoOnline.listenDiceEvent(roomId, applyRemoteDiceEvent));
+            onlineDetachFns.push(window.LudoOnline.listenRoomStatus(roomId, evt => {
+                if (!evt || !isOnlineMode || onlineLeavingSelf) return;
+                const myUid = window.LudoOnline && window.LudoOnline.getUid();
+                if (evt.by && myUid && evt.by === myUid) return; // ignore my own end-event echo
+                handleOpponentLeftOnline(evt.reason);
+            }));
+            // Dead-man's switch: if THIS device disappears mid-match without
+            // a clean exit, the other player still gets told (see
+            // armRoomDisconnectGuard for details).
+            window.LudoOnline.armRoomDisconnectGuard(roomId);
+        }
+
+        // Called when the room's endEvent fires for a reason that ISN'T a
+        // normal finished game — i.e. the opponent left mid-match, whether
+        // by tapping Exit, by accepting a different request instead, or by
+        // disconnecting outright. Rather than leaving this player staring at
+        // a board that just stopped responding, they're shown a clear win —
+        // the match is over and they didn't lose it.
+        function handleOpponentLeftOnline(reason) {
+            const opponent = players.find(p => p.color !== onlineMyColor);
+            const oppName = opponent ? opponent.name : 'The other player';
+            let subtitle;
+            if (reason === 'forfeit') subtitle = `${oppName} left to play another match.`;
+            else if (reason === 'disconnected') subtitle = `${oppName} went offline / lost connection.`;
+            else subtitle = `${oppName} left the match.`;
+
+            document.getElementById('winner-title').innerText = '🏆 You Win!';
+            const winnerModal = document.getElementById('winner-modal');
+            let sub = winnerModal.querySelector('.online-forfeit-sub');
+            if (!sub) {
+                sub = document.createElement('p');
+                sub.className = 'online-forfeit-sub';
+                sub.style.cssText = 'font-size:0.68rem; color:var(--ivory-dim); margin:-8px 0 14px; line-height:1.5;';
+                document.getElementById('winner-title').insertAdjacentElement('afterend', sub);
+            }
+            sub.textContent = subtitle;
+            winnerModal.style.display = 'flex';
+
+            // The match is genuinely over now — stop treating this as a
+            // live online game so goToMenu()/Play Again don't try to send
+            // one more (redundant) leaveRoom() call for an already-ended room.
+            isOnlineMode = false;
+            onlineDetachFns.forEach(fn => { try { fn(); } catch (e) {} });
+            onlineDetachFns = [];
+        }
+
+        // Tears down listeners + tells Firebase we've left, WITHOUT touching
+        // any of the local-mode variables (players/tokens/etc. get freely
+        // overwritten again the moment any new game — local or online —
+        // actually starts).
+        function cleanupOnlineGame(reason) {
+            onlineLeavingSelf = true;
+            if (onlineRoomId && window.LudoOnline) window.LudoOnline.leaveRoom(onlineRoomId, reason || 'left');
+            onlineDetachFns.forEach(fn => { try { fn(); } catch (e) {} });
+            onlineDetachFns = [];
+            isOnlineMode = false;
+            onlineRoomId = null;
+            onlineMyColor = null;
+            onlineApplyingRemote = false;
+        }
+
+        // Starts a live 2-player online match. Both devices call this
+        // independently (once as the requester = Red, once as the accepter =
+        // Yellow) with identical, deterministic starting data — so both
+        // boards begin perfectly in sync without either side needing to wait
+        // on the other's first network round-trip.
+        function startOnlineGame(myColor, roomId, mode, redName, yellowName) {
+            // Defensive: if this device was already mid-match in a DIFFERENT
+            // online room (e.g. the player accepted a fresh request while
+            // still playing a previous online game), properly tell that old
+            // room/opponent we're leaving before switching over — they get a
+            // clear "forfeit" win screen instead of the sync just silently
+            // stopping.
+            if (isOnlineMode && onlineRoomId && onlineRoomId !== roomId) cleanupOnlineGame('forfeit');
+
+            document.getElementById('online-screen').style.display = 'none';
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+
+            winnersList = []; currentPlayerIndex = 0; consecutiveSixes = 0; currentRoll = 0;
+            botMode = false;
+            activePartnerMode = 'off';
+            activeBarrierMode = (mode === 'barrier') ? 'on' : 'off';
+
+            isOnlineMode = true;
+            onlineRoomId = roomId;
+            onlineMyColor = myColor;
+            onlineLeavingSelf = false;
+
+            players = [
+                { name: redName || 'Player 1', color: 'Red', hex: colors[0].hex, isBot: false },
+                { name: yellowName || 'Player 2', color: 'Yellow', hex: colors[2].hex, isBot: false }
+            ];
+
+            initTokens();
+            createBoard();
+            renderScoreboard();
+            updateTurnUI();
+            attachOnlineRoomListeners(roomId);
+        }
+
+        // ─── Online lobby screen wiring ─────────────────────────────────────
+        let onlineUsersDetach = null;
+        let onlineRequestsDetach = null;
+        let onlineResponseDetach = null;
+
+        // Starts listening for incoming match requests the moment this
+        // device's online identity is ready — NOT only once the player has
+        // opened the "Play Online" lobby. This is what makes the incoming
+        // request popup able to appear at any time: while sitting on the
+        // main menu, while playing a local/bot/hotseat game, or even during
+        // an already-running online match — not just while browsing the
+        // online screen itself.
+        function startGlobalOnlineRequestWatcher() {
+            if (onlineRequestsDetach) return; // already watching
+            const prof = window.LudoOnline && window.LudoOnline.getProfile();
+            if (!prof || !prof.uid) { setTimeout(startGlobalOnlineRequestWatcher, 300); return; }
+            onlineRequestsDetach = window.LudoOnline.listenIncomingRequests(renderIncomingRequests);
+        }
+        startGlobalOnlineRequestWatcher();
+
+        function openOnlineScreen() {
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('online-screen').style.display = 'block';
+
+            const waitForProfile = () => {
+                const prof = window.LudoOnline && window.LudoOnline.getProfile();
+                if (!prof || !prof.uid) { setTimeout(waitForProfile, 200); return; }
+                document.getElementById('onl-my-id').innerText = prof.publicId;
+                document.getElementById('onl-name-input').value = prof.name;
+
+                if (!onlineUsersDetach) {
+                    onlineUsersDetach = window.LudoOnline.listenOnlineUsers(renderOnlinePlayerList);
+                }
+                startGlobalOnlineRequestWatcher(); // no-op if already attached
+            };
+            waitForProfile();
+        }
+
+        function closeOnlineScreen() {
+            document.getElementById('online-screen').style.display = 'none';
+            document.getElementById('menu-screen').style.display = 'block';
+        }
+
+        function updateOnlineProfileName() {
+            const val = document.getElementById('onl-name-input').value;
+            if (window.LudoOnline) window.LudoOnline.setName(val);
+        }
+
+        function copyOnlineId() {
+            const id = document.getElementById('onl-my-id').innerText;
+            try {
+                navigator.clipboard.writeText(id);
+                document.getElementById('msg-log'); // no-op guard, msg-log lives in game-screen only
+            } catch (e) {}
+        }
+
+        function setOnlineModeSetting(mode, el) {
+            onlineModeSetting = mode;
+            document.querySelectorAll('.onl-mode-pill').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        // Builds the list purely with DOM APIs (no inline onclick with
+        // interpolated names/IDs) — safer, since a player's display name is
+        // untrusted user text and could otherwise contain characters
+        // (quotes, tags) that break inline HTML attributes.
+        function renderOnlinePlayerList(list) {
+            const box = document.getElementById('onl-player-list');
+            if (!box) return;
+            box.innerHTML = '';
+            if (!list || list.length === 0) {
+                const p = document.createElement('p');
+                p.className = 'onl-empty';
+                p.textContent = 'No one else is online right now. Share your ID with a friend, or check back soon.';
+                box.appendChild(p);
+                return;
+            }
+            list.forEach(u => {
+                const row = document.createElement('div');
+                row.className = 'onl-player-row';
+
+                const dot = document.createElement('span');
+                dot.className = 'onl-dot';
+
+                const info = document.createElement('span');
+                info.className = 'onl-player-info';
+                const nameEl = document.createElement('span');
+                nameEl.className = 'onl-player-name';
+                nameEl.style.display = 'block';
+                nameEl.textContent = u.name || 'Player';
+                const idEl = document.createElement('span');
+                idEl.className = 'onl-player-id';
+                idEl.textContent = 'ID: ' + u.publicId;
+                info.appendChild(nameEl);
+                info.appendChild(idEl);
+
+                const btn = document.createElement('button');
+                btn.className = 'onl-invite-btn';
+                btn.textContent = 'Invite';
+                btn.addEventListener('click', () => sendOnlineInvite(u.uid, u.name || 'Player'));
+
+                row.appendChild(dot);
+                row.appendChild(info);
+                row.appendChild(btn);
+                box.appendChild(row);
+            });
+        }
+
+        function sendOnlineInviteById() {
+            const idInput = document.getElementById('onl-invite-id-input');
+            const id = (idInput.value || '').trim().toUpperCase();
+            if (!id) return;
+            window.LudoOnline.lookupByPublicId(id).then(u => {
+                if (!u || !u.online) {
+                    alert('No online player found with that ID.');
+                    return;
+                }
+                // Note: deliberately NOT blocked just because u.status is
+                // 'in_game' — the request still gets sent even to a player
+                // who's mid-match elsewhere. They'll see the incoming
+                // request popup with a note that they're busy, and can
+                // choose to accept (ending their current match) or decline.
+                sendOnlineInvite(u.uid, u.name || 'Player');
+            });
+        }
+
+        function sendOnlineInvite(targetUid, targetName) {
+            const { reqId, roomId } = window.LudoOnline.sendRequest(targetUid, onlineModeSetting);
+            onlinePendingReq = { reqId, roomId, targetUid, targetName };
+
+            document.getElementById('online-waiting-title').innerText = 'Waiting for response…';
+            document.getElementById('online-waiting-sub').innerText = `Request sent to ${targetName}. Hang tight.`;
+            document.getElementById('online-waiting-modal').style.display = 'flex';
+
+            if (onlineResponseDetach) { onlineResponseDetach(); onlineResponseDetach = null; }
+            onlineResponseDetach = window.LudoOnline.listenRequestResponse(reqId, resp => {
+                document.getElementById('online-waiting-modal').style.display = 'none';
+                if (onlineResponseDetach) { onlineResponseDetach(); onlineResponseDetach = null; }
+                if (!onlinePendingReq) return;
+                if (resp.status === 'accepted') {
+                    const myProf = window.LudoOnline.getProfile();
+                    startOnlineGame('Red', resp.roomId || onlinePendingReq.roomId, onlineModeSetting, myProf.name, targetName);
+                } else if (resp.status === 'declined') {
+                    if (resp.reason === 'busy') {
+                        showOnlineNotice('⏳', 'Player Busy', `${targetName} is currently busy playing another match and couldn't accept right now.`, null);
+                    } else {
+                        showOnlineNotice('🙁', 'Request Declined', `${targetName} declined your request.`, null);
+                    }
+                }
+                onlinePendingReq = null;
+            });
+        }
+
+        document.getElementById('online-waiting-cancel-btn') && (document.getElementById('online-waiting-cancel-btn').onclick = function () {
+            document.getElementById('online-waiting-modal').style.display = 'none';
+            if (onlinePendingReq && window.LudoOnline) window.LudoOnline.cancelRequest(onlinePendingReq.targetUid, onlinePendingReq.reqId);
+            if (onlineResponseDetach) { onlineResponseDetach(); onlineResponseDetach = null; }
+            onlinePendingReq = null;
+        });
+
+        let onlineActiveIncoming = null; // { reqId, req } currently shown in the popup
+
+        function renderIncomingRequests(reqs) {
+            const ids = Object.keys(reqs || {});
+            if (ids.length === 0) {
+                if (onlineActiveIncoming) {
+                    document.getElementById('online-request-modal').style.display = 'none';
+                    onlineActiveIncoming = null;
+                }
+                return;
+            }
+            // Only one request is ever shown at a time — first one wins.
+            const reqId = ids[0];
+            const req = reqs[reqId];
+            onlineActiveIncoming = { reqId, req };
+            const busy = document.getElementById('game-screen').style.display !== 'none';
+            let msg = `${req.fromName} wants to play a ${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'} match with you.`;
+            if (busy) msg += ' You are currently in a game — accepting will end it.';
+            document.getElementById('online-request-text').innerText = msg;
+            document.getElementById('online-request-modal').style.display = 'flex';
+        }
+
+        document.getElementById('online-request-accept-btn') && (document.getElementById('online-request-accept-btn').onclick = function () {
+            if (!onlineActiveIncoming) return;
+            const { reqId, req } = onlineActiveIncoming;
+            // Popped up mid-match (local or online)? Confirm before wiping it out.
+            const busy = document.getElementById('game-screen').style.display !== 'none';
+            if (busy && !confirm('You are currently in a game. Accept anyway and start the new match? Your current game will end.')) {
+                return; // leave the popup open — they can still Decline, or Accept again
+            }
+            document.getElementById('online-request-modal').style.display = 'none';
+            window.LudoOnline.acceptRequest(reqId, req);
+            const myProf = window.LudoOnline.getProfile();
+            startOnlineGame('Yellow', req.roomId, req.mode, req.fromName, myProf.name);
+            onlineActiveIncoming = null;
+        });
+
+        document.getElementById('online-request-decline-btn') && (document.getElementById('online-request-decline-btn').onclick = function () {
+            if (!onlineActiveIncoming) return;
+            const { reqId, req } = onlineActiveIncoming;
+            // Let the sender know WHY it was declined: were we actually busy
+            // in another match right now, or did we just not want to play?
+            const busy = document.getElementById('game-screen').style.display !== 'none';
+            document.getElementById('online-request-modal').style.display = 'none';
+            window.LudoOnline.declineRequest(reqId, req, busy ? 'busy' : 'declined');
+            onlineActiveIncoming = null;
+        });
+
+        function showOnlineNotice(icon, title, text, onOk) {
+            document.getElementById('online-notice-icon').innerText = icon;
+            document.getElementById('online-notice-title').innerText = title;
+            document.getElementById('online-notice-text').innerText = text;
+            document.getElementById('online-notice-modal').style.display = 'flex';
+            document.getElementById('online-notice-ok-btn').onclick = function () {
+                document.getElementById('online-notice-modal').style.display = 'none';
+                if (typeof onOk === 'function') onOk();
+            };
         }
     </script>
     <!-- ============================================================
