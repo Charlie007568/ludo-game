@@ -149,6 +149,25 @@
         .chat-unread-dot { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 9px; background: #ff4d4d; color: #fff; font-size: 0.58rem; font-weight: 900; display: none; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #0f0c29; }
         .chat-unread-dot.show { display: flex; }
 
+        /* =================================================================
+           REPORT A BUG — a player can flag a problem from the main menu
+           OR mid-game. Pushed to bugReports/ in Realtime Database, where
+           the Admin Panel shows it live. Kept in its own namespace
+           (.bugrep-*, #bugreport-*) so nothing here collides with the
+           existing menu/game/online styles above.
+           ================================================================= */
+        .bugrep-btn { position: relative; padding: 9px 12px; min-height: 36px; border-radius: 18px; border: 1px solid rgba(220,38,38,0.45); cursor: pointer; background: rgba(220,38,38,0.16); color: var(--red-light); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 5px; }
+        .bugrep-btn:hover, .bugrep-btn:active { background: rgba(220,38,38,0.28); }
+        .bugrep-tile { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 14px; border-radius: 12px; cursor: pointer; background: linear-gradient(140deg, rgba(220,38,38,0.22), rgba(153,27,27,0.22)); border: 1px solid rgba(248,113,113,0.35); color: var(--ivory); text-align: left; }
+        .bugrep-tile .mode-icon-badge { background: linear-gradient(150deg, var(--red-light), rgba(0,0,0,0.3)); flex-shrink: 0; }
+
+        #bugreport-modal { display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 280; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        #bugreport-modal .btn { display: inline-block; width: 100%; }
+        .bugrep-card { background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); border: 1px solid rgba(248,113,113,0.4); border-radius: 20px; padding: 24px 22px; max-width: 320px; width: 100%; text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.7); animation: slideIn 0.4s cubic-bezier(.2,.8,.2,1); }
+        .bugrep-textarea { width: 100%; min-height: 96px; margin: 12px 0 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(201,162,75,0.3); background: rgba(0,0,0,0.42); color: var(--ivory); font-size: 0.78rem; font-family: 'Manrope', sans-serif; resize: vertical; outline: none; }
+        .bugrep-textarea:focus { border-color: var(--red-light); }
+        .bugrep-count { font-size: 0.58rem; color: var(--ivory-dim); text-align: right; margin-bottom: 10px; }
+
         #online-chat-panel {
             display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 265;
             background: linear-gradient(180deg, rgba(20,14,10,0.98), rgba(8,5,3,0.99));
@@ -552,6 +571,20 @@
             </div>
         </div>
 
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🐞 Found a Problem?</span>
+            </div>
+            <div class="bugrep-tile" onclick="openBugReportModal('menu')">
+                <span class="mode-icon-badge">🐞</span>
+                <span style="flex:1;">
+                    <span class="mode-name" style="display:block;">Report a Bug</span>
+                    <span class="mode-sub">Tell us what happened — we'll see it in the admin panel</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+        </div>
+
         <p class="dev-credit">Designed &amp; Developed by <span>Rahbar Waris</span></p>
     </div>
 
@@ -646,6 +679,24 @@
         </div>
     </div>
 
+    <!-- REPORT A BUG — kept top-level like the ONLINE popups above (see
+         the comment there): a fixed-position element still inherits
+         display:none from a hidden ancestor, so this needs to live
+         outside #menu-screen / #game-screen to be openable from either
+         one. -->
+    <div id="bugreport-modal">
+        <div class="bugrep-card">
+            <div class="onl-modal-icon">🐞</div>
+            <div class="onl-modal-title">Report a Bug</div>
+            <div class="onl-modal-sub" style="margin-bottom:0;">Describe what happened — this goes straight to the admin panel.</div>
+            <textarea id="bugreport-text" class="bugrep-textarea" maxlength="500" placeholder="e.g. My dice showed 6 but the piece only moved 2 steps, on Full Table mode..."></textarea>
+            <div class="bugrep-count"><span id="bugreport-charcount">0</span>/500</div>
+            <p id="bugreport-status-msg" style="display:none; font-size:0.68rem; font-weight:700; margin-bottom:10px;"></p>
+            <button class="btn btn-green" id="bugreport-submit-btn" onclick="submitBugReport()">Send Report</button>
+            <button class="btn btn-primary" onclick="closeBugReportModal()">Cancel</button>
+        </div>
+    </div>
+
     <!-- ONLINE: in-match chat + emoji panel — real-time, only ever shown
          while an online match is active (toggled from the 💬 Chat button in
          the game header). Kept top-level like the popups above so it can
@@ -686,6 +737,7 @@
                         💬 Chat
                         <span class="chat-unread-dot" id="online-chat-unread">0</span>
                     </button>
+                    <button class="bugrep-btn" onclick="openBugReportModal('game')">🐞 Report</button>
                     <button class="btn-exit" onclick="handleExitTap()">Exit</button>
                 </div>
             </div>
@@ -962,6 +1014,76 @@
             try { remove(ref(rtdb, 'presence/' + presenceUid)); } catch (e) {}
             try { update(ref(rtdb, 'devices/' + deviceId), { online: false, lastSeen: serverTimestamp() }); } catch (e) {}
         });
+
+        // ─── Report a Bug — real-time, mirrors the device-tracking setup
+        // above ──────────────────────────────────────────────────────────
+        // FEATURE: lets any player describe a problem — from the main menu
+        // or mid-game — without needing to log in or leave the app. It's
+        // pushed to bugReports/ in Realtime Database, where the Admin
+        // Panel lists reports live. The same deviceId/deviceName/approx-
+        // location already collected above rides along automatically, so
+        // a report is never just a bare, unattributable message.
+        let bugReportContext = 'menu'; // 'menu' | 'game' — which button opened it
+        window.openBugReportModal = function (context) {
+            bugReportContext = context || 'menu';
+            const ta  = document.getElementById('bugreport-text');
+            const msg = document.getElementById('bugreport-status-msg');
+            if (ta) ta.value = '';
+            updateBugReportCharCount();
+            if (msg) { msg.style.display = 'none'; msg.innerText = ''; }
+            const btn = document.getElementById('bugreport-submit-btn');
+            if (btn) { btn.disabled = false; btn.innerText = 'Send Report'; }
+            const m = document.getElementById('bugreport-modal');
+            if (m) m.style.display = 'flex';
+            if (ta) setTimeout(() => ta.focus(), 50);
+        };
+        window.closeBugReportModal = function () {
+            const m = document.getElementById('bugreport-modal');
+            if (m) m.style.display = 'none';
+        };
+        function updateBugReportCharCount() {
+            const ta = document.getElementById('bugreport-text');
+            const cc = document.getElementById('bugreport-charcount');
+            if (ta && cc) cc.innerText = String(ta.value.length);
+        }
+        const bugReportTextarea = document.getElementById('bugreport-text');
+        if (bugReportTextarea) bugReportTextarea.addEventListener('input', updateBugReportCharCount);
+
+        window.submitBugReport = async function () {
+            const ta  = document.getElementById('bugreport-text');
+            const msg = document.getElementById('bugreport-status-msg');
+            const btn = document.getElementById('bugreport-submit-btn');
+            const text = ((ta && ta.value) || '').trim();
+            if (!text) {
+                if (msg) { msg.style.display = 'block'; msg.style.color = 'var(--red-light)'; msg.innerText = 'Please describe the problem first.'; }
+                return;
+            }
+            if (btn) { btn.disabled = true; btn.innerText = 'Sending…'; }
+            try {
+                // Approx location resolves async and may still be pending —
+                // don't let it block or fail the report if it never comes.
+                const loc = await approxLocationPromise.catch(() => null);
+                const reportRef = push(ref(rtdb, 'bugReports'));
+                await set(reportRef, {
+                    message:    text,
+                    deviceId:   deviceId,
+                    deviceName: deviceName,
+                    location:   loc || null,
+                    context:    bugReportContext, // 'menu' or 'game' — where the Report button was tapped
+                    status:     'new',
+                    createdAt:  serverTimestamp()
+                });
+                if (msg) { msg.style.display = 'block'; msg.style.color = 'var(--green-light)'; msg.innerText = 'Thanks — your report was sent.'; }
+                if (ta) ta.value = '';
+                updateBugReportCharCount();
+                setTimeout(() => { window.closeBugReportModal(); }, 1400);
+            } catch (e) {
+                console.error('[Bug report] Failed to submit:', e);
+                if (msg) { msg.style.display = 'block'; msg.style.color = 'var(--red-light)'; msg.innerText = "Couldn't send — check your connection and try again."; }
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = 'Send Report'; }
+            }
+        };
 
         // ─── Stable state ───────────────────────────────────────────────────
         let wasLocked           = false;  // detects admin unlocking after a lock
