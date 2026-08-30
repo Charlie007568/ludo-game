@@ -220,6 +220,17 @@
         #bugreport-modal { display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 280; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
         #bugreport-modal .btn { display: inline-block; width: 100%; }
         .bugrep-card { background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); border: 1px solid rgba(248,113,113,0.4); border-radius: 20px; padding: 24px 22px; max-width: 320px; width: 100%; text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.7); animation: slideIn 0.4s cubic-bezier(.2,.8,.2,1); }
+
+        #adwatch-modal { display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.94); backdrop-filter: blur(12px); z-index: 290; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        #adwatch-modal.open { display: flex; }
+        .adwatch-card { background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); border: 1px solid rgba(201,162,75,0.4); border-radius: 18px; padding: 14px; max-width: 380px; width: 100%; box-shadow: 0 30px 70px rgba(0,0,0,0.7); animation: slideIn 0.4s cubic-bezier(.2,.8,.2,1); }
+        .adwatch-header { display: flex; justify-content: space-between; align-items: center; color: var(--brass-light); font-weight: 800; font-size: 0.82rem; margin-bottom: 10px; }
+        .adwatch-skip-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: var(--ivory-dim); font-size: 0.68rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+        .adwatch-frame-wrap { position: relative; width: 100%; aspect-ratio: 4 / 5; background: rgba(0,0,0,0.5); border-radius: 12px; overflow: hidden; }
+        .adwatch-frame-wrap iframe { width: 100%; height: 100%; border: none; display: block; }
+        .adwatch-placeholder { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; color: var(--ivory-dim); text-align: center; padding: 20px; }
+        .adwatch-placeholder.show { display: flex; }
+        .adwatch-status { text-align: center; font-size: 0.72rem; color: var(--ivory-dim); margin: 10px 0 0; font-weight: 700; }
         .bugrep-textarea { width: 100%; min-height: 96px; margin: 12px 0 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(201,162,75,0.3); background: rgba(0,0,0,0.42); color: var(--ivory); font-size: 16px; font-family: 'Manrope', sans-serif; resize: vertical; outline: none; }
         .bugrep-textarea:focus { border-color: var(--red-light); }
         .bugrep-count { font-size: 0.58rem; color: var(--ivory-dim); text-align: right; margin-bottom: 10px; }
@@ -1033,6 +1044,31 @@
             <p id="bugreport-status-msg" style="display:none; font-size:0.68rem; font-weight:700; margin-bottom:10px;"></p>
             <button class="btn btn-green" id="bugreport-submit-btn" onclick="submitBugReport()">Send Report</button>
             <button class="btn btn-primary" onclick="closeBugReportModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- WATCH AD FOR COINS — in-app overlay (kept top-level like the other
+         popups above). Deliberately does NOT use window.open()/new tabs:
+         this game normally runs inside the Loader's sandboxed cross-origin
+         <iframe>, and sandboxed iframes block window.open() outright by
+         browser policy — so a tab-based "watch ad, come back" flow can
+         never work here. This overlay shows the ad in-place instead, with a
+         required watch time before the reward is credited. -->
+    <div id="adwatch-modal">
+        <div class="adwatch-card">
+            <div class="adwatch-header">
+                <span>🎬 Watching Ad</span>
+                <button class="adwatch-skip-btn" id="adwatch-skip-btn" onclick="skipAdWatch()">Skip ✕</button>
+            </div>
+            <div class="adwatch-frame-wrap">
+                <iframe id="adwatch-iframe" title="Advertisement" referrerpolicy="no-referrer"></iframe>
+                <div class="adwatch-placeholder" id="adwatch-placeholder">
+                    <div style="font-size:2.2rem;">🎬</div>
+                    <div style="font-weight:800; margin-top:6px;">Ad Placeholder</div>
+                    <div style="font-size:0.68rem; opacity:0.65; margin-top:4px; max-width:220px;">Set a Rewarded Ad URL in the Admin Panel to show a real ad here.</div>
+                </div>
+            </div>
+            <p class="adwatch-status" id="adwatch-status">Watch to earn 500 coins…</p>
         </div>
     </div>
 
@@ -4991,90 +5027,71 @@
         }
 
         // ─── Watch Ad for Coins ─────────────────────────────────────────────
-        // Unlimited, repeatable: every time the player watches an ad and
-        // comes back to the game, they're credited 500 coins. There's no
-        // per-ad "did they really watch it" signal available client-side, so
-        // this uses the same trust model as the rest of this app's coin
-        // economy (client-authoritative via Firebase) — a real click opens
-        // the ad in a new tab, and a minimum dwell-away time before crediting
-        // guards against a reflex tab-switch-back counting as a "watch".
+        // Unlimited, repeatable: every time the player watches an ad through
+        // to the end and it closes, they're credited 500 coins.
         //
-        // BUG FIX: previously, if the ad tab/popup got blocked (very common
-        // inside an app WebView) or simply never triggered a
-        // visibilitychange event, the button would stay stuck on
-        // "Watching Ad…" forever — permanently disabled, looking "hidden"/
-        // broken to the player. Now: (1) a blocked popup is detected
-        // immediately and never enters the pending state at all, and (2) a
-        // safety timeout guarantees the button always comes back to normal
-        // even if no return-signal ever fires. Either way — closing the ad
-        // without really watching earns no coins, but the option itself
-        // never gets stuck.
-        let _adWatchPending = false;
-        let _adWatchClickedAt = 0;
-        let _adWatchSafetyTimer = null;
-        const AD_MIN_AWAY_MS = 5000;
-        const AD_SAFETY_TIMEOUT_MS = 90000;
-
-        function resetAdWatchButton() {
-            const btn = document.getElementById('coin-ad-btn');
-            if (btn) { btn.disabled = false; btn.textContent = '🎬 Watch Ad for 500 Coins'; }
-        }
+        // BUG FIX: this used to open the ad in a new tab via window.open()
+        // and wait for the player to switch back. That approach can NEVER
+        // work here: this game normally runs inside the Loader's sandboxed
+        // cross-origin <iframe>, and browsers categorically block
+        // window.open() from inside a sandboxed iframe unless it explicitly
+        // allows popups (it doesn't, and shouldn't need to) — so every single
+        // click failed with "Could not open the ad". Now the ad shows in an
+        // in-app overlay instead (no new tab/window involved at all), with a
+        // required minimum watch time before the reward is credited.
+        // Closing early via Skip earns nothing — watching it through does.
+        const AD_REQUIRED_SECONDS = 15;
+        let _adWatchInterval = null;
+        let _adWatchRemaining = 0;
 
         function handleWatchAdForCoins() {
-            if (_adWatchPending) return;
+            const modal = document.getElementById('adwatch-modal');
+            const iframe = document.getElementById('adwatch-iframe');
+            const placeholder = document.getElementById('adwatch-placeholder');
+            const statusEl = document.getElementById('adwatch-status');
+            if (!modal || !iframe || !placeholder || !statusEl) return;
 
-            // Prefer the Admin Panel's dedicated Rewarded Ad URL (a Monetag
-            // Direct Link/Smart Link is meant exactly for this "click → view
-            // → return" flow). If the admin hasn't set one, fall back to
-            // simply opening this game's own URL in a new tab — a real click
-            // is what most ad networks' popunder/interstitial scripts (already
-            // injected via injectAdsIfNeeded) need in order to fire at all.
             const adUrl = (window._rewardAdUrl || '').trim();
-            let adWindow = null;
-            try { adWindow = window.open(adUrl || window.location.href, '_blank'); } catch (e) { adWindow = null; }
-
-            if (!adWindow) {
-                // Blocked by the browser/WebView's popup blocker — nothing
-                // actually opened, so there's nothing to "come back" from.
-                // Reset immediately instead of leaving the button stuck.
-                resetAdWatchButton();
-                alert('Could not open the ad. Please allow pop-ups for this app and try again.');
-                return;
+            if (adUrl) {
+                iframe.src = adUrl;
+                iframe.style.display = 'block';
+                placeholder.classList.remove('show');
+            } else {
+                // No Rewarded Ad URL configured in the Admin Panel yet —
+                // show a placeholder instead of a blank/broken iframe.
+                iframe.removeAttribute('src');
+                iframe.style.display = 'none';
+                placeholder.classList.add('show');
             }
 
-            _adWatchPending = true;
-            _adWatchClickedAt = Date.now();
-            const btn = document.getElementById('coin-ad-btn');
-            if (btn) { btn.disabled = true; btn.textContent = '🎬 Watching Ad… come back here after'; }
+            _adWatchRemaining = AD_REQUIRED_SECONDS;
+            statusEl.textContent = `Watch ${_adWatchRemaining}s to earn 500 coins…`;
+            modal.classList.add('open');
 
-            // Safety net — guarantees the button is never stuck, even if the
-            // browser never fires a visibilitychange/focus event for this
-            // tab (some in-app WebViews don't, when the "new tab" is really
-            // a separate Chrome Custom Tab / external browser).
-            if (_adWatchSafetyTimer) clearTimeout(_adWatchSafetyTimer);
-            _adWatchSafetyTimer = setTimeout(() => {
-                if (!_adWatchPending) return;
-                _adWatchPending = false;
-                resetAdWatchButton();
-            }, AD_SAFETY_TIMEOUT_MS);
+            if (_adWatchInterval) clearInterval(_adWatchInterval);
+            _adWatchInterval = setInterval(() => {
+                _adWatchRemaining--;
+                if (_adWatchRemaining <= 0) {
+                    finishAdWatch(true);
+                } else {
+                    statusEl.textContent = `Watch ${_adWatchRemaining}s to earn 500 coins…`;
+                }
+            }, 1000);
         }
 
-        function resolveAdWatchReturn() {
-            if (!_adWatchPending) return;
-            const elapsed = Date.now() - _adWatchClickedAt;
-            _adWatchPending = false;
-            if (_adWatchSafetyTimer) { clearTimeout(_adWatchSafetyTimer); _adWatchSafetyTimer = null; }
-            resetAdWatchButton();
-            if (elapsed < AD_MIN_AWAY_MS) return; // closed too quickly — didn't really watch, no coins
-            if (window.LudoOnline) window.LudoOnline.creditAdReward();
+        function skipAdWatch() {
+            finishAdWatch(false); // closed early — no reward
         }
 
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') resolveAdWatchReturn();
-        });
-        // Extra fallback for WebViews that don't fire visibilitychange
-        // reliably on return from an external tab/browser.
-        window.addEventListener('focus', resolveAdWatchReturn);
+        function finishAdWatch(earned) {
+            if (_adWatchInterval) { clearInterval(_adWatchInterval); _adWatchInterval = null; }
+            const modal = document.getElementById('adwatch-modal');
+            const iframe = document.getElementById('adwatch-iframe');
+            if (modal) modal.classList.remove('open');
+            if (iframe) iframe.removeAttribute('src'); // stop the ad from playing/loading in the background
+            if (earned && window.LudoOnline) window.LudoOnline.creditAdReward();
+        }
+        window.skipAdWatch = skipAdWatch;
 
         function openOnlineScreen() {
             document.getElementById('menu-screen').style.display = 'none';
