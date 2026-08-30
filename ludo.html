@@ -721,11 +721,11 @@
                 <span class="coin-balance-label">used for Online coin matches</span>
             </div>
             <div class="coin-claim-row" id="coin-claim-row">
-                <button class="coin-claim-btn" id="coin-claim-btn" onclick="handleClaimDailyBonus()">Claim Free 500 Coins</button>
+                <button class="coin-claim-btn" id="coin-claim-btn" onclick="handleClaimDailyBonus()">Claim Free 100 Coins</button>
                 <span class="coin-claim-countdown" id="coin-claim-countdown"></span>
             </div>
             <div class="coin-claim-row" id="coin-ad-row">
-                <button class="coin-claim-btn coin-ad-btn" id="coin-ad-btn" onclick="handleWatchAdForCoins()">🎬 Watch Ad for 500 Coins</button>
+                <button class="coin-claim-btn coin-ad-btn" id="coin-ad-btn" onclick="handleWatchAdForCoins()">🎬 Watch Ad for 100 Coins</button>
                 <span class="coin-claim-countdown">Watch as many times as you like</span>
             </div>
         </div>
@@ -1161,7 +1161,7 @@
                     <div style="font-size:0.68rem; opacity:0.65; margin-top:4px; max-width:220px;">Set a Rewarded Ad URL in the Admin Panel to show a real ad here.</div>
                 </div>
             </div>
-            <p class="adwatch-status" id="adwatch-status">Watch to earn 500 coins…</p>
+            <p class="adwatch-status" id="adwatch-status">Watch to earn 100 coins…</p>
         </div>
     </div>
 
@@ -1875,6 +1875,10 @@
         // all Firebase calls; the other owns all game rules/rendering).
         // =====================================================================
         const ONLINE_ROOT = 'lm_online';
+        // Reward amounts for the Claim button and the Watch Ad button — one
+        // place to change both (per request, lowered from 500 to 100).
+        const DAILY_BONUS_AMOUNT = 100;
+        const AD_REWARD_AMOUNT   = 100;
         let onlineUid = null;
         let onlineName = '';
         let onlinePublicId = '';
@@ -2215,7 +2219,7 @@
             },
 
             // Timestamp of the last daily-bonus claim — drives the 24h
-            // countdown on the "Claim Free 500 Coins" button, same live-listener
+            // countdown on the "Claim Free 100 Coins" button, same live-listener
             // pattern as coinsZeroAt above.
             listenLastDailyBonusAt(cb) {
                 return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}/lastDailyBonusAt`, val => cb(val || null));
@@ -2253,40 +2257,68 @@
                 } catch (e) { _onlineReportError('coins:deduct', e); return false; }
             },
 
-            // Atomically adds `amount` to MY OWN balance (winnings).
+            // Atomically adds `amount` to MY OWN balance (winnings). Returns
+            // the new balance on success, or undefined if it didn't happen
+            // (not ready / no uid / a Firebase error) — callers use this to
+            // confirm the credit actually landed instead of assuming it did.
             async creditCoins(amount) {
-                if (!onlineUid || !amount) return;
+                if (!onlineUid || !amount) return undefined;
                 const coinsRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}/coins`);
                 try {
-                    await runTransaction(coinsRef, (cur) => (typeof cur === 'number' ? cur : 5000) + amount);
+                    const result = await runTransaction(coinsRef, (cur) => (typeof cur === 'number' ? cur : 5000) + amount);
+                    if (!result.committed) return undefined;
                     update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { coinsZeroAt: null }).catch(() => {});
-                } catch (e) { _onlineReportError('coins:credit', e); }
+                    return result.snapshot.val();
+                } catch (e) { _onlineReportError('coins:credit', e); return undefined; }
             },
 
-            // Grants a free 500-coin daily bonus — once every 24 hours,
+            // Grants a free coin daily bonus — once every 24 hours,
             // regardless of current balance (previously this only ever fired
             // once the balance hit exactly 0, and refilled to a flat 5000).
             // Re-checked against the server-stored timestamp so a player
             // can't just change their phone's clock to claim early.
+            //
+            // BUG FIX: this used to be a plain get() (read balance) then a
+            // separate update() (write balance+500) a moment later — NOT
+            // atomic. If anything else touched this same users/{uid} record
+            // in between those two calls (most notably the identity-recovery
+            // logic in registerOnlineIdentity(), which can still be
+            // resolving right after the app opens), that other write could
+            // land in between and get silently overwritten, or overwrite
+            // this one — the reward could vanish even though this function
+            // reported success. Using runTransaction() makes the whole
+            // read-check-write a single atomic operation the database
+            // itself guarantees can't be clobbered by another write.
             async claimDailyBonus() {
                 if (!onlineUid) return { ok: false, reason: 'not-ready' };
+                const DAY = 24 * 60 * 60 * 1000;
+                const userRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`);
                 try {
-                    const snap = await get(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`));
-                    const u = snap.exists() ? snap.val() : {};
-                    const lastClaim = u.lastDailyBonusAt;
-                    const DAY = 24 * 60 * 60 * 1000;
-                    if (lastClaim) {
-                        const elapsed = Date.now() - lastClaim;
-                        if (elapsed < DAY) return { ok: false, reason: 'too-soon', remainingMs: DAY - elapsed };
-                    }
-                    const bal = typeof u.coins === 'number' ? u.coins : 5000;
-                    await update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), {
-                        coins: bal + 500,
-                        lastDailyBonusAt: serverTimestamp(),
-                        coinsZeroAt: null
+                    const result = await runTransaction(userRef, (u) => {
+                        if (u === null) return u; // record not created yet — abort, nothing to claim against
+                        const lastClaim = u.lastDailyBonusAt;
+                        if (lastClaim && (Date.now() - lastClaim) < DAY) return; // abort — still on cooldown
+                        const bal = typeof u.coins === 'number' ? u.coins : 5000;
+                        u.coins = bal + DAILY_BONUS_AMOUNT;
+                        // NOTE: serverTimestamp() must not be used inside a
+                        // transaction updater (Firebase docs specifically warn
+                        // against it — it can make the transaction retry
+                        // forever). Date.now() is accurate enough for this
+                        // 24h cooldown check.
+                        u.lastDailyBonusAt = Date.now();
+                        u.coinsZeroAt = null;
+                        return u;
                     });
-                    return { ok: true };
-                } catch (e) { _onlineReportError('coins:claim', e); return { ok: false, reason: 'error' }; }
+                    if (!result.committed) {
+                        const u = result.snapshot.exists() ? result.snapshot.val() : null;
+                        if (u && u.lastDailyBonusAt) {
+                            const elapsed = Date.now() - u.lastDailyBonusAt;
+                            if (elapsed < DAY) return { ok: false, reason: 'too-soon', remainingMs: DAY - elapsed };
+                        }
+                        return { ok: false, reason: 'not-ready' };
+                    }
+                    return { ok: true, newBalance: result.snapshot.val().coins };
+                } catch (e) { _onlineReportError('coins:claim', e); return { ok: false, reason: 'error', message: e.message }; }
             },
 
             // Rewarded-ad coin credit — called once the player watches an ad
@@ -2294,7 +2326,7 @@
             // game-logic script below). No cap: as many ads as they watch,
             // that many times they're credited.
             async creditAdReward() {
-                return this.creditCoins(500);
+                return this.creditCoins(AD_REWARD_AMOUNT);
             },
 
             // ─── Quick Match (auto matchmaking) + multi-friend room invites ──
@@ -2632,6 +2664,16 @@
         let botMode = false;
         let winnersList = [];
         let gameState = 'IDLE';
+        // ── BUG FIX (bot keeps playing for 1-2s after Exit) ─────────────────
+        // botPlay() was scheduled via a plain setTimeout with no way to
+        // cancel it — exiting to the menu mid-turn (right after the dice
+        // becomes rollable for a bot) left that timeout alive, so it fired
+        // a moment later and made the bot roll/move invisibly "in the
+        // background" even though the player was already back at the menu.
+        // Every setTimeout(botPlay, ...) call site now stores its id here so
+        // goToMenu()/startGame() can cancel it outright, and botPlay() itself
+        // also bails out if the game screen isn't even showing anymore.
+        let botMoveTimeoutId = null;
         let currentRoll = 0;
 
         // ─── 3D dice cube rotation ──────────────────────────────────────────
@@ -3593,6 +3635,7 @@
         }
 
         function goToMenu() {
+            if (botMoveTimeoutId) { clearTimeout(botMoveTimeoutId); botMoveTimeoutId = null; } // BUG FIX: see botMoveTimeoutId declaration above
             if (isOnlineMode) cleanupOnlineGame('left'); // best-effort: tell Firebase we've left, detach listeners
             document.getElementById('game-screen').style.display = 'none';
             document.getElementById('winner-modal').style.display = 'none';
@@ -3622,6 +3665,7 @@
         let selectedBotCount = 1;
 
         function startGame(mode) {
+            if (botMoveTimeoutId) { clearTimeout(botMoveTimeoutId); botMoveTimeoutId = null; } // BUG FIX: see botMoveTimeoutId declaration above
             // Starting any local/bot/hotseat game always leaves online mode
             // behind cleanly, in case the player came here from an online
             // match or the online lobby. The old opponent (if any) gets a
@@ -3983,7 +4027,7 @@
             gameState = 'IDLE';
 
             if (cp.isBot) {
-                setTimeout(botPlay, 600 / gameSpeed);
+                botMoveTimeoutId = setTimeout(botPlay, 600 / gameSpeed);
             }
 
             syncOnlineStateIfNeeded();
@@ -4550,7 +4594,7 @@
                 document.getElementById('msg-log').innerText = `${token.color} gets a Bonus Roll!`;
                 gameState = 'IDLE';
                 if (players[currentPlayerIndex].isBot) {
-                    setTimeout(botPlay, 600 / gameSpeed);
+                    botMoveTimeoutId = setTimeout(botPlay, 600 / gameSpeed);
                 }
             } else {
                 nextTurn();
@@ -4797,6 +4841,12 @@
         }
 
         function botPlay() {
+            botMoveTimeoutId = null;
+            // BUG FIX: bail out if the player already exited to the menu (or
+            // a new game/screen swap happened) while this move was pending —
+            // see botMoveTimeoutId above for the full explanation.
+            const gs = document.getElementById('game-screen');
+            if (!gs || gs.style.display === 'none') return;
             // BUG FIX: this used to always call onDiceClick('Green'), so it only
             // ever worked for the Green bot. With 2 or 3 bots on the table
             // (Yellow / Blue), onDiceClick() saw a color that didn't match the
@@ -5432,19 +5482,58 @@
             claimCountdownTimer = setInterval(tick, 1000);
         }
 
-        function handleClaimDailyBonus() {
-            if (!window.LudoOnline) return;
-            window.LudoOnline.claimDailyBonus().then(res => {
-                if (!res.ok && res.reason === 'too-soon') {
-                    // Timer just hasn't finished — renderCoinUI's own
-                    // countdown already reflects this, nothing else to do.
-                    return;
-                }
-                // On success (or any other outcome) the live listenCoins/
-                // listenLastDailyBonusAt subscriptions above pick up the
-                // change automatically and re-render.
+        // Waits (polling, capped) for window.LudoOnline's identity to be
+        // ready — used by Claim/Watch Ad so tapping them the instant the
+        // menu appears (before sign-in has fully resolved) doesn't just
+        // silently fail; see handleClaimDailyBonus()/finishAdWatch() below.
+        function waitForOnlineReady(timeoutMs) {
+            return new Promise(resolve => {
+                const start = Date.now();
+                (function check() {
+                    const prof = window.LudoOnline && window.LudoOnline.getProfile();
+                    if (prof && prof.uid) { resolve(true); return; }
+                    if (Date.now() - start > timeoutMs) { resolve(false); return; }
+                    setTimeout(check, 200);
+                })();
             });
         }
+
+        // BUG FIX (Claim button "doing nothing"): this used to just return
+        // silently for ANY failure other than the 24h cooldown — including
+        // the very common case of tapping it before sign-in had finished (no
+        // error shown, nothing happened, looked completely broken). It also
+        // relied purely on the realtime coin listener to update the display,
+        // which added a delay (or, if that listener ever missed a beat,
+        // never updated at all until the next full reload). Now: it waits
+        // briefly for identity to be ready, shows a real error if the claim
+        // still fails, and refreshes the coin display immediately itself.
+        async function handleClaimDailyBonus() {
+            const btn = document.getElementById('coin-claim-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Please wait…'; }
+
+            const ready = await waitForOnlineReady(5000);
+            if (!ready || !window.LudoOnline) {
+                if (btn) { btn.disabled = false; btn.textContent = 'Claim Free ' + DAILY_BONUS_DISPLAY_AMOUNT + ' Coins'; }
+                showOnlineNotice('⚠️', 'Not Connected', 'Still connecting — please wait a moment and try again.', null);
+                return;
+            }
+
+            const res = await window.LudoOnline.claimDailyBonus();
+            if (btn) { btn.disabled = false; btn.textContent = 'Claim Free ' + DAILY_BONUS_DISPLAY_AMOUNT + ' Coins'; }
+
+            if (res.ok) {
+                // Instant local refresh — don't wait on the realtime
+                // listener so the balance updates the moment the claim
+                // actually succeeds, same as it used to feel before.
+                if (typeof res.newBalance === 'number') { myCoins = res.newBalance; renderCoinUI(); }
+                myLastDailyBonusAt = Date.now();
+                renderCoinUI();
+                return;
+            }
+            if (res.reason === 'too-soon') return; // countdown already shown — nothing else to do
+            showOnlineNotice('⚠️', 'Could Not Claim', 'Something went wrong claiming your bonus — please check your connection and try again.', null);
+        }
+        const DAILY_BONUS_DISPLAY_AMOUNT = 100;
 
         // ─── Watch Ad for Coins ─────────────────────────────────────────────
         // Unlimited, repeatable: every time the player watches an ad through
@@ -5485,7 +5574,7 @@
             }
 
             _adWatchRemaining = AD_REQUIRED_SECONDS;
-            statusEl.textContent = `Watch ${_adWatchRemaining}s to earn 500 coins…`;
+            statusEl.textContent = `Watch ${_adWatchRemaining}s to earn 100 coins…`;
             modal.classList.add('open');
 
             if (_adWatchInterval) clearInterval(_adWatchInterval);
@@ -5494,7 +5583,7 @@
                 if (_adWatchRemaining <= 0) {
                     finishAdWatch(true);
                 } else {
-                    statusEl.textContent = `Watch ${_adWatchRemaining}s to earn 500 coins…`;
+                    statusEl.textContent = `Watch ${_adWatchRemaining}s to earn 100 coins…`;
                 }
             }, 1000);
         }
@@ -5503,13 +5592,37 @@
             finishAdWatch(false); // closed early — no reward
         }
 
-        function finishAdWatch(earned) {
+        // BUG FIX (ad plays, but coin never shows up): this used to call
+        // window.LudoOnline.creditAdReward() and never check whether it
+        // actually succeeded — a fire-and-forget call. If it failed for any
+        // reason (most commonly: tapping "Watch Ad" right as the app opens,
+        // before sign-in had fully resolved, so creditCoins() silently did
+        // nothing because there was no uid yet), the player just never got
+        // their coins and had no idea why. It also relied purely on the
+        // realtime coin listener to reflect the change. Now this is async,
+        // actually awaits the result, shows a real error on failure, and
+        // refreshes the coin display immediately itself on success.
+        async function finishAdWatch(earned) {
             if (_adWatchInterval) { clearInterval(_adWatchInterval); _adWatchInterval = null; }
             const modal = document.getElementById('adwatch-modal');
             const iframe = document.getElementById('adwatch-iframe');
             if (modal) modal.classList.remove('open');
             if (iframe) iframe.removeAttribute('src'); // stop the ad from playing/loading in the background
-            if (earned && window.LudoOnline) window.LudoOnline.creditAdReward();
+            if (!earned) return;
+
+            const ready = await waitForOnlineReady(5000);
+            if (!ready || !window.LudoOnline) {
+                showOnlineNotice('⚠️', 'Not Connected', "The ad finished, but we weren't connected to credit your coins. Please check your connection and try again.", null);
+                return;
+            }
+            const bal = await window.LudoOnline.creditAdReward();
+            if (typeof bal !== 'number') {
+                showOnlineNotice('⚠️', 'Could Not Credit Coins', 'The ad finished, but something went wrong crediting your coins — please try again.', null);
+                return;
+            }
+            // Instant local refresh — don't wait on the realtime listener.
+            myCoins = bal;
+            renderCoinUI();
         }
         window.skipAdWatch = skipAdWatch;
 
