@@ -63,6 +63,13 @@
         .title-rule { width: 70px; height: 1px; margin: 8px auto 12px; background: linear-gradient(90deg, transparent, var(--brass), transparent); position: relative; }
         .title-rule::after { content: '◆'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 7px; color: var(--brass-light); background: var(--walnut-800); padding: 0 6px; }
 
+        /* ── Admin Announcement banner — set from the Admin Panel, shown
+           centered in the main menu, live via the same master_controls
+           listener as everything else. Hidden entirely when disabled/empty. */
+        #announcement-banner { display: none; background: linear-gradient(160deg, rgba(201,162,75,0.18), rgba(0,0,0,0.25)); border: 1px solid rgba(245,215,127,0.4); border-radius: 12px; padding: 9px 12px; margin: 0 0 10px; text-align: center; font-size: 0.78rem; line-height: 1.5; color: var(--ivory); box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+        #announcement-banner .announce-highlight { background: rgba(245,215,127,0.3); color: var(--brass-light); padding: 0 3px; border-radius: 3px; }
+        #announcement-banner .announce-big { font-size: 1.25em; font-weight: 800; }
+
         .dash-card { background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.22)); border: 1px solid rgba(201,162,75,0.25); border-radius: 14px; padding: 11px 13px; margin: 9px 0; text-align: left; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 10px rgba(0,0,0,0.25); }
         .dash-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .dash-card-title { font-size: 0.63rem; letter-spacing: 1.2px; text-transform: uppercase; color: var(--brass-light); font-weight: 800; }
@@ -80,6 +87,8 @@
         .coin-balance-label { font-size: 0.56rem; color: var(--ivory-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
         .coin-claim-row { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
         .coin-claim-btn { padding: 8px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--green-light), var(--green) 60%, var(--green-dark)); color: #08240f; font-weight: 900; font-size: 0.68rem; cursor: pointer; box-shadow: 0 3px 10px rgba(22,163,74,0.4); }
+        .coin-claim-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .coin-claim-btn.coin-ad-btn { background: linear-gradient(135deg, var(--brass-light), var(--brass) 55%, var(--brass-dark)); color: #1a1206; box-shadow: 0 3px 10px rgba(201,162,75,0.45); }
         .coin-claim-countdown { font-size: 0.58rem; color: var(--ivory-dim); text-align: center; }
 
         .bet-pills { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -649,6 +658,8 @@
         <h1 class="title-text">LUDO Master Pro</h1>
         <div class="title-rule"></div>
 
+        <div id="announcement-banner"></div>
+
         <div class="dash-card coin-balance-card">
             <div class="dash-card-head">
                 <span class="dash-card-title">🪙 Your Coins</span>
@@ -657,9 +668,13 @@
                 <span class="coin-balance-amount" id="menu-coin-balance">5,000</span>
                 <span class="coin-balance-label">used for Online coin matches</span>
             </div>
-            <div class="coin-claim-row" id="coin-claim-row" style="display:none;">
-                <button class="coin-claim-btn" id="coin-claim-btn" onclick="handleClaimFreeCoins()">Claim Free 5,000 Coins</button>
+            <div class="coin-claim-row" id="coin-claim-row">
+                <button class="coin-claim-btn" id="coin-claim-btn" onclick="handleClaimDailyBonus()">Claim Free 500 Coins</button>
                 <span class="coin-claim-countdown" id="coin-claim-countdown"></span>
+            </div>
+            <div class="coin-claim-row" id="coin-ad-row">
+                <button class="coin-claim-btn coin-ad-btn" id="coin-ad-btn" onclick="handleWatchAdForCoins()">🎬 Watch Ad for 500 Coins</button>
+                <span class="coin-claim-countdown">Watch as many times as you like</span>
             </div>
         </div>
 
@@ -1569,12 +1584,44 @@
         }
 
         // ─── Master control handler ──────────────────────────────────────────
+        // Escapes user/admin-supplied text before it's ever inserted as HTML.
+        function escapeHtmlText(s) {
+            return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+            }[c]));
+        }
+
+        // ─── Admin Announcement banner ──────────────────────────────────────
+        // Renders master_controls' announcementEnabled/announcementText live,
+        // centered in the main menu. The admin writes plain text and can mark
+        // parts of it up with simple, safe markers (parsed AFTER escaping, so
+        // nothing but these three markers can ever produce HTML):
+        //   **text**  -> bold
+        //   ==text==  -> highlighted
+        //   ##text##  -> bigger font
+        function renderAnnouncement(data) {
+            const el = document.getElementById('announcement-banner');
+            if (!el) return;
+            const enabled = !!(data && data.announcementEnabled);
+            const raw = ((data && data.announcementText) || '').trim();
+            if (!enabled || !raw) { el.style.display = 'none'; el.innerHTML = ''; return; }
+            let html = escapeHtmlText(raw);
+            html = html.replace(/##(.+?)##/g, '<span class="announce-big">$1</span>');
+            html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+            html = html.replace(/==(.+?)==/g, '<span class="announce-highlight">$1</span>');
+            html = html.replace(/\n/g, '<br>');
+            el.innerHTML = html;
+            el.style.display = 'block';
+        }
+
         function applyMasterControl(data) {
             if (!data) return;
 
             // Ads can be injected regardless of lock/approval state so they're
             // never blocked by either gate.
             injectAdsIfNeeded(data);
+            renderAnnouncement(data);
+            window._rewardAdUrl = data.rewardAdUrl || '';
 
             // --- Lock screen (on/off switch — untouched) ---
             const lockEl = document.getElementById('lock-overlay');
@@ -1977,6 +2024,13 @@
                 return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}/coinsZeroAt`, val => cb(val || null));
             },
 
+            // Timestamp of the last daily-bonus claim — drives the 24h
+            // countdown on the "Claim Free 500 Coins" button, same live-listener
+            // pattern as coinsZeroAt above.
+            listenLastDailyBonusAt(cb) {
+                return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}/lastDailyBonusAt`, val => cb(val || null));
+            },
+
             // Looks up another player's CURRENT coin balance (used to check
             // an incoming bet request is actually affordable for them before
             // showing an Accept button that would fail).
@@ -2019,25 +2073,38 @@
                 } catch (e) { _onlineReportError('coins:credit', e); }
             },
 
-            // Grants the free 5000-coin refill — but ONLY if the balance is
-            // genuinely 0 and a full 24 hours have passed since it hit 0.
+            // Grants a free 500-coin daily bonus — once every 24 hours,
+            // regardless of current balance (previously this only ever fired
+            // once the balance hit exactly 0, and refilled to a flat 5000).
             // Re-checked against the server-stored timestamp so a player
             // can't just change their phone's clock to claim early.
-            async claimFreeCoins() {
+            async claimDailyBonus() {
                 if (!onlineUid) return { ok: false, reason: 'not-ready' };
                 try {
                     const snap = await get(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`));
                     const u = snap.exists() ? snap.val() : {};
-                    const bal = typeof u.coins === 'number' ? u.coins : 5000;
-                    if (bal > 0) return { ok: false, reason: 'not-empty' };
-                    const zeroAt = u.coinsZeroAt;
-                    if (!zeroAt) return { ok: false, reason: 'no-timer' };
-                    const elapsed = Date.now() - zeroAt;
+                    const lastClaim = u.lastDailyBonusAt;
                     const DAY = 24 * 60 * 60 * 1000;
-                    if (elapsed < DAY) return { ok: false, reason: 'too-soon', remainingMs: DAY - elapsed };
-                    await update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { coins: 5000, coinsZeroAt: null });
+                    if (lastClaim) {
+                        const elapsed = Date.now() - lastClaim;
+                        if (elapsed < DAY) return { ok: false, reason: 'too-soon', remainingMs: DAY - elapsed };
+                    }
+                    const bal = typeof u.coins === 'number' ? u.coins : 5000;
+                    await update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), {
+                        coins: bal + 500,
+                        lastDailyBonusAt: serverTimestamp(),
+                        coinsZeroAt: null
+                    });
                     return { ok: true };
                 } catch (e) { _onlineReportError('coins:claim', e); return { ok: false, reason: 'error' }; }
+            },
+
+            // Rewarded-ad coin credit — called once the player watches an ad
+            // and returns to the game (see handleWatchAdForCoins() in the
+            // game-logic script below). No cap: as many ads as they watch,
+            // that many times they're credited.
+            async creditAdReward() {
+                return this.creditCoins(500);
             },
 
             // ─── Quick Match (auto matchmaking) + multi-friend room invites ──
@@ -2416,11 +2483,12 @@
 
         // ─── Coin wagering state ────────────────────────────────────────────
         let myCoins = 5000;               // locally cached balance, kept in sync by listenCoins()
-        let myCoinsZeroAt = null;         // server timestamp of when balance last hit 0 (for the 24h refill)
+        let myCoinsZeroAt = null;         // server timestamp of when balance last hit 0 (legacy field, kept clear on every credit)
+        let myLastDailyBonusAt = null;    // server timestamp of the last 500-coin daily bonus claim
         let onlineBetSetting = 0;         // lobby pill: coin bet attached to requests I SEND (0 = free)
         let onlineBetAmount = 0;          // the AGREED bet for the CURRENT match (set once it starts)
-        let coinsDetach = null, coinsZeroDetach = null; // listener detach fns, attached once identity is ready
-        let claimCountdownTimer = null;   // interval id for the 24h free-refill countdown display
+        let coinsDetach = null, coinsZeroDetach = null, dailyBonusDetach = null; // listener detach fns, attached once identity is ready
+        let claimCountdownTimer = null;   // interval id for the 24h daily-bonus countdown display
 
         const colors = [
             { name: "Red", hex: "#dc2626" },
@@ -4273,7 +4341,16 @@
         }
 
         function botPlay() {
-            onDiceClick('Green');
+            // BUG FIX: this used to always call onDiceClick('Green'), so it only
+            // ever worked for the Green bot. With 2 or 3 bots on the table
+            // (Yellow / Blue), onDiceClick() saw a color that didn't match the
+            // actual current player and silently did nothing — leaving the
+            // human to tap the dice manually for those bots, even though their
+            // TOKEN movement afterwards was already driven correctly by the
+            // isBot check elsewhere. Now it rolls for whichever color's turn it
+            // actually is.
+            const cp = players[currentPlayerIndex];
+            if (cp && cp.isBot) onDiceClick(cp.color);
         }
 
         function endGame(teamColors) {
@@ -4856,6 +4933,10 @@
                 myCoinsZeroAt = zeroAt;
                 renderCoinUI();
             });
+            dailyBonusDetach = window.LudoOnline.listenLastDailyBonusAt(lastAt => {
+                myLastDailyBonusAt = lastAt;
+                renderCoinUI();
+            });
         }
         startCoinListeners();
 
@@ -4871,24 +4952,20 @@
             if (!claimRow) return;
             if (claimCountdownTimer) { clearInterval(claimCountdownTimer); claimCountdownTimer = null; }
 
-            if (myCoins > 0 || !myCoinsZeroAt) {
-                claimRow.style.display = 'none';
-                return;
-            }
-            claimRow.style.display = 'flex';
+            // Daily 500-coin bonus — available once every 24h, independent of
+            // current balance (previously this only ever showed once the
+            // balance hit exactly 0, and refilled to a flat 5000 coins).
             const DAY = 24 * 60 * 60 * 1000;
             const btn = document.getElementById('coin-claim-btn');
             const countdownEl = document.getElementById('coin-claim-countdown');
             const tick = () => {
-                const remaining = DAY - (Date.now() - myCoinsZeroAt);
+                const remaining = myLastDailyBonusAt ? (DAY - (Date.now() - myLastDailyBonusAt)) : 0;
                 if (remaining <= 0) {
                     btn.disabled = false;
-                    btn.textContent = 'Claim Free 5,000 Coins';
                     countdownEl.textContent = 'Ready to claim!';
                     if (claimCountdownTimer) { clearInterval(claimCountdownTimer); claimCountdownTimer = null; }
                 } else {
                     btn.disabled = true;
-                    btn.textContent = 'Claim Free 5,000 Coins';
                     const h = Math.floor(remaining / 3600000);
                     const m = Math.floor((remaining % 3600000) / 60000);
                     const s = Math.floor((remaining % 60000) / 1000);
@@ -4899,19 +4976,58 @@
             claimCountdownTimer = setInterval(tick, 1000);
         }
 
-        function handleClaimFreeCoins() {
+        function handleClaimDailyBonus() {
             if (!window.LudoOnline) return;
-            window.LudoOnline.claimFreeCoins().then(res => {
+            window.LudoOnline.claimDailyBonus().then(res => {
                 if (!res.ok && res.reason === 'too-soon') {
                     // Timer just hasn't finished — renderCoinUI's own
                     // countdown already reflects this, nothing else to do.
                     return;
                 }
                 // On success (or any other outcome) the live listenCoins/
-                // listenCoinsZeroAt subscriptions above pick up the change
-                // automatically and re-render.
+                // listenLastDailyBonusAt subscriptions above pick up the
+                // change automatically and re-render.
             });
         }
+
+        // ─── Watch Ad for Coins ─────────────────────────────────────────────
+        // Unlimited, repeatable: every time the player watches an ad and
+        // comes back to the game, they're credited 500 coins. There's no
+        // per-ad "did they really watch it" signal available client-side, so
+        // this uses the same trust model as the rest of this app's coin
+        // economy (client-authoritative via Firebase) — a real click opens
+        // the ad in a new tab, and a minimum dwell-away time before crediting
+        // guards against a reflex tab-switch-back counting as a "watch".
+        let _adWatchPending = false;
+        let _adWatchClickedAt = 0;
+        const AD_MIN_AWAY_MS = 5000;
+
+        function handleWatchAdForCoins() {
+            if (_adWatchPending) return;
+            _adWatchPending = true;
+            _adWatchClickedAt = Date.now();
+            const btn = document.getElementById('coin-ad-btn');
+            if (btn) { btn.disabled = true; btn.textContent = '🎬 Watching Ad… come back here after'; }
+
+            // Prefer the Admin Panel's dedicated Rewarded Ad URL (a Monetag
+            // Direct Link/Smart Link is meant exactly for this "click → view
+            // → return" flow). If the admin hasn't set one, fall back to
+            // simply opening this game's own URL in a new tab — a real click
+            // is what most ad networks' popunder/interstitial scripts (already
+              // injected via injectAdsIfNeeded) need in order to fire at all.
+            const adUrl = (window._rewardAdUrl || '').trim();
+            try { window.open(adUrl || window.location.href, '_blank'); } catch (e) {}
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState !== 'visible' || !_adWatchPending) return;
+            const btn = document.getElementById('coin-ad-btn');
+            const elapsed = Date.now() - _adWatchClickedAt;
+            _adWatchPending = false;
+            if (btn) { btn.disabled = false; btn.textContent = '🎬 Watch Ad for 500 Coins'; }
+            if (elapsed < AD_MIN_AWAY_MS) return; // too quick — likely no real ad view happened
+            if (window.LudoOnline) window.LudoOnline.creditAdReward();
+        });
 
         function openOnlineScreen() {
             document.getElementById('menu-screen').style.display = 'none';
