@@ -119,6 +119,31 @@
         }
         .online-tile .mode-icon-badge { background: linear-gradient(150deg, #b48cff, rgba(0,0,0,0.3)); flex-shrink: 0; }
 
+        /* ── Name entry (first-run) screen ─────────────────────────────── */
+        #name-entry-screen { padding: 30px 24px calc(26px + env(safe-area-inset-bottom)); max-width: 380px; width: 90%; display: none; }
+        #name-entry-screen .name-entry-icon { font-size: 2.4rem; margin-bottom: 6px; }
+        #name-entry-screen p.name-entry-sub { font-size: 0.7rem; color: var(--ivory-dim); line-height: 1.6; margin: 8px 0 18px; }
+        .name-entry-input { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(201,162,75,0.32); background: rgba(0,0,0,0.42); color: var(--ivory); outline: none; font-size: 16px; font-weight: 700; text-align: center; }
+        .name-entry-input:focus { border-color: var(--brass-light); }
+
+        /* ── Select-mode dialog & bot-count dialog ─────────────────────── */
+        .selector-tile {
+            display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 14px; border-radius: 12px; cursor: pointer;
+            background: linear-gradient(150deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015));
+            border: 1px solid rgba(201,162,75,0.24); color: var(--ivory); text-align: left;
+        }
+        .selector-tile .selector-value { flex: 1; font-size: 0.78rem; font-weight: 800; color: var(--brass-light); }
+        #mode-select-modal, #edit-name-modal {
+            display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 275; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+        }
+        #mode-select-modal .onl-modal-card { max-width: 340px; text-align: left; }
+        #mode-select-modal .mode-grid { margin-top: 10px; }
+        #mode-select-modal .onl-back-btn { margin-top: 4px; }
+        .botcount-row { display: flex; gap: 6px; margin: 10px 0 2px; }
+        .botcount-pill { flex: 1; padding: 10px 4px; border-radius: 10px; border: 1px solid rgba(201,162,75,0.28); background: rgba(255,255,255,0.05); color: var(--ivory); font-weight: 800; font-size: 0.72rem; text-align: center; cursor: pointer; }
+        .botcount-pill.active { background: linear-gradient(135deg, var(--brass-light), var(--brass) 55%, var(--brass-dark)); border-color: var(--brass-light); color: #1a1206; }
+        #edit-name-modal .onl-modal-card { max-width: 300px; }
+
         /* =================================================================
            ONLINE MULTIPLAYER — Lobby screen, request popups, player list.
            Kept in its own namespace (.onl-*, #online-*) so nothing here can
@@ -264,30 +289,58 @@
         }
         .tag-info { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-width: 0; flex: 1; margin-left: 6px; gap: 2px; }
         .tag-name { font-size: 0.66rem; font-weight: 800; color: var(--ivory); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; letter-spacing: 0.1px; }
+        .tag-edit-btn { flex-shrink: 0; border: none; background: rgba(255,255,255,0.1); color: var(--brass-light); width: 16px; height: 16px; border-radius: 50%; font-size: 0.5rem; line-height: 16px; text-align: center; cursor: pointer; padding: 0; margin-left: 4px; }
         .tag-status { font-size: 0.48rem; color: var(--ivory-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
 
-        /* PLAYER-CARD DICE — a clean classic square die (not a tall
-           strip), with a smooth "toss and settle" roll animation. Rotation
-           stays 2D (plus a light lift/scale) so the pip face never looks
-           mirrored or flipped mid-roll — just a believable, smooth tumble. */
+        /* PLAYER-CARD DICE — a real 3D cube (6 faces positioned in 3D space
+           with CSS transforms), not a flat square with a fake 2D spin. While
+           rolling it tumbles continuously; once the result is known it
+           smoothly rotates to rest on exactly that face — see
+           startDiceSpin()/spinDiceTo() in the game script for how the JS
+           drives this. */
         .dice-box-tag {
             width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; margin-left: auto;
-            background: linear-gradient(145deg, #ffffff 0%, #f4f7fb 45%, #dbe3ec 100%);
-            color: #0f172a; display: none; justify-content: center; align-items: center;
-            box-shadow: 0 6px 14px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.4), inset 0 2px 3px #fff, inset 0 -3px 5px rgba(0,0,0,0.15);
-            border: 2px solid #cbd5e1; cursor: pointer; transition: transform 0.15s;
-            padding: 5px; gap: 3px;
+            background: transparent; color: #0f172a; display: none; justify-content: center; align-items: center;
+            border: none; cursor: pointer; transition: transform 0.15s; perspective: 220px;
+            padding: 0;
         }
         .dice-box-tag:active { transform: scale(0.92); }
-        .dice-box-tag.active-roll { display: grid; grid-template-columns: 1fr; grid-template-rows: 1fr; animation: bounce 1s infinite alternate; }
-        @keyframes bounce { 0% { transform: rotate(0deg) scale(1); } 100% { transform: rotate(8deg) scale(1.05); } }
-        .dice-box-tag.rolling { animation: diceTumble 0.7s cubic-bezier(0.45, 0.05, 0.15, 1) !important; }
-        @keyframes diceTumble {
-            0%   { transform: rotate(0deg); }
-            100% { transform: rotate(720deg); }
+        .dice-box-tag.active-roll { display: flex; animation: bounce 1s infinite alternate; }
+        @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
+
+        .dice3d {
+            position: relative; width: 30px; height: 30px; transform-style: preserve-3d;
+            transform: rotateX(0deg) rotateY(0deg);
         }
-        .dice-pip-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); width: 100%; height: 100%; gap: 2.5px; }
-        .dice-pip { display: block; border-radius: 50%; width: 100%; height: 100%; max-width: 8.5px; max-height: 8.5px; margin: auto; background: radial-gradient(circle at 30% 25%, #334155, #0f172a); box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 0.5px 1px rgba(0,0,0,0.35); opacity: 0; transform: scale(0.4); transition: opacity 0.1s, transform 0.1s; }
+        /* While actively rolling, an infinite CSS keyframe loop drives the
+           tumble — the cube just keeps spinning, with NO fixed end value,
+           until JS actually knows the real rolled number and calls
+           spinDiceTo() to settle it. This is what makes the synced number
+           always correct on both devices: the dice can never stop early on
+           a guess, because nothing makes it stop except the real result
+           arriving. */
+        .dice-box-tag.spinning .dice3d { animation: diceSpinLoop 0.7s linear infinite; }
+        @keyframes diceSpinLoop {
+            from { transform: rotateX(0deg)   rotateY(0deg); }
+            to   { transform: rotateX(360deg) rotateY(720deg); }
+        }
+        .dice-face {
+            position: absolute; inset: 0; width: 30px; height: 30px; border-radius: 6px;
+            background: linear-gradient(145deg, #ffffff 0%, #f4f7fb 45%, #dbe3ec 100%);
+            border: 2px solid #cbd5e1; box-shadow: inset 0 2px 3px #fff, inset 0 -3px 5px rgba(0,0,0,0.15);
+            display: flex; justify-content: center; align-items: center; padding: 4px;
+            backface-visibility: hidden;
+        }
+        /* Standard die layout — opposite faces always sum to 7. */
+        .dice-face-front  { transform: rotateY(0deg)    translateZ(15px); }
+        .dice-face-back   { transform: rotateY(180deg)  translateZ(15px); }
+        .dice-face-right  { transform: rotateY(90deg)   translateZ(15px); }
+        .dice-face-left   { transform: rotateY(-90deg)  translateZ(15px); }
+        .dice-face-top    { transform: rotateX(90deg)   translateZ(15px); }
+        .dice-face-bottom { transform: rotateX(-90deg)  translateZ(15px); }
+
+        .dice-pip-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); width: 100%; height: 100%; gap: 2px; }
+        .dice-pip { display: block; border-radius: 50%; width: 100%; height: 100%; max-width: 6.5px; max-height: 6.5px; margin: auto; background: radial-gradient(circle at 30% 25%, #334155, #0f172a); box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 0.5px 1px rgba(0,0,0,0.35); opacity: 0; transform: scale(0.4); transition: opacity 0.1s, transform 0.1s; }
         .dice-pip.on { opacity: 1; transform: scale(1); }
         .dice-pip.on.red-pip { background: radial-gradient(circle at 30% 25%, #ef4444, #7f1d1d); box-shadow: inset 0 1px 1px rgba(255,255,255,0.55), 0 0.5px 1px rgba(0,0,0,0.4), 0 0 4px rgba(239,68,68,0.55); }
 
@@ -389,37 +442,35 @@
         .star-white { color: rgba(255,255,255,0.92) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.35); }
         .arrow-indicator { position: absolute; font-size: 13px; font-weight: 900; color: rgba(15,23,42,0.55); pointer-events: none; z-index: 2; }
 
-        /* 3D TOKENS WITH GLOSS + CENTER "HOLE" SO SAFE-SPOT STARS PEEK THROUGH */
+        /* 3D PAWN TOKENS — a proper cone-and-ball Ludo pawn silhouette
+           (built as an inline SVG per token, see pawnSVG()/createTokenElement()
+           in the game script) instead of a flat coin. The bounding box stays
+           square so it always fits inside a board cell without clipping;
+           the SVG's own viewBox scales the pawn shape to fit within it. */
         .token {
-            width: 96%; height: 96%; max-width: 42px; max-height: 42px; border-radius: 50%;
-            border: 2.5px solid #ffffff; box-shadow: 0 4px 9px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.2), inset 0 2px 3px rgba(255,255,255,0.8), inset 0 -2px 3px rgba(0,0,0,0.5);
+            width: 94%; height: 94%; max-width: 40px; max-height: 40px;
             cursor: pointer; z-index: 10; position: absolute; display: flex; justify-content: center; align-items: center;
-            transition: transform calc(0.16s / var(--speed-factor)) cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
-            -webkit-mask-image: radial-gradient(circle, transparent 0 26%, #000 29% 100%);
-            mask-image: radial-gradient(circle, transparent 0 26%, #000 29% 100%);
+            transition: transform calc(0.16s / var(--speed-factor)) cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
+            filter: drop-shadow(0 3px 2px rgba(0,0,0,0.55));
         }
-        .token::after { content: ''; position: absolute; width: 22%; height: 14%; border-radius: 50%; background: rgba(255,255,255,0.85); top: 12%; left: 30%; pointer-events: none; transform: rotate(-25deg); filter: blur(0.3px); }
-        .token-red { background: radial-gradient(circle at 35% 30%, var(--red-light) 0%, var(--red) 55%, var(--red-dark) 100%); }
-        .token-green { background: radial-gradient(circle at 35% 30%, var(--green-light) 0%, var(--green) 55%, var(--green-dark) 100%); }
-        .token-yellow { background: radial-gradient(circle at 35% 30%, var(--yellow-light) 0%, var(--yellow) 55%, var(--yellow-dark) 100%); }
-        .token-blue { background: radial-gradient(circle at 35% 30%, var(--blue-light) 0%, var(--blue) 55%, var(--blue-dark) 100%); }
+        .token svg { width: 100%; height: 100%; display: block; overflow: visible; }
 
         .token-movable {
             animation: tokenPulse calc(0.5s / var(--speed-factor)) infinite alternate;
-            border: 2.5px solid var(--brass-light); box-shadow: 0 0 0 2px #0f172a, 0 0 4px 2px rgba(245,215,127,0.9), 0 0 18px 4px rgba(245,215,127,0.75); z-index: 30;
+            filter: drop-shadow(0 0 3px rgba(245,215,127,0.95)) drop-shadow(0 0 8px rgba(245,215,127,0.8)) drop-shadow(0 3px 2px rgba(0,0,0,0.5));
+            z-index: 30;
         }
-        @keyframes tokenPulse { 0% { transform: scale(0.92); } 100% { transform: scale(1.2); } }
+        @keyframes tokenPulse { 0% { transform: scale(0.92); } 100% { transform: scale(1.15); } }
 
         /* BARRIER TOKENS — two same-colour tokens locked together on one cell.
-           Gets a bold brass ring + a small lock badge so it reads clearly as
+           Gets a bold brass glow + a small lock badge so it reads clearly as
            "blocked" against the plain movable-token pulse above. */
         .token-barrier {
-            border: 2.5px solid var(--brass-light) !important;
-            box-shadow: 0 0 0 2px #0f172a, 0 0 0 4px var(--brass-light), 0 4px 10px rgba(0,0,0,0.6) !important;
+            filter: drop-shadow(0 0 2px var(--brass-light)) drop-shadow(0 0 6px var(--brass-light)) drop-shadow(0 3px 2px rgba(0,0,0,0.5));
             z-index: 20;
         }
         .token-barrier::before {
-            content: '🔒'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            content: '🔒'; position: absolute; top: -2px; left: 0; right: 0; display: flex; align-items: center; justify-content: center;
             font-size: 9px; z-index: 25; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.8));
         }
 
@@ -511,6 +562,15 @@
         <p id="loading-status-msg" style="font-size:0.66rem; color:#888; margin-top:22px; max-width:260px; line-height:1.6;"></p>
     </div>
 
+    <!-- NAME ENTRY (first run — asked before the menu is ever shown) -->
+    <div id="name-entry-screen" class="glass-panel">
+        <div class="name-entry-icon">🧑‍🎲</div>
+        <h1 class="title-text" style="font-size:1.35rem;">Welcome!</h1>
+        <p class="name-entry-sub">Khelne se pehle apna naam likhein — yehi naam aapke player box me dikhega. Baad me bhi ise kabhi change kar sakte hain.</p>
+        <input type="text" id="player-name-input" class="name-entry-input" placeholder="Apna naam likhein" maxlength="18" onkeydown="if(event.key==='Enter') submitPlayerName();">
+        <button class="btn btn-green" style="margin-top:14px;" onclick="submitPlayerName()">Continue</button>
+    </div>
+
     <!-- MAIN MENU -->
     <div id="menu-screen" class="glass-panel">
         <p class="brand-eyebrow">Rahbar Engineering Presents</p>
@@ -531,16 +591,16 @@
             </div>
         </div>
 
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <span class="dash-card-title">👥 Player Names</span>
-            </div>
-            <div class="player-grid">
-                <div class="player-slot"><label style="color:var(--red-light);">Red</label><input type="text" id="name-red" value="Player 1"></div>
-                <div class="player-slot"><label style="color:var(--green-light);">Green</label><input type="text" id="name-green" value="Player 2"></div>
-                <div class="player-slot"><label style="color:var(--yellow-light);">Yellow</label><input type="text" id="name-yellow" value="Player 3"></div>
-                <div class="player-slot"><label style="color:var(--blue-light);">Blue</label><input type="text" id="name-blue" value="Player 4"></div>
-            </div>
+        <!-- Player name inputs kept in the DOM (hidden) so startGame() and
+             the rest of the game logic can read them exactly as before —
+             only the visible name entry now happens on the first-run
+             name-entry-screen and via the in-game player-box edit (pencil)
+             icon. Red syncs both ways with that saved display name. -->
+        <div style="display:none;">
+            <input type="text" id="name-red" value="Player 1">
+            <input type="text" id="name-green" value="Player 2">
+            <input type="text" id="name-yellow" value="Player 3">
+            <input type="text" id="name-blue" value="Player 4">
         </div>
 
         <div class="dash-card">
@@ -568,33 +628,16 @@
 
         <div class="dash-card">
             <div class="dash-card-head">
-                <span class="dash-card-title">🎮 Select Game Mode</span>
+                <span class="dash-card-title">🎮 Game Mode</span>
             </div>
-            <div class="mode-grid">
-                <div class="mode-tile mode-blue" onclick="startGame('computer')">
-                    <span class="mode-icon-badge">🤖</span>
-                    <span class="mode-name">Vs Computer</span>
-                    <span class="mode-sub">1 Player Mode</span>
-                </div>
-                <div class="mode-tile mode-green" onclick="startGame(2)">
-                    <span class="mode-icon-badge">🎲</span>
-                    <span class="mode-name">Duel Match</span>
-                    <span class="mode-sub">2 Players (Red vs Yellow)</span>
-                </div>
-                <div class="mode-tile mode-yellow" onclick="startGame(3)">
-                    <span class="mode-icon-badge">🎯</span>
-                    <span class="mode-name">Triple Table</span>
-                    <span class="mode-sub">3 Players</span>
-                </div>
-                <div class="mode-tile mode-red" onclick="startGame(4)">
-                    <span class="mode-icon-badge">🏆</span>
-                    <span class="mode-name">Full Table</span>
-                    <span class="mode-sub">4 Players</span>
-                </div>
+            <div class="selector-tile" onclick="openModeModal()">
+                <span class="mode-icon-badge" id="mode-selector-icon">🎲</span>
+                <span style="flex:1;">
+                    <span class="mode-name" style="display:block;">Select Game Mode</span>
+                    <span class="mode-sub" id="mode-selector-current">Tap to choose how you want to play</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
             </div>
-            <p id="mode-lock-msg" style="display:none; font-size:0.62rem; color:var(--red-light); font-weight:700; margin-top:8px; line-height:1.4; text-align:center;">
-                🤝 Partner Mode is set to Assist/Full Control — only Full Table (4 Players) can be played. Set Partner Mode to Off to use this mode.
-            </p>
         </div>
 
         <div class="dash-card">
@@ -626,6 +669,65 @@
         </div>
 
         <p class="dev-credit">Designed &amp; Developed by <span>Rahbar Waris</span></p>
+    </div>
+
+    <!-- GAME MODE SELECT DIALOG -->
+    <div id="mode-select-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-title" style="text-align:center;">Choose Mode</div>
+
+            <!-- Step 1: top-level mode list -->
+            <div id="mode-select-step1">
+                <div class="mode-grid">
+                    <div class="mode-tile mode-blue" onclick="openBotCountStep()">
+                        <span class="mode-icon-badge">🤖</span>
+                        <span class="mode-name">Vs Computer</span>
+                        <span class="mode-sub">1-3 Bots</span>
+                    </div>
+                    <div class="mode-tile mode-green" onclick="confirmStartGame(2)">
+                        <span class="mode-icon-badge">🎲</span>
+                        <span class="mode-name">Duel Match</span>
+                        <span class="mode-sub">2 Players</span>
+                    </div>
+                    <div class="mode-tile mode-yellow" onclick="confirmStartGame(3)">
+                        <span class="mode-icon-badge">🎯</span>
+                        <span class="mode-name">Triple Table</span>
+                        <span class="mode-sub">3 Players</span>
+                    </div>
+                    <div class="mode-tile mode-red" onclick="confirmStartGame(4)">
+                        <span class="mode-icon-badge">🏆</span>
+                        <span class="mode-name">Full Table</span>
+                        <span class="mode-sub">4 Players</span>
+                    </div>
+                </div>
+                <p id="mode-lock-msg" style="display:none; font-size:0.62rem; color:var(--red-light); font-weight:700; margin-top:8px; line-height:1.4; text-align:center;">
+                    🤝 Partner Mode is set to Assist/Full Control — only Full Table (4 Players) can be played. Set Partner Mode to Off to use this mode.
+                </p>
+                <button class="onl-back-btn" style="width:100%; margin-top:12px;" onclick="closeModeModal()">Cancel</button>
+            </div>
+
+            <!-- Step 2: how many bots, shown only after "Vs Computer" is tapped -->
+            <div id="mode-select-step2" style="display:none;">
+                <p class="onl-modal-sub" style="margin-bottom:6px;">Kitne bots ke against khelna hai?</p>
+                <div class="botcount-row">
+                    <div class="botcount-pill active" id="botcount-1" onclick="setBotCount(1, this)">1 Bot<br><span style="font-weight:600;font-size:0.58rem;">(2 Players)</span></div>
+                    <div class="botcount-pill" id="botcount-2" onclick="setBotCount(2, this)">2 Bots<br><span style="font-weight:600;font-size:0.58rem;">(3 Players)</span></div>
+                    <div class="botcount-pill" id="botcount-3" onclick="setBotCount(3, this)">3 Bots<br><span style="font-weight:600;font-size:0.58rem;">(4 Players)</span></div>
+                </div>
+                <button class="btn btn-green" onclick="confirmStartGame('computer')">Start</button>
+                <button class="onl-back-btn" style="width:100%;" onclick="closeBotCountStep()">← Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT PLAYER NAME DIALOG (opened from the in-game player box) -->
+    <div id="edit-name-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-title">Edit Name</div>
+            <input type="text" id="edit-name-input" class="name-entry-input" maxlength="18" onkeydown="if(event.key==='Enter') saveEditedPlayerName();">
+            <button class="btn btn-green" onclick="saveEditedPlayerName()">Save</button>
+            <button class="onl-back-btn" style="width:100%;" onclick="closeEditNameModal()">Cancel</button>
+        </div>
     </div>
 
     <!-- ONLINE MULTIPLAYER LOBBY -->
@@ -1843,6 +1945,66 @@
         let winnersList = [];
         let gameState = 'IDLE';
         let currentRoll = 0;
+
+        // ─── 3D dice cube rotation ──────────────────────────────────────────
+        // Maps each face value to the (rotateX, rotateY) that brings that
+        // face to the front (facing the viewer). Standard die: opposite
+        // faces sum to 7 — see dice3dHTML() for which value sits on which
+        // physical face of the cube.
+        const DICE_FACE_ROTATION = {
+            1: { x: 0,   y: 0 },
+            6: { x: 0,   y: 180 },
+            3: { x: 0,   y: -90 },
+            4: { x: 0,   y: 90 },
+            2: { x: -90, y: 0 },
+            5: { x: 90,  y: 0 }
+        };
+        const diceCubeState = {}; // color -> { x, y } — last-applied absolute rotation, kept increasing so every roll spins further forward rather than snapping back
+
+        // Picks the next absolute angle (always AHEAD of `current`, never
+        // backwards) that (a) lands on `targetMod` once reduced mod 360, and
+        // (b) includes `extraSpins` extra full rotations for a satisfying
+        // multi-flip tumble on the way there.
+        function nextAngleTo(current, targetMod, extraSpins) {
+            targetMod = ((targetMod % 360) + 360) % 360;
+            let base = Math.floor(current / 360) * 360 + targetMod;
+            while (base <= current) base += 360;
+            return base + extraSpins * 360;
+        }
+
+        // Starts an INDEFINITE tumble (CSS keyframe loop, no fixed end
+        // value) — used the instant a roll begins, before the actual result
+        // is known. Nothing stops this except spinDiceTo() being called
+        // with the real value, so the dice can never settle on a guess.
+        function startDiceSpin(color) {
+            const box = document.getElementById(`dice-${color}`);
+            if (!box) return;
+            const cube = box.querySelector('.dice3d');
+            if (cube) { cube.style.transition = 'none'; cube.style.transform = ''; }
+            box.classList.add('spinning');
+        }
+
+        // Smoothly rotates the cube from wherever it currently is to rest
+        // exactly on `value`'s face, over `durationMs`. Safe to call whether
+        // or not startDiceSpin() was already running (removing the
+        // .spinning class stops the infinite loop cleanly and this inline
+        // transform/transition takes over from the frozen last frame).
+        function spinDiceTo(color, value, durationMs) {
+            const box = document.getElementById(`dice-${color}`);
+            if (!box) return;
+            const cube = box.querySelector('.dice3d');
+            if (!cube) return;
+            box.classList.remove('spinning');
+            const target = DICE_FACE_ROTATION[value] || DICE_FACE_ROTATION[1];
+            const state = diceCubeState[color] || (diceCubeState[color] = { x: 0, y: 0 });
+            const extraSpinsX = 1 + Math.floor(Math.random() * 2); // 1–2 extra full turns
+            const extraSpinsY = 2 + Math.floor(Math.random() * 2);
+            state.x = nextAngleTo(state.x, target.x, extraSpinsX);
+            state.y = nextAngleTo(state.y, target.y, extraSpinsY);
+            cube.style.transition = `transform ${durationMs}ms cubic-bezier(0.22, 0.61, 0.36, 1)`;
+            cube.style.transform = `rotateX(${state.x}deg) rotateY(${state.y}deg)`;
+        }
+
         let hasBonusTurn = false;
         let consecutiveSixes = 0;
 
@@ -2055,6 +2217,37 @@
 
         // Tracks whether menu has been revealed (to avoid revealing it twice)
         window._menuRevealed = false;
+        // ─── Player display name (asked once, on first run) ──────────────────
+        const PLAYER_NAME_KEY = 'lm_player_display_name';
+        function loadSavedPlayerName() {
+            try { return localStorage.getItem(PLAYER_NAME_KEY) || ''; } catch (e) { return ''; }
+        }
+        // Single source of truth for "your" name — updates the hidden
+        // name-red input (used by startGame()), the saved value (so it's
+        // remembered next time / on the name-entry screen), and the online
+        // lobby profile name, all at once, from wherever it was changed.
+        function savePlayerNameEverywhere(name) {
+            name = (name || '').trim();
+            if (!name) return;
+            try { localStorage.setItem(PLAYER_NAME_KEY, name); } catch (e) {}
+            const redInput = document.getElementById('name-red');
+            if (redInput) redInput.value = name;
+            try { localStorage.setItem('lm_online_name', name); } catch (e) {}
+            if (window.LudoOnline && typeof window.LudoOnline.setName === 'function') {
+                window.LudoOnline.setName(name);
+            }
+            const onlNameInput = document.getElementById('onl-name-input');
+            if (onlNameInput) onlNameInput.value = name;
+        }
+
+        function submitPlayerName() {
+            const input = document.getElementById('player-name-input');
+            const name = (input.value || '').trim() || ('Player' + Math.floor(1000 + Math.random() * 9000));
+            savePlayerNameEverywhere(name);
+            document.getElementById('name-entry-screen').style.display = 'none';
+            document.getElementById('menu-screen').style.display = 'block';
+        }
+
         function revealMenu() {
             if (window._menuRevealed) return;
             window._menuRevealed = true;
@@ -2067,8 +2260,18 @@
             // put the player right back into it instead of dropping them on
             // the menu as if nothing had happened.
             if (!tryRestoreResumeState()) {
-                const m = document.getElementById('menu-screen');
-                if (m && m.style.display !== 'block') m.style.display = 'block';
+                const savedName = loadSavedPlayerName();
+                if (!savedName) {
+                    // First time ever opening the game on this device — ask
+                    // for a name before showing anything else. The menu
+                    // (and every other screen) only appears once this is done.
+                    const n = document.getElementById('name-entry-screen');
+                    if (n) n.style.display = 'block';
+                } else {
+                    document.getElementById('name-red').value = savedName;
+                    const m = document.getElementById('menu-screen');
+                    if (m && m.style.display !== 'block') m.style.display = 'block';
+                }
             }
 
             // Player has actually reached the playable menu — count them in
@@ -2342,6 +2545,71 @@
             }
         }
 
+        // ─── Game-mode select dialog ───────────────────────────────────────
+        function openModeModal() {
+            document.getElementById('mode-select-step1').style.display = 'block';
+            document.getElementById('mode-select-step2').style.display = 'none';
+            document.getElementById('mode-select-modal').style.display = 'flex';
+        }
+        function closeModeModal() {
+            document.getElementById('mode-select-modal').style.display = 'none';
+        }
+        function openBotCountStep() {
+            document.getElementById('mode-select-step1').style.display = 'none';
+            document.getElementById('mode-select-step2').style.display = 'block';
+        }
+        function closeBotCountStep() {
+            document.getElementById('mode-select-step1').style.display = 'block';
+            document.getElementById('mode-select-step2').style.display = 'none';
+        }
+        function setBotCount(n, el) {
+            selectedBotCount = n;
+            document.querySelectorAll('.botcount-pill').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+        }
+        // Wraps startGame() so the dialog closes itself on a successful
+        // start — but stays open (showing the Partner-Mode lock message)
+        // if startGame() bails out without starting anything.
+        function confirmStartGame(mode) {
+            const wasHidden = document.getElementById('menu-screen').style.display === 'none';
+            startGame(mode);
+            const nowHidden = document.getElementById('menu-screen').style.display === 'none';
+            if (!wasHidden && nowHidden) closeModeModal(); // menu just got hidden => game actually started
+        }
+
+        // ─── In-game player-name editing (pencil icon on the player box) ───
+        let editingNameColor = null;
+        function editPlayerName(color) {
+            const p = players.find(pl => pl.color === color);
+            if (!p || p.isBot) return;
+            editingNameColor = color;
+            document.getElementById('edit-name-input').value = p.name;
+            document.getElementById('edit-name-modal').style.display = 'flex';
+            setTimeout(() => document.getElementById('edit-name-input').focus(), 50);
+        }
+        function closeEditNameModal() {
+            document.getElementById('edit-name-modal').style.display = 'none';
+            editingNameColor = null;
+        }
+        function saveEditedPlayerName() {
+            const name = (document.getElementById('edit-name-input').value || '').trim();
+            if (!name || !editingNameColor) { closeEditNameModal(); return; }
+            const p = players.find(pl => pl.color === editingNameColor);
+            if (p) p.name = name;
+            // Keep the matching menu input (name-red/green/yellow/blue) in sync
+            // so the same name is still there if this game is restarted.
+            const inputByColor = { Red: 'name-red', Green: 'name-green', Yellow: 'name-yellow', Blue: 'name-blue' };
+            const input = document.getElementById(inputByColor[editingNameColor]);
+            if (input) input.value = name;
+            // Editing your own (Red) name also updates the saved display
+            // name, so it's remembered for next time and stays in sync with
+            // the very first name-entry screen — "dono jagah change ho jaye".
+            if (editingNameColor === 'Red') savePlayerNameEverywhere(name);
+            renderScoreboard();
+            updateTurnUI();
+            closeEditNameModal();
+        }
+
         function goToMenu() {
             if (isOnlineMode) cleanupOnlineGame('left'); // best-effort: tell Firebase we've left, detach listeners
             document.getElementById('game-screen').style.display = 'none';
@@ -2365,6 +2633,11 @@
             }
             goToMenu();
         }
+
+        // How many bots to face in "Vs Computer" mode (1, 2, or 3 — i.e. a
+        // 2, 3, or 4 player table). Chosen in the bot-count step of the
+        // mode-select dialog; defaults to the classic 1-bot duel.
+        let selectedBotCount = 1;
 
         function startGame(mode) {
             // Starting any local/bot/hotseat game always leaves online mode
@@ -2396,10 +2669,15 @@
 
             if (mode === 'computer') {
                 botMode = true;
-                players = [
-                    { name: redName, color: "Red", hex: colors[0].hex, isBot: false },
-                    { name: "Bot (Green)", color: "Green", hex: colors[1].hex, isBot: true }
-                ];
+                const botNamesByColor = { Green: "Bot (Green)", Yellow: "Bot (Yellow)", Blue: "Bot (Blue)" };
+                const botColorOrder = ["Green", "Yellow", "Blue"];
+                const n = Math.min(Math.max(selectedBotCount || 1, 1), 3); // 1-3 bots => 2-4 total players
+                players = [{ name: redName, color: "Red", hex: colors[0].hex, isBot: false }];
+                for (let i = 0; i < n; i++) {
+                    const c = botColorOrder[i];
+                    const colorDef = colors.find(cd => cd.name === c);
+                    players.push({ name: botNamesByColor[c], color: c, hex: colorDef.hex, isBot: true });
+                }
             } else if (mode === 2) {
                 botMode = false;
                 players = [
@@ -2616,6 +2894,24 @@
             return `<div class="dice-pip-grid">${html}</div>`;
         }
 
+        // Builds the persistent 3D cube DOM — 6 faces, one per value, laid
+        // out so opposite faces sum to 7 (the real-dice convention). This
+        // markup is only ever built ONCE per game (from renderScoreboard,
+        // itself only called when a game starts) — see startDiceSpin()/
+        // spinDiceTo() below for how rolls animate it afterwards without
+        // ever rebuilding/replacing this DOM (which would destroy the
+        // in-flight CSS transform/transition).
+        function dice3dHTML() {
+            return `<div class="dice3d">
+                <div class="dice-face dice-face-front">${pipGrid(1)}</div>
+                <div class="dice-face dice-face-back">${pipGrid(6)}</div>
+                <div class="dice-face dice-face-right">${pipGrid(3)}</div>
+                <div class="dice-face dice-face-left">${pipGrid(4)}</div>
+                <div class="dice-face dice-face-top">${pipGrid(2)}</div>
+                <div class="dice-face dice-face-bottom">${pipGrid(5)}</div>
+            </div>`;
+        }
+
         function renderScoreboard() {
             colors.forEach(c => {
                 const tag = document.getElementById(`tag-${c.name}`);
@@ -2635,14 +2931,21 @@
                     const youBadge = (isOnlineMode && onlineMyColor === c.name)
                         ? `<span style="margin-left:5px; opacity:0.85; font-size:0.62em; font-weight:800; color:var(--brass-light);">(You)</span>`
                         : '';
+                    // Non-bot players get a small pencil icon to rename
+                    // themselves mid-game (local hotseat) — bots can't be
+                    // renamed since their name isn't meaningful.
+                    const editBtn = p.isBot ? '' : `<button class="tag-edit-btn" onclick="editPlayerName('${c.name}')" title="Edit name">✎</button>`;
                     tag.innerHTML = `
                         <div class="tag-avatar">${initial}</div>
                         <div class="tag-info">
-                            <span class="tag-name">${p.name}${partnerBadge}${youBadge}</span>
+                            <div style="display:flex; align-items:center; min-width:0; width:100%;">
+                                <span class="tag-name" style="width:auto;">${p.name}${partnerBadge}${youBadge}</span>${editBtn}
+                            </div>
                             <span class="tag-status" id="status-${c.name}">Waiting</span>
                         </div>
-                        <div class="dice-box-tag" id="dice-${c.name}" onclick="onDiceClick('${c.name}')">${pipGrid(1)}</div>
+                        <div class="dice-box-tag" id="dice-${c.name}" onclick="onDiceClick('${c.name}')">${dice3dHTML()}</div>
                     `;
+                    diceCubeState[c.name] = { x: 0, y: 0 }; // fresh cube DOM — reset the rotation tracker to match
                 } else {
                     tag.style.display = 'none';
                 }
@@ -2707,24 +3010,18 @@
 
             gameState = 'ROLLING';
             playSound('roll');
-            const dice = document.getElementById(`dice-${color}`);
-            dice.classList.add('rolling');
+            // Real 3D tumble: the cube spins indefinitely (no fixed end
+            // face) for the duration below, then rotates to rest exactly on
+            // the actual rolled value — see spinDiceTo().
+            startDiceSpin(color);
 
             // Let the opponent's screen play the same tumbling animation live,
             // in real time, while the actual result is still being decided.
             if (isOnlineMode && window.LudoOnline) window.LudoOnline.pushDiceEvent(onlineRoomId, { color });
 
-            // Cycle random faces while the dice visually tumbles, so it reads as an
-            // actual roll settling on a result rather than an instant flip.
-            const cycle = setInterval(() => {
-                dice.innerHTML = pipGrid(Math.floor(Math.random() * 6) + 1);
-            }, 65);
-
             setTimeout(() => {
-                clearInterval(cycle);
-                dice.classList.remove('rolling');
                 currentRoll = Math.floor(Math.random() * 6) + 1;
-                dice.innerHTML = pipGrid(currentRoll);
+                spinDiceTo(color, currentRoll, 520 / gameSpeed);
 
                 if (currentRoll === 6) {
                     consecutiveSixes++;
@@ -2746,8 +3043,9 @@
                 }
 
                 checkTurnMoves();
-            }, 600 / gameSpeed);
+            }, 650 / gameSpeed);
         }
+
 
         // ─── BARRIER MODE HELPERS ───────────────────────────────────────────
         // A Barrier locks 2, 3, or 4 of the SAME colour's tokens together on
@@ -3380,10 +3678,48 @@
             saveResumeState();
         }
 
+        // ─── 3D pawn tokens ─────────────────────────────────────────────────
+        // Builds a classic cone-and-ball Ludo pawn as an inline SVG (glossy
+        // gradient body + head, subtle highlight) instead of the old flat
+        // coin. Each call gets its own gradient IDs (SVG ids must be unique
+        // per-document) so many pawns can render side by side safely.
+        const PAWN_PALETTE = {
+            Red:    { light: '#f87171', mid: '#dc2626', dark: '#7f1d1d' },
+            Green:  { light: '#4ade80', mid: '#16a34a', dark: '#14532d' },
+            Yellow: { light: '#fde047', mid: '#ca8a04', dark: '#713f12' },
+            Blue:   { light: '#60a5fa', mid: '#2563eb', dark: '#1e3a8a' }
+        };
+        let pawnSvgUid = 0;
+        function pawnSVG(color) {
+            const c = PAWN_PALETTE[color] || PAWN_PALETTE.Red;
+            const uid = 'pawn' + (pawnSvgUid++);
+            return `<svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <radialGradient id="${uid}b" cx="35%" cy="20%" r="90%">
+                        <stop offset="0%" stop-color="${c.light}"/>
+                        <stop offset="55%" stop-color="${c.mid}"/>
+                        <stop offset="100%" stop-color="${c.dark}"/>
+                    </radialGradient>
+                    <radialGradient id="${uid}h" cx="35%" cy="28%" r="75%">
+                        <stop offset="0%" stop-color="${c.light}"/>
+                        <stop offset="60%" stop-color="${c.mid}"/>
+                        <stop offset="100%" stop-color="${c.dark}"/>
+                    </radialGradient>
+                </defs>
+                <ellipse cx="50" cy="132" rx="30" ry="7" fill="rgba(0,0,0,0.32)"/>
+                <path d="M 24 128 C 18 128 18 118 22 100 L 36 60 C 30 56 28 50 28 44 L 72 44 C 72 50 70 56 64 60 L 78 100 C 82 118 82 128 76 128 Z" fill="url(#${uid}b)" stroke="rgba(0,0,0,0.35)" stroke-width="2"/>
+                <ellipse cx="50" cy="46" rx="14" ry="4" fill="${c.dark}" opacity="0.55"/>
+                <circle cx="50" cy="26" r="22" fill="url(#${uid}h)" stroke="rgba(0,0,0,0.35)" stroke-width="2"/>
+                <ellipse cx="41" cy="17" rx="7" ry="5" fill="#ffffff" opacity="0.55"/>
+                <ellipse cx="38" cy="90" rx="7" ry="20" fill="#ffffff" opacity="0.16"/>
+            </svg>`;
+        }
+
         function createTokenElement(t) {
             const tEl = document.createElement('div');
             tEl.id = `t-${t.id}`;
             tEl.className = `token token-${t.color.toLowerCase()}` + (t.barrier ? ' token-barrier' : '');
+            tEl.innerHTML = pawnSVG(t.color);
             tEl.onclick = (e) => {
                 e.stopPropagation();
                 handleTokenClick(t);
@@ -3520,82 +3856,29 @@
             }
         }
 
-        // Cosmetic-only: replays the opponent's dice tumbling live, so this
-        // device visually SEES the roll happen instead of jumping straight to
-        // a final number a moment later (that final number arrives right
+        // Cosmetic: replays the opponent's dice tumbling live, so this
+        // device visually SEES the roll happen instead of jumping straight
+        // to a final number a moment later (that final number arrives right
         // after via applyRemoteOnlineState's data.lastRoll, above).
         //
-        // GLITCH FIX: this animation and the real settled value used to
-        // arrive over the network completely independently. If the tumble's
-        // own local timeout finished before the real `lastRoll` value had
-        // arrived, it just stopped on whatever random face the last 65ms
-        // tick happened to leave behind — a number that had nothing to do
-        // with what was actually rolled. And if the real value arrived
-        // WHILE the tumble was still cycling, the tumble's next random tick
-        // would immediately overwrite the correct number again. Either way,
-        // the receiving device could end up showing the wrong face.
-        //
-        // Fix: track each color's animation as a tiny state machine. The
-        // dice only ever stops on ONE of two things — the real value, once
-        // it's known — never on a random leftover tick. If the real value
-        // hasn't arrived yet when the minimum tumble time elapses, the
-        // animation just keeps spinning (instead of stopping on a guess)
-        // until receiveRemoteDiceValue() supplies it.
-        const diceAnimState = {}; // color -> { interval, minTimeDone, finalValue }
-
+        // GLITCH FIX (now structural, not just patched): the 3D cube starts
+        // an INDEFINITE tumble here — no fixed end time, no guessed value.
+        // It is physically incapable of settling on a wrong number, because
+        // nothing makes it stop spinning except receiveRemoteDiceValue()
+        // being called with the real result below. There's no longer a
+        // race to get right — there's simply nothing to race.
         function applyRemoteDiceEvent(data) {
             if (!data || !isOnlineMode) return;
             if (data.writer && window.LudoOnline && data.writer === window.LudoOnline.getUid()) return;
-            const color = data.color;
-            const dice = document.getElementById(`dice-${color}`);
-            if (!dice) return;
-
-            // A fresh roll event for this color always supersedes whatever
-            // animation state (and stray final value) was left behind.
-            if (diceAnimState[color] && diceAnimState[color].interval) {
-                clearInterval(diceAnimState[color].interval);
-            }
-            dice.classList.add('rolling');
-            const state = { interval: null, minTimeDone: false, finalValue: null };
-            diceAnimState[color] = state;
-            state.interval = setInterval(() => {
-                dice.innerHTML = pipGrid(Math.floor(Math.random() * 6) + 1);
-            }, 65);
-            setTimeout(() => {
-                state.minTimeDone = true;
-                settleDiceAnim(color);
-            }, 600 / gameSpeed);
-        }
-
-        // Called once BOTH conditions are met for a color: the minimum
-        // tumble time has elapsed AND the real rolled value is known. Only
-        // then does the dice actually stop — guaranteeing it never settles
-        // on anything other than the true result.
-        function settleDiceAnim(color) {
-            const state = diceAnimState[color];
-            if (!state || !state.minTimeDone || state.finalValue == null) return;
-            clearInterval(state.interval);
-            const dice = document.getElementById(`dice-${color}`);
-            if (dice) {
-                dice.classList.remove('rolling');
-                dice.innerHTML = pipGrid(state.finalValue);
-            }
-            delete diceAnimState[color];
+            startDiceSpin(data.color);
         }
 
         // Feeds the authoritative rolled value in for a color, from
-        // applyRemoteOnlineState's data.lastRoll. If a cosmetic tumble is
-        // still in flight for that color, hand it off to settle correctly;
-        // otherwise (event arrived very early, or there's no dice element
-        // mid-animation) just write it straight to the DOM.
+        // applyRemoteOnlineState's data.lastRoll. Stops the indefinite
+        // tumble (if still running — or settles immediately either way) and
+        // smoothly rotates the cube to rest on the true result.
         function receiveRemoteDiceValue(color, value) {
-            if (diceAnimState[color]) {
-                diceAnimState[color].finalValue = value;
-                settleDiceAnim(color);
-            } else {
-                const d = document.getElementById(`dice-${color}`);
-                if (d) d.innerHTML = pipGrid(value);
-            }
+            spinDiceTo(color, value, 480 / gameSpeed);
         }
 
         function attachOnlineRoomListeners(roomId) {
