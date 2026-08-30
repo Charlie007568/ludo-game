@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>Ludo Master Pro — Rahbar Engineering</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -72,10 +72,26 @@
         .diff-pill:active { transform: scale(0.96); }
         .diff-pill.active { background: linear-gradient(135deg, var(--brass-light), var(--brass) 55%, var(--brass-dark)); border-color: var(--brass-light); color: #1a1206; font-weight: 900; box-shadow: 0 2px 10px rgba(201,162,75,0.45), inset 0 1px 0 rgba(255,255,255,0.5); }
 
+        /* ── Coin wagering economy ─────────────────────────────────────── */
+        .coin-balance-card { background: linear-gradient(160deg, rgba(201,162,75,0.16), rgba(0,0,0,0.28)); border-color: rgba(245,215,127,0.4); }
+        .coin-balance-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+        .coin-balance-amount { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 800; color: var(--brass-light); text-shadow: 0 2px 10px rgba(201,162,75,0.35); }
+        .coin-balance-amount::before { content: '🪙 '; font-size: 0.9rem; }
+        .coin-balance-label { font-size: 0.56rem; color: var(--ivory-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+        .coin-claim-row { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+        .coin-claim-btn { padding: 8px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--green-light), var(--green) 60%, var(--green-dark)); color: #08240f; font-weight: 900; font-size: 0.68rem; cursor: pointer; box-shadow: 0 3px 10px rgba(22,163,74,0.4); }
+        .coin-claim-countdown { font-size: 0.58rem; color: var(--ivory-dim); text-align: center; }
+
+        .bet-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+        .bet-pill { flex: 1 1 30%; min-width: 58px; padding: 7px 4px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(201, 162, 75, 0.22); border-radius: 8px; color: var(--ivory-dim); font-size: 0.64rem; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.15s; }
+        .bet-pill:active { transform: scale(0.96); }
+        .bet-pill.active { background: linear-gradient(135deg, var(--brass-light), var(--brass) 55%, var(--brass-dark)); border-color: var(--brass-light); color: #1a1206; font-weight: 900; box-shadow: 0 2px 10px rgba(201,162,75,0.45), inset 0 1px 0 rgba(255,255,255,0.5); }
+        .bet-pill[disabled] { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
         .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .player-slot label { font-size: 0.58rem; letter-spacing: 0.6px; text-transform: uppercase; color: var(--ivory-dim); font-weight: 700; display: flex; align-items: center; gap: 4px; margin-bottom: 3px; }
         .player-slot label::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 5px currentColor; }
-        .player-slot input { width: 100%; padding: 7px 9px; border-radius: 8px; border: 1px solid rgba(201,162,75,0.28); background: rgba(0,0,0,0.42); color: var(--ivory); outline: none; font-size: 0.72rem; font-weight: 600; transition: border-color 0.15s; }
+        .player-slot input { width: 100%; padding: 7px 9px; border-radius: 8px; border: 1px solid rgba(201,162,75,0.28); background: rgba(0,0,0,0.42); color: var(--ivory); outline: none; font-size: 16px; font-weight: 600; transition: border-color 0.15s; }
         .player-slot input:focus { border-color: var(--brass-light); }
 
         .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
@@ -114,10 +130,10 @@
         .onl-id-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .onl-id-pill { font-family: 'Manrope', sans-serif; font-weight: 900; letter-spacing: 1.5px; font-size: 0.82rem; color: var(--brass-light); background: rgba(0,0,0,0.4); border: 1px dashed rgba(201,162,75,0.4); border-radius: 8px; padding: 6px 10px; }
         .onl-copy-btn { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(201,162,75,0.35); background: rgba(255,255,255,0.06); color: var(--ivory-dim); font-size: 0.6rem; font-weight: 800; text-transform: uppercase; cursor: pointer; }
-        .onl-name-input { width: 100%; margin-top: 8px; padding: 7px 9px; border-radius: 8px; border: 1px solid rgba(201,162,75,0.28); background: rgba(0,0,0,0.42); color: var(--ivory); outline: none; font-size: 0.72rem; font-weight: 700; }
+        .onl-name-input { width: 100%; margin-top: 8px; padding: 7px 9px; border-radius: 8px; border: 1px solid rgba(201,162,75,0.28); background: rgba(0,0,0,0.42); color: var(--ivory); outline: none; font-size: 16px; font-weight: 700; }
         .onl-hint { font-size: 0.56rem; color: var(--ivory-dim); margin-top: 6px; line-height: 1.5; }
         .onl-invite-row { display: flex; gap: 6px; margin-top: 8px; }
-        .onl-invite-row input { flex: 1; padding: 7px 9px; border-radius: 8px; border: 1px solid rgba(201,162,75,0.28); background: rgba(0,0,0,0.42); color: var(--ivory); outline: none; font-size: 0.72rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        .onl-invite-row input { flex: 1; padding: 7px 9px; border-radius: 8px; border: 1px solid rgba(201,162,75,0.28); background: rgba(0,0,0,0.42); color: var(--ivory); outline: none; font-size: 16px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
         .onl-invite-row button { padding: 7px 14px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--brass-light), var(--brass) 60%, var(--brass-dark)); color: #1a1206; font-weight: 900; font-size: 0.66rem; cursor: pointer; white-space: nowrap; }
         .onl-list { max-height: 220px; overflow-y: auto; margin-top: 4px; }
         .onl-player-row { display: flex; align-items: center; gap: 8px; padding: 8px 6px; border-bottom: 1px solid rgba(201,162,75,0.12); }
@@ -164,7 +180,7 @@
         #bugreport-modal { display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 280; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
         #bugreport-modal .btn { display: inline-block; width: 100%; }
         .bugrep-card { background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); border: 1px solid rgba(248,113,113,0.4); border-radius: 20px; padding: 24px 22px; max-width: 320px; width: 100%; text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.7); animation: slideIn 0.4s cubic-bezier(.2,.8,.2,1); }
-        .bugrep-textarea { width: 100%; min-height: 96px; margin: 12px 0 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(201,162,75,0.3); background: rgba(0,0,0,0.42); color: var(--ivory); font-size: 0.78rem; font-family: 'Manrope', sans-serif; resize: vertical; outline: none; }
+        .bugrep-textarea { width: 100%; min-height: 96px; margin: 12px 0 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(201,162,75,0.3); background: rgba(0,0,0,0.42); color: var(--ivory); font-size: 16px; font-family: 'Manrope', sans-serif; resize: vertical; outline: none; }
         .bugrep-textarea:focus { border-color: var(--red-light); }
         .bugrep-count { font-size: 0.58rem; color: var(--ivory-dim); text-align: right; margin-bottom: 10px; }
 
@@ -192,7 +208,7 @@
         .chat-emoji-strip { display: flex; gap: 6px; padding: 8px 12px; overflow-x: auto; border-top: 1px solid rgba(255,255,255,0.06); }
         .chat-emoji-strip button { flex-shrink: 0; font-size: 1.3rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 4px 8px; cursor: pointer; }
         .chat-input-row { display: flex; gap: 8px; padding: 10px 12px; }
-        .chat-input-row input { flex: 1; padding: 9px 12px; border-radius: 20px; border: 1px solid rgba(201,162,75,0.28); background: rgba(255,255,255,0.05); color: var(--ivory); outline: none; font-size: 0.76rem; }
+        .chat-input-row input { flex: 1; padding: 9px 12px; border-radius: 20px; border: 1px solid rgba(201,162,75,0.28); background: rgba(255,255,255,0.05); color: var(--ivory); outline: none; font-size: 16px; }
         .chat-input-row button { padding: 9px 16px; border-radius: 20px; border: none; background: linear-gradient(135deg, var(--brass-light), var(--brass) 60%, var(--brass-dark)); color: #1a1206; font-weight: 900; font-size: 0.72rem; cursor: pointer; }
 
         /* Floating emoji reaction — pops briefly over the sender's scoreboard
@@ -337,6 +353,16 @@
             grid-row: 7 / 10; grid-column: 7 / 10; position: relative; border: 2px solid #0f172a;
             background: conic-gradient(from 45deg, var(--green) 0 90deg, var(--yellow) 90deg 180deg, var(--blue) 180deg 270deg, var(--red) 270deg 360deg);
             box-shadow: inset 0 0 10px rgba(0,0,0,0.35);
+            /* FIX: finished tokens were appended here as plain absolute-
+               positioned children with no top/left offset, so the browser
+               fell back to their "static" flow position — the box's
+               top-left corner — which is exactly why every piece that
+               reached HOME visually piled up in the corner instead of
+               sitting in the middle of the star. Every other board cell
+               (.cell, below) already centers its children with flex; this
+               brings the center home triangle in line with that so
+               finished tokens land dead-center, same as everywhere else. */
+            display: flex; justify-content: center; align-items: center;
         }
         .center-home-cell::after {
             content: '★'; position: absolute; inset: 0; display: flex; justify-content: center; align-items: center;
@@ -365,7 +391,7 @@
 
         /* 3D TOKENS WITH GLOSS + CENTER "HOLE" SO SAFE-SPOT STARS PEEK THROUGH */
         .token {
-            width: 88%; height: 88%; max-width: 33px; max-height: 33px; border-radius: 50%;
+            width: 96%; height: 96%; max-width: 42px; max-height: 42px; border-radius: 50%;
             border: 2.5px solid #ffffff; box-shadow: 0 4px 9px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.2), inset 0 2px 3px rgba(255,255,255,0.8), inset 0 -2px 3px rgba(0,0,0,0.5);
             cursor: pointer; z-index: 10; position: absolute; display: flex; justify-content: center; align-items: center;
             transition: transform calc(0.16s / var(--speed-factor)) cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
@@ -490,6 +516,20 @@
         <p class="brand-eyebrow">Rahbar Engineering Presents</p>
         <h1 class="title-text">LUDO Master Pro</h1>
         <div class="title-rule"></div>
+
+        <div class="dash-card coin-balance-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🪙 Your Coins</span>
+            </div>
+            <div class="coin-balance-row">
+                <span class="coin-balance-amount" id="menu-coin-balance">5,000</span>
+                <span class="coin-balance-label">used for Online coin matches</span>
+            </div>
+            <div class="coin-claim-row" id="coin-claim-row" style="display:none;">
+                <button class="coin-claim-btn" id="coin-claim-btn" onclick="handleClaimFreeCoins()">Claim Free 5,000 Coins</button>
+                <span class="coin-claim-countdown" id="coin-claim-countdown"></span>
+            </div>
+        </div>
 
         <div class="dash-card">
             <div class="dash-card-head">
@@ -621,6 +661,21 @@
 
         <div class="dash-card">
             <div class="dash-card-head">
+                <span class="dash-card-title">🪙 Coin Bet (for requests you send)</span>
+            </div>
+            <div class="bet-pills" id="onl-bet-pills">
+                <div class="bet-pill active" data-bet="0" onclick="setOnlineBetSetting(0, this)">Free</div>
+                <div class="bet-pill" data-bet="100" onclick="setOnlineBetSetting(100, this)">100</div>
+                <div class="bet-pill" data-bet="500" onclick="setOnlineBetSetting(500, this)">500</div>
+                <div class="bet-pill" data-bet="1000" onclick="setOnlineBetSetting(1000, this)">1,000</div>
+                <div class="bet-pill" data-bet="2000" onclick="setOnlineBetSetting(2000, this)">2,000</div>
+                <div class="bet-pill" data-bet="5000" onclick="setOnlineBetSetting(5000, this)">All-in</div>
+            </div>
+            <p class="onl-hint">Winner takes the whole pot (both stakes). Your balance: <span id="onl-bet-balance">🪙 5,000</span></p>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-card-head">
                 <span class="dash-card-title">✉️ Invite By ID</span>
             </div>
             <div class="onl-invite-row">
@@ -638,6 +693,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- ONLINE MULTIPLAYER POPUPS — kept OUTSIDE every screen div (menu/
          online-screen/game-screen) on purpose: these use position:fixed to
@@ -733,6 +789,7 @@
             <div class="game-header">
                 <div class="mini-brand" id="game-title-label">Ludo Master Pro</div>
                 <div class="header-actions">
+                    <button class="btn-exit" id="sound-toggle-btn" onclick="toggleSound()" style="min-height:auto; padding:9px 12px;">🔊</button>
                     <button class="chat-toggle-btn" id="online-chat-toggle-btn" onclick="toggleOnlineChat()">
                         💬 Chat
                         <span class="chat-unread-dot" id="online-chat-unread">0</span>
@@ -822,7 +879,7 @@
         import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getDatabase, ref, set, update, remove, onDisconnect, serverTimestamp, onValue, get, off, push, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, update, remove, onDisconnect, serverTimestamp, onValue, get, off, push, query, limitToLast, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey:            "AIzaSyDPYuTSyVY5_I9DoAUg6NCkZ_3ERpZ705M",
@@ -1038,6 +1095,39 @@
             } catch (e) { console.error('[Device tracking] setup failed:', e); }
         }
         window.registerPresenceIfReady = registerPresenceIfReady; // called from revealMenu() below
+
+        // ─── BUG FIX: "online player only shows on my own device" ──────────
+        // presence/, devices/{id}, and lm_online/users/{uid} were only ever
+        // written to `online:true` ONCE, right after the very first sign-in,
+        // with an onDisconnect() hook armed for that ONE connection. On
+        // mobile that first connection is fragile — the OS backgrounding the
+        // app, the screen locking, or just a brief network blip all drop the
+        // realtime socket. The instant that happens, Firebase's SERVER runs
+        // the armed onDisconnect and flips the record to offline — correctly!
+        // But when the app comes back to the foreground and reconnects, nothing
+        // ever wrote `online:true` again (onAuthStateChanged doesn't fire a
+        // second time for an already-signed-in session) and nothing re-armed
+        // onDisconnect for the NEW connection. From that point on the player
+        // keeps using the app normally on their own screen, but every other
+        // player's device — reading the server record — sees them as
+        // permanently offline. That's exactly the reported symptom: a real
+        // online player never appearing in anyone else's list.
+        //
+        // The fix is the standard Firebase presence pattern: watch the
+        // special `.info/connected` path, which flips to `true` on the
+        // INITIAL connect and every single reconnect after that, and
+        // re-run the "I'm online" writes + re-arm onDisconnect every time.
+        let rtdbConnected = false;
+        onValue(ref(rtdb, '.info/connected'), (snap) => {
+            rtdbConnected = snap.val() === true;
+            if (!rtdbConnected) return;
+            if (presenceUid) {
+                presenceRegistered = false; // force re-registration below
+                registerPresenceIfReady();
+            }
+            if (onlineUid) reaffirmOnlineIdentity();
+        });
+
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 presenceUid = user.uid;
@@ -1352,9 +1442,22 @@
             if (!uid) return;
             onlineUid = uid;
             const userRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`);
-            set(userRef, {
-                uid: onlineUid, name: onlineName, publicId: onlinePublicId,
-                online: true, status: 'idle', roomId: null, updatedAt: serverTimestamp()
+            // Use update(), not set(): set() blindly overwrites the WHOLE
+            // record every time the app opens, which used to wipe out this
+            // player's coin balance/coinsZeroAt back to nothing on every
+            // single reload. get() first so a returning player's coins are
+            // only initialized once, never reset.
+            get(userRef).then(snap => {
+                const existing = snap.exists() ? snap.val() : null;
+                const base = {
+                    uid: onlineUid, name: onlineName, publicId: onlinePublicId,
+                    online: true, status: 'idle', roomId: null, updatedAt: serverTimestamp()
+                };
+                if (!existing || typeof existing.coins !== 'number') {
+                    base.coins = 5000;
+                    base.coinsZeroAt = null;
+                }
+                return update(userRef, base);
             }).catch(err => _onlineReportError('write:users', err));
             set(ref(rtdb, `${ONLINE_ROOT}/idIndex/${onlinePublicId}`), onlineUid).catch(err => _onlineReportError('write:idIndex', err));
             // If the tab/app dies without a clean goodbye, the server itself
@@ -1363,6 +1466,18 @@
             window.dispatchEvent(new CustomEvent('lm-online-ready', {
                 detail: { uid: onlineUid, name: onlineName, publicId: onlinePublicId }
             }));
+        }
+
+        // Re-run on every reconnect (see the `.info/connected` watcher
+        // above) — flips this player back to `online:true` and re-arms the
+        // onDisconnect hook for the NEW connection, without touching
+        // status/roomId/coins so an in-progress match or balance is never
+        // disturbed by a brief network blip.
+        function reaffirmOnlineIdentity() {
+            if (!onlineUid) return;
+            const userRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`);
+            update(userRef, { online: true, updatedAt: serverTimestamp() }).catch(() => {});
+            onDisconnect(userRef).update({ online: false, status: 'offline' }).catch(() => {});
         }
 
         // Surfaces a Firebase error instead of letting it fail silently
@@ -1433,18 +1548,22 @@
                 } catch (e) { return null; }
             },
 
-            // Sends a match request to targetUid. Returns the requestId so the
-            // caller can listen for the response / cancel it later.
-            sendRequest(targetUid, mode) {
+            // Sends a match request to targetUid. `bet` is an optional coin
+            // wager (0 = free match) both sides agree to by sending/accepting.
+            // Returns the requestId so the caller can listen for the
+            // response / cancel it later.
+            sendRequest(targetUid, mode, bet) {
                 const reqId = 'r' + Date.now() + '_' + Math.floor(Math.random() * 9999);
                 const roomId = 'room_' + onlineUid.slice(0, 6) + '_' + Date.now();
                 const payload = {
                     fromUid: onlineUid, fromName: onlineName, fromPublicId: onlinePublicId,
-                    mode: mode === 'barrier' ? 'barrier' : 'normal', roomId, createdAt: serverTimestamp()
+                    mode: mode === 'barrier' ? 'barrier' : 'normal',
+                    bet: Math.max(0, Math.floor(Number(bet) || 0)),
+                    roomId, createdAt: serverTimestamp()
                 };
                 set(ref(rtdb, `${ONLINE_ROOT}/requests/${targetUid}/${reqId}`), payload).catch(err => _onlineReportError('write', err));
                 update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'pending' }).catch(err => _onlineReportError('write', err));
-                return { reqId, roomId };
+                return { reqId, roomId, bet: payload.bet };
             },
 
             cancelRequest(targetUid, reqId) {
@@ -1465,6 +1584,7 @@
             acceptRequest(reqId, req) {
                 const room = {
                     mode: req.mode,
+                    bet: Math.max(0, Math.floor(Number(req.bet) || 0)),
                     players: {
                         Red:    { uid: req.fromUid, name: req.fromName },
                         Yellow: { uid: onlineUid,   name: onlineName }
@@ -1472,7 +1592,7 @@
                     status: 'active', createdAt: serverTimestamp()
                 };
                 set(ref(rtdb, `${ONLINE_ROOT}/rooms/${req.roomId}`), room).catch(err => _onlineReportError('write', err));
-                set(ref(rtdb, `${ONLINE_ROOT}/requestResponses/${req.fromUid}/${reqId}`), { status: 'accepted', roomId: req.roomId }).catch(err => _onlineReportError('write', err));
+                set(ref(rtdb, `${ONLINE_ROOT}/requestResponses/${req.fromUid}/${reqId}`), { status: 'accepted', roomId: req.roomId, bet: room.bet }).catch(err => _onlineReportError('write', err));
                 remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(err => _onlineReportError('write', err));
                 update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'in_game', roomId: req.roomId }).catch(err => _onlineReportError('write', err));
                 update(ref(rtdb, `${ONLINE_ROOT}/users/${req.fromUid}`), { status: 'in_game', roomId: req.roomId }).catch(err => _onlineReportError('write', err));
@@ -1564,7 +1684,89 @@
                 return () => { try { off(q); } catch (e) {} delete _onlineListenerRefs[`chat/${roomId}`]; };
             },
 
-            getUid() { return onlineUid; }
+            getUid() { return onlineUid; },
+
+            // ─── Coin wagering economy ───────────────────────────────────
+            // Every player starts with 5000 coins (see registerOnlineIdentity
+            // above — set once, never reset on returning visits). A bet
+            // amount can be attached to a match request; on accept, BOTH
+            // sides deduct the bet from their OWN balance independently (each
+            // client only ever writes its own uid's coins — never the
+            // opponent's — so this stays safe under standard "auth.uid ===
+            // $uid" security rules and never needs a race-prone cross-write).
+            // The winner's own device credits itself the full pot (2× bet)
+            // once the match ends — see endGame()/handleOpponentLeftOnline()
+            // in the game-logic script below.
+            listenCoins(cb) {
+                return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}/coins`, val => cb(typeof val === 'number' ? val : 5000));
+            },
+
+            listenCoinsZeroAt(cb) {
+                return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}/coinsZeroAt`, val => cb(val || null));
+            },
+
+            // Looks up another player's CURRENT coin balance (used to check
+            // an incoming bet request is actually affordable for them before
+            // showing an Accept button that would fail).
+            async getCoinsFor(uid) {
+                try {
+                    const snap = await get(ref(rtdb, `${ONLINE_ROOT}/users/${uid}/coins`));
+                    return snap.exists() && typeof snap.val() === 'number' ? snap.val() : 5000;
+                } catch (e) { return 5000; }
+            },
+
+            // Atomically subtracts `amount` from MY OWN balance. Refuses
+            // (returns false) if the balance is insufficient — runTransaction
+            // aborts by returning `undefined` from the updater, which is
+            // exactly what stops a double-spend if this ever ran twice in
+            // quick succession (e.g. a flaky double-tap on Accept).
+            async deductCoins(amount) {
+                if (!onlineUid || !amount) return true;
+                const coinsRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}/coins`);
+                try {
+                    const result = await runTransaction(coinsRef, (cur) => {
+                        const bal = typeof cur === 'number' ? cur : 5000;
+                        if (bal < amount) return; // abort — insufficient funds
+                        return bal - amount;
+                    });
+                    if (!result.committed) return false;
+                    if (result.snapshot.val() === 0) {
+                        update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { coinsZeroAt: serverTimestamp() }).catch(() => {});
+                    }
+                    return true;
+                } catch (e) { _onlineReportError('coins:deduct', e); return false; }
+            },
+
+            // Atomically adds `amount` to MY OWN balance (winnings).
+            async creditCoins(amount) {
+                if (!onlineUid || !amount) return;
+                const coinsRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}/coins`);
+                try {
+                    await runTransaction(coinsRef, (cur) => (typeof cur === 'number' ? cur : 5000) + amount);
+                    update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { coinsZeroAt: null }).catch(() => {});
+                } catch (e) { _onlineReportError('coins:credit', e); }
+            },
+
+            // Grants the free 5000-coin refill — but ONLY if the balance is
+            // genuinely 0 and a full 24 hours have passed since it hit 0.
+            // Re-checked against the server-stored timestamp so a player
+            // can't just change their phone's clock to claim early.
+            async claimFreeCoins() {
+                if (!onlineUid) return { ok: false, reason: 'not-ready' };
+                try {
+                    const snap = await get(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`));
+                    const u = snap.exists() ? snap.val() : {};
+                    const bal = typeof u.coins === 'number' ? u.coins : 5000;
+                    if (bal > 0) return { ok: false, reason: 'not-empty' };
+                    const zeroAt = u.coinsZeroAt;
+                    if (!zeroAt) return { ok: false, reason: 'no-timer' };
+                    const elapsed = Date.now() - zeroAt;
+                    const DAY = 24 * 60 * 60 * 1000;
+                    if (elapsed < DAY) return { ok: false, reason: 'too-soon', remainingMs: DAY - elapsed };
+                    await update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { coins: 5000, coinsZeroAt: null });
+                    return { ok: true };
+                } catch (e) { _onlineReportError('coins:claim', e); return { ok: false, reason: 'error' }; }
+            }
         };
     </script>
 
@@ -1589,17 +1791,49 @@
             }
             function pinScroll() {
                 if (window.scrollX !== 0 || window.scrollY !== 0) window.scrollTo(0, 0);
+                if (document.documentElement.scrollTop !== 0) document.documentElement.scrollTop = 0;
+                if (document.body.scrollTop !== 0) document.body.scrollTop = 0;
+                // On some Android/Chrome builds, focusing an input inside a
+                // fixed-position layout still shifts the VISUAL viewport
+                // (visualViewport.offsetTop/pageTop) even though
+                // window.scrollY stays 0 — that's the "whole screen jumps
+                // up while typing in chat" bug. Undoing that offset by
+                // hand is what actually fixes it; the scrollTo(0,0) above
+                // alone doesn't touch this.
+                if (window.visualViewport && window.visualViewport.offsetTop) {
+                    document.body.style.transform = `translateY(${-window.visualViewport.offsetTop}px)`;
+                } else if (document.body.style.transform) {
+                    document.body.style.transform = '';
+                }
+            }
+            // A focused input/textarea triggers the browser's own
+            // "scroll/zoom the focused field into view" behaviour over
+            // several animation frames while the keyboard opens/closes —
+            // one-shot correction after a fixed delay isn't enough to
+            // catch every frame of that, so keep correcting for ~700ms.
+            let pinRaf = null, pinUntil = 0;
+            function pinScrollBurst(ms) {
+                pinUntil = Date.now() + ms;
+                if (pinRaf) return;
+                const tick = () => {
+                    pinScroll();
+                    if (Date.now() < pinUntil) { pinRaf = requestAnimationFrame(tick); }
+                    else { pinRaf = null; }
+                };
+                pinRaf = requestAnimationFrame(tick);
             }
             setAppVh();
-            window.addEventListener('resize', () => { setAppVh(); pinScroll(); });
-            window.addEventListener('orientationchange', () => { setAppVh(); pinScroll(); });
+            window.addEventListener('resize', () => { setAppVh(); pinScrollBurst(300); });
+            window.addEventListener('orientationchange', () => { setAppVh(); pinScrollBurst(500); });
             window.addEventListener('scroll', pinScroll, { passive: true });
             if (window.visualViewport) {
-                window.visualViewport.addEventListener('resize', () => { setAppVh(); pinScroll(); });
-                window.visualViewport.addEventListener('scroll', pinScroll);
+                window.visualViewport.addEventListener('resize', () => { setAppVh(); pinScrollBurst(300); });
+                window.visualViewport.addEventListener('scroll', () => pinScrollBurst(300));
             }
-            document.addEventListener('focusin', () => setTimeout(pinScroll, 60));
-            document.addEventListener('focusout', () => setTimeout(pinScroll, 60));
+            document.addEventListener('focusin', (e) => {
+                if (/^(INPUT|TEXTAREA)$/.test(e.target && e.target.tagName)) pinScrollBurst(700);
+            });
+            document.addEventListener('focusout', () => pinScrollBurst(400));
         })();
 
         let gameSpeed = 1;
@@ -1641,6 +1875,14 @@
         let onlineChatSeenIds = new Set();// message ids already rendered — lets us tell which are NEW on each update
         let onlineChatUnread = 0;         // unread count shown on the 💬 button while the panel is closed
 
+        // ─── Coin wagering state ────────────────────────────────────────────
+        let myCoins = 5000;               // locally cached balance, kept in sync by listenCoins()
+        let myCoinsZeroAt = null;         // server timestamp of when balance last hit 0 (for the 24h refill)
+        let onlineBetSetting = 0;         // lobby pill: coin bet attached to requests I SEND (0 = free)
+        let onlineBetAmount = 0;          // the AGREED bet for the CURRENT match (set once it starts)
+        let coinsDetach = null, coinsZeroDetach = null; // listener detach fns, attached once identity is ready
+        let claimCountdownTimer = null;   // interval id for the 24h free-refill countdown display
+
         const colors = [
             { name: "Red", hex: "#dc2626" },
             { name: "Green", hex: "#16a34a" },
@@ -1676,6 +1918,21 @@
 
         // AUDIO
         let audioCtx = null;
+        let soundEnabled = (function () {
+            try { return localStorage.getItem('lm_sound_enabled') !== '0'; } catch (e) { return true; }
+        })();
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            try { localStorage.setItem('lm_sound_enabled', soundEnabled ? '1' : '0'); } catch (e) {}
+            const btn = document.getElementById('sound-toggle-btn');
+            if (btn) btn.textContent = soundEnabled ? '🔊' : '🔇';
+            if (soundEnabled) playSound('step');
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('sound-toggle-btn');
+            if (btn) btn.textContent = soundEnabled ? '🔊' : '🔇';
+        });
+        let noiseBuffer = null; // shared white-noise buffer, generated once and reused for every "rattle"/"crash" sound
         function getAudioContext() {
             if (!audioCtx) {
                 const AudioClass = window.AudioContext || window.webkitAudioContext;
@@ -1683,7 +1940,32 @@
             }
             return audioCtx;
         }
+        function getNoiseBuffer(ctx) {
+            if (noiseBuffer) return noiseBuffer;
+            const len = ctx.sampleRate * 0.5;
+            const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+            noiseBuffer = buf;
+            return buf;
+        }
+        // A single short filtered noise "knock" — the building block for a
+        // realistic dice-in-a-cup rattle and for the token-capture crash.
+        // freq/q shape the tonal character (a hard wooden click vs a duller
+        // thud), dur controls how quickly it decays, vol controls loudness.
+        function playNoiseKnock(ctx, t0, freq, q, dur, vol) {
+            const src = ctx.createBufferSource();
+            src.buffer = getNoiseBuffer(ctx);
+            const filt = ctx.createBiquadFilter();
+            filt.type = 'bandpass'; filt.frequency.value = freq; filt.Q.value = q;
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(vol, t0);
+            g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+            src.connect(filt); filt.connect(g); g.connect(ctx.destination);
+            src.start(t0); src.stop(t0 + dur + 0.02);
+        }
         function playSound(type) {
+            if (!soundEnabled) return;
             const ctx = getAudioContext();
             if (!ctx) return;
             if (ctx.state === 'suspended') ctx.resume();
@@ -1692,19 +1974,35 @@
             osc.connect(gain); gain.connect(ctx.destination);
             const now = ctx.currentTime;
             if (type === 'roll') {
-                osc.type = 'triangle'; osc.frequency.setValueAtTime(220, now);
-                osc.frequency.exponentialRampToValueAtTime(420, now + 0.14);
-                gain.gain.setValueAtTime(0.5, now);
-                osc.start(now); osc.stop(now + 0.14);
+                // Authentic dice-in-a-cup rattle: a burst of irregular wooden
+                // "knocks" (filtered noise, not a pure tone) that speed up
+                // then settle, finishing with one slightly deeper "landing"
+                // knock — much closer to a real die tumbling than a single
+                // smooth pitch sweep.
+                let t = now;
+                const knocks = 7;
+                for (let i = 0; i < knocks; i++) {
+                    const progress = i / (knocks - 1);
+                    const freq = 1400 + Math.random() * 900 - progress * 300;
+                    playNoiseKnock(ctx, t, freq, 3.2, 0.06 + progress * 0.02, 0.5 - progress * 0.15);
+                    t += 0.045 + progress * 0.025 + Math.random() * 0.015;
+                }
+                // Final landing thud — lower, longer, more resonant.
+                playNoiseKnock(ctx, t + 0.02, 350, 1.4, 0.16, 0.55);
             } else if (type === 'step') {
                 osc.type = 'sine'; osc.frequency.setValueAtTime(580, now);
                 gain.gain.setValueAtTime(0.55, now);
                 osc.start(now); osc.stop(now + 0.07);
             } else if (type === 'cut') {
+                // Capture "smash" — a noise crash layered under the original
+                // descending tone, reading much more like a piece getting
+                // knocked off the board than a plain synth sweep.
                 osc.type = 'sawtooth'; osc.frequency.setValueAtTime(800, now);
                 osc.frequency.exponentialRampToValueAtTime(80, now + 0.28);
-                gain.gain.setValueAtTime(0.8, now);
+                gain.gain.setValueAtTime(0.6, now);
                 osc.start(now); osc.stop(now + 0.28);
+                playNoiseKnock(ctx, now, 900, 1.1, 0.22, 0.7);
+                playNoiseKnock(ctx, now + 0.03, 250, 1.6, 0.3, 0.5);
             } else if (type === 'star') {
                 osc.type = 'sine'; osc.frequency.setValueAtTime(950, now);
                 osc.frequency.exponentialRampToValueAtTime(1400, now + 0.16);
@@ -1733,6 +2031,25 @@
                 gain.gain.setValueAtTime(0.22, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
                 osc.start(now); osc.stop(now + 0.12);
+            } else if (type === 'coinWin') {
+                // A satisfying metallic coin "cha-ching" — a quick bright
+                // ascending arpeggio plus a shimmering high overtone.
+                [880, 1108, 1318, 1760].forEach((freq, i) => {
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.connect(g); g.connect(ctx.destination);
+                    o.type = 'triangle';
+                    const t0 = now + i * 0.07;
+                    o.frequency.setValueAtTime(freq, t0);
+                    g.gain.setValueAtTime(0.4, t0);
+                    g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.35);
+                    o.start(t0); o.stop(t0 + 0.35);
+                });
+                playNoiseKnock(ctx, now, 4200, 6, 0.4, 0.15);
+            } else if (type === 'bet') {
+                // A single low, confident "chip stack placed" tap — plays
+                // when a coin match is confirmed/started.
+                playNoiseKnock(ctx, now, 500, 2.2, 0.18, 0.5);
             }
         }
 
@@ -2031,6 +2348,8 @@
             document.getElementById('winner-modal').style.display = 'none';
             const forfeitSub = document.querySelector('.online-forfeit-sub');
             if (forfeitSub) forfeitSub.remove(); // clear the one-off "opponent left/forfeited" line, if shown
+            const coinBanner = document.querySelector('.coin-result-banner');
+            if (coinBanner) coinBanner.remove(); // clear the one-off coin-winnings line, if shown
             document.getElementById('menu-screen').style.display = 'block';
             gameState = 'IDLE';
             saveResumeState(); // game-screen is hidden now, so this clears the saved snapshot
@@ -2172,9 +2491,10 @@
                 const myTag = document.getElementById('tag-' + onlineMyColor);
                 const opponent = players.find(p => p.color !== onlineMyColor);
                 const otherTag = opponent ? document.getElementById('tag-' + opponent.color) : null;
-                // My own colour's card always sits bottom-left — right where
-                // my base now sits after the board rotation.
-                if (myTag) bottomRow.insertBefore(myTag, bottomRow.firstChild);
+                // My own tag+dice sits at the RIGHT of the bottom row (easy
+                // to reach/tap with a right thumb) — the opponent's sits at
+                // the left of the top row, mirroring it.
+                if (myTag) bottomRow.appendChild(myTag);
                 if (otherTag) topRow.insertBefore(otherTag, topRow.firstChild);
             } else {
                 // Local/hotseat/bot: board is never rotated, so restore the
@@ -3088,6 +3408,21 @@
             }
             document.getElementById('winner-title').innerText = title;
 
+            // ─── Coin wager settlement ──────────────────────────────────
+            // endGame() with no teamColors (Partner Mode never runs online)
+            // only ever fires on the device whose OWN move just finished all
+            // 4 tokens — i.e. this branch only executes on the winner's own
+            // device, so it's always safe to credit "myself" here. Each
+            // client only ever touches its own coin balance (never the
+            // opponent's) — see LudoOnline.creditCoins.
+            if (isOnlineMode && !teamColors && onlineBetAmount > 0 && winnersList[0] === onlineMyColor && window.LudoOnline) {
+                const winnings = onlineBetAmount * 2;
+                window.LudoOnline.creditCoins(winnings);
+                playSound('coinWin');
+                showCoinResultBanner(`🪙 You won ${winnings.toLocaleString()} coins!`);
+                onlineBetAmount = 0; // settled — never credit twice for this match
+            }
+
             // Let the opponent's device know the match is over and show them
             // the same winner popup — without this they'd be left staring at
             // a board that just stopped responding.
@@ -3096,6 +3431,22 @@
             // let the next reload land back on the menu instead of
             // re-opening an already-won board.
             saveResumeState();
+        }
+
+        // Shows a small line under the winner-modal title — used for both
+        // the coin-winnings banner (endGame) and the opponent-left forfeit
+        // subtitle (handleOpponentLeftOnline). Reuses the same element so
+        // the two never stack on top of each other.
+        function showCoinResultBanner(text) {
+            const winnerModal = document.getElementById('winner-modal');
+            let banner = winnerModal.querySelector('.coin-result-banner');
+            if (!banner) {
+                banner = document.createElement('p');
+                banner.className = 'coin-result-banner';
+                banner.style.cssText = 'font-size:0.78rem; font-weight:800; color:var(--brass-light); margin:-6px 0 14px;';
+                document.getElementById('winner-title').insertAdjacentElement('afterend', banner);
+            }
+            banner.textContent = text;
         }
 
         // =====================================================================
@@ -3149,8 +3500,15 @@
                 // reflect the exact number the opponent just rolled, on their
                 // dice, so it reads correctly instead of staying on "1".
                 if (data.lastRoll && data.lastRoll.color) {
-                    const d = document.getElementById(`dice-${data.lastRoll.color}`);
-                    if (d) d.innerHTML = pipGrid(data.lastRoll.value);
+                    // Hand the real settled value to the dice-animation
+                    // state machine (see applyRemoteDiceEvent/settleDiceAnim
+                    // below) instead of writing it straight to the DOM —
+                    // that's what used to cause the "shows a different
+                    // number than what was actually rolled" glitch: the
+                    // cosmetic tumble animation could still be running and
+                    // would overwrite this correct value with one more
+                    // random face a moment later.
+                    receiveRemoteDiceValue(data.lastRoll.color, data.lastRoll.value);
                 }
 
                 if (data.finished) {
@@ -3166,14 +3524,78 @@
         // device visually SEES the roll happen instead of jumping straight to
         // a final number a moment later (that final number arrives right
         // after via applyRemoteOnlineState's data.lastRoll, above).
+        //
+        // GLITCH FIX: this animation and the real settled value used to
+        // arrive over the network completely independently. If the tumble's
+        // own local timeout finished before the real `lastRoll` value had
+        // arrived, it just stopped on whatever random face the last 65ms
+        // tick happened to leave behind — a number that had nothing to do
+        // with what was actually rolled. And if the real value arrived
+        // WHILE the tumble was still cycling, the tumble's next random tick
+        // would immediately overwrite the correct number again. Either way,
+        // the receiving device could end up showing the wrong face.
+        //
+        // Fix: track each color's animation as a tiny state machine. The
+        // dice only ever stops on ONE of two things — the real value, once
+        // it's known — never on a random leftover tick. If the real value
+        // hasn't arrived yet when the minimum tumble time elapses, the
+        // animation just keeps spinning (instead of stopping on a guess)
+        // until receiveRemoteDiceValue() supplies it.
+        const diceAnimState = {}; // color -> { interval, minTimeDone, finalValue }
+
         function applyRemoteDiceEvent(data) {
             if (!data || !isOnlineMode) return;
             if (data.writer && window.LudoOnline && data.writer === window.LudoOnline.getUid()) return;
-            const dice = document.getElementById(`dice-${data.color}`);
+            const color = data.color;
+            const dice = document.getElementById(`dice-${color}`);
             if (!dice) return;
+
+            // A fresh roll event for this color always supersedes whatever
+            // animation state (and stray final value) was left behind.
+            if (diceAnimState[color] && diceAnimState[color].interval) {
+                clearInterval(diceAnimState[color].interval);
+            }
             dice.classList.add('rolling');
-            const cycle = setInterval(() => { dice.innerHTML = pipGrid(Math.floor(Math.random() * 6) + 1); }, 65);
-            setTimeout(() => { clearInterval(cycle); dice.classList.remove('rolling'); }, 600 / gameSpeed);
+            const state = { interval: null, minTimeDone: false, finalValue: null };
+            diceAnimState[color] = state;
+            state.interval = setInterval(() => {
+                dice.innerHTML = pipGrid(Math.floor(Math.random() * 6) + 1);
+            }, 65);
+            setTimeout(() => {
+                state.minTimeDone = true;
+                settleDiceAnim(color);
+            }, 600 / gameSpeed);
+        }
+
+        // Called once BOTH conditions are met for a color: the minimum
+        // tumble time has elapsed AND the real rolled value is known. Only
+        // then does the dice actually stop — guaranteeing it never settles
+        // on anything other than the true result.
+        function settleDiceAnim(color) {
+            const state = diceAnimState[color];
+            if (!state || !state.minTimeDone || state.finalValue == null) return;
+            clearInterval(state.interval);
+            const dice = document.getElementById(`dice-${color}`);
+            if (dice) {
+                dice.classList.remove('rolling');
+                dice.innerHTML = pipGrid(state.finalValue);
+            }
+            delete diceAnimState[color];
+        }
+
+        // Feeds the authoritative rolled value in for a color, from
+        // applyRemoteOnlineState's data.lastRoll. If a cosmetic tumble is
+        // still in flight for that color, hand it off to settle correctly;
+        // otherwise (event arrived very early, or there's no dice element
+        // mid-animation) just write it straight to the DOM.
+        function receiveRemoteDiceValue(color, value) {
+            if (diceAnimState[color]) {
+                diceAnimState[color].finalValue = value;
+                settleDiceAnim(color);
+            } else {
+                const d = document.getElementById(`dice-${color}`);
+                if (d) d.innerHTML = pipGrid(value);
+            }
         }
 
         function attachOnlineRoomListeners(roomId) {
@@ -3227,6 +3649,17 @@
             sub.textContent = subtitle;
             winnerModal.style.display = 'flex';
 
+            // Same coin settlement as a normal finish (see endGame): the
+            // player who STAYED — i.e. this device — wins the pot when the
+            // opponent leaves/disconnects mid-match.
+            if (onlineBetAmount > 0 && window.LudoOnline) {
+                const winnings = onlineBetAmount * 2;
+                window.LudoOnline.creditCoins(winnings);
+                playSound('coinWin');
+                showCoinResultBanner(`🪙 You won ${winnings.toLocaleString()} coins!`);
+                onlineBetAmount = 0;
+            }
+
             // The match is genuinely over now — stop treating this as a
             // live online game so goToMenu()/Play Again don't try to send
             // one more (redundant) leaveRoom() call for an already-ended room.
@@ -3251,6 +3684,7 @@
             onlineRoomId = null;
             onlineMyColor = null;
             onlineApplyingRemote = false;
+            onlineBetAmount = 0;
         }
 
         // Starts a live 2-player online match. Both devices call this
@@ -3258,7 +3692,7 @@
         // Yellow) with identical, deterministic starting data — so both
         // boards begin perfectly in sync without either side needing to wait
         // on the other's first network round-trip.
-        function startOnlineGame(myColor, roomId, mode, redName, yellowName) {
+        function startOnlineGame(myColor, roomId, mode, redName, yellowName, bet) {
             // Defensive: if this device was already mid-match in a DIFFERENT
             // online room (e.g. the player accepted a fresh request while
             // still playing a previous online game), properly tell that old
@@ -3280,6 +3714,13 @@
             onlineRoomId = roomId;
             onlineMyColor = myColor;
             onlineLeavingSelf = false;
+            onlineBetAmount = Math.max(0, Math.floor(Number(bet) || 0));
+
+            const titleEl = document.getElementById('game-title-label');
+            if (titleEl) titleEl.innerText = onlineBetAmount > 0
+                ? `Ludo Master Pro — 🪙 ${onlineBetAmount.toLocaleString()} Coin Match`
+                : 'Ludo Master Pro';
+            if (onlineBetAmount > 0) playSound('bet');
 
             players = [
                 { name: redName || 'Player 1', color: 'Red', hex: colors[0].hex, isBot: false },
@@ -3294,6 +3735,7 @@
             updateTurnUI();
             attachOnlineRoomListeners(roomId);
         }
+
 
         // ─── In-match chat + emoji — real-time ─────────────────────────────
         function teardownOnlineChat() {
@@ -3443,6 +3885,80 @@
         }
         startGlobalOnlineRequestWatcher();
 
+        // Starts the live coin-balance + 24h-refill-timer listeners the
+        // moment identity is ready — same "always watching, not just while
+        // the lobby is open" approach as the request watcher above, so the
+        // menu's coin card and the online lobby's bet pills always reflect
+        // the true balance immediately.
+        function startCoinListeners() {
+            if (coinsDetach) return; // already watching
+            const prof = window.LudoOnline && window.LudoOnline.getProfile();
+            if (!prof || !prof.uid) { setTimeout(startCoinListeners, 300); return; }
+            coinsDetach = window.LudoOnline.listenCoins(bal => {
+                myCoins = bal;
+                renderCoinUI();
+            });
+            coinsZeroDetach = window.LudoOnline.listenCoinsZeroAt(zeroAt => {
+                myCoinsZeroAt = zeroAt;
+                renderCoinUI();
+            });
+        }
+        startCoinListeners();
+
+        function renderCoinUI() {
+            const fmt = myCoins.toLocaleString();
+            const menuBal = document.getElementById('menu-coin-balance');
+            if (menuBal) menuBal.textContent = fmt;
+            const lobbyBal = document.getElementById('onl-bet-balance');
+            if (lobbyBal) lobbyBal.textContent = '🪙 ' + fmt;
+            refreshBetPillAffordability();
+
+            const claimRow = document.getElementById('coin-claim-row');
+            if (!claimRow) return;
+            if (claimCountdownTimer) { clearInterval(claimCountdownTimer); claimCountdownTimer = null; }
+
+            if (myCoins > 0 || !myCoinsZeroAt) {
+                claimRow.style.display = 'none';
+                return;
+            }
+            claimRow.style.display = 'flex';
+            const DAY = 24 * 60 * 60 * 1000;
+            const btn = document.getElementById('coin-claim-btn');
+            const countdownEl = document.getElementById('coin-claim-countdown');
+            const tick = () => {
+                const remaining = DAY - (Date.now() - myCoinsZeroAt);
+                if (remaining <= 0) {
+                    btn.disabled = false;
+                    btn.textContent = 'Claim Free 5,000 Coins';
+                    countdownEl.textContent = 'Ready to claim!';
+                    if (claimCountdownTimer) { clearInterval(claimCountdownTimer); claimCountdownTimer = null; }
+                } else {
+                    btn.disabled = true;
+                    btn.textContent = 'Claim Free 5,000 Coins';
+                    const h = Math.floor(remaining / 3600000);
+                    const m = Math.floor((remaining % 3600000) / 60000);
+                    const s = Math.floor((remaining % 60000) / 1000);
+                    countdownEl.textContent = `Available in ${h}h ${m}m ${s}s`;
+                }
+            };
+            tick();
+            claimCountdownTimer = setInterval(tick, 1000);
+        }
+
+        function handleClaimFreeCoins() {
+            if (!window.LudoOnline) return;
+            window.LudoOnline.claimFreeCoins().then(res => {
+                if (!res.ok && res.reason === 'too-soon') {
+                    // Timer just hasn't finished — renderCoinUI's own
+                    // countdown already reflects this, nothing else to do.
+                    return;
+                }
+                // On success (or any other outcome) the live listenCoins/
+                // listenCoinsZeroAt subscriptions above pick up the change
+                // automatically and re-render.
+            });
+        }
+
         function openOnlineScreen() {
             document.getElementById('menu-screen').style.display = 'none';
             document.getElementById('online-screen').style.display = 'block';
@@ -3500,6 +4016,32 @@
             onlineModeSetting = mode;
             document.querySelectorAll('.onl-mode-pill').forEach(p => p.classList.remove('active'));
             el.classList.add('active');
+        }
+
+        function setOnlineBetSetting(bet, el) {
+            if (el.hasAttribute('disabled')) return; // can't afford this stake
+            onlineBetSetting = bet;
+            document.querySelectorAll('.bet-pill').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        // Greys out any bet pill above the current balance — you can't wager
+        // more coins than you actually have.
+        function refreshBetPillAffordability() {
+            document.querySelectorAll('.bet-pill').forEach(p => {
+                const amt = Number(p.dataset.bet || 0);
+                if (amt > myCoins) {
+                    p.setAttribute('disabled', 'disabled');
+                    if (p.classList.contains('active')) {
+                        p.classList.remove('active');
+                        onlineBetSetting = 0;
+                        const freePill = document.querySelector('.bet-pill[data-bet="0"]');
+                        if (freePill) freePill.classList.add('active');
+                    }
+                } else {
+                    p.removeAttribute('disabled');
+                }
+            });
         }
 
         // Builds the list purely with DOM APIs (no inline onclick with
@@ -3567,11 +4109,17 @@
         }
 
         function sendOnlineInvite(targetUid, targetName) {
-            const { reqId, roomId } = window.LudoOnline.sendRequest(targetUid, onlineModeSetting);
-            onlinePendingReq = { reqId, roomId, targetUid, targetName };
+            if (onlineBetSetting > myCoins) {
+                showOnlineNotice('🪙', 'Not Enough Coins', `You don't have enough coins for a ${onlineBetSetting.toLocaleString()} coin match.`, null);
+                return;
+            }
+            const { reqId, roomId, bet } = window.LudoOnline.sendRequest(targetUid, onlineModeSetting, onlineBetSetting);
+            onlinePendingReq = { reqId, roomId, targetUid, targetName, bet };
 
             document.getElementById('online-waiting-title').innerText = 'Waiting for response…';
-            document.getElementById('online-waiting-sub').innerText = `Request sent to ${targetName}. Hang tight.`;
+            document.getElementById('online-waiting-sub').innerText = bet > 0
+                ? `Request sent to ${targetName} for 🪙 ${bet.toLocaleString()} coins. Hang tight.`
+                : `Request sent to ${targetName}. Hang tight.`;
             document.getElementById('online-waiting-modal').style.display = 'flex';
 
             if (onlineResponseDetach) { onlineResponseDetach(); onlineResponseDetach = null; }
@@ -3581,7 +4129,19 @@
                 if (!onlinePendingReq) return;
                 if (resp.status === 'accepted') {
                     const myProf = window.LudoOnline.getProfile();
-                    startOnlineGame('Red', resp.roomId || onlinePendingReq.roomId, onlineModeSetting, myProf.name, targetName);
+                    const agreedBet = Math.max(0, Math.floor(Number(resp.bet) || 0));
+                    const startMatch = () => startOnlineGame('Red', resp.roomId || onlinePendingReq.roomId, onlineModeSetting, myProf.name, targetName, agreedBet);
+                    if (agreedBet > 0) {
+                        window.LudoOnline.deductCoins(agreedBet).then(ok => {
+                            if (!ok) {
+                                showOnlineNotice('🪙', 'Not Enough Coins', `You no longer have enough coins to cover this ${agreedBet.toLocaleString()} coin match.`, null);
+                                return;
+                            }
+                            startMatch();
+                        });
+                    } else {
+                        startMatch();
+                    }
                 } else if (resp.status === 'declined') {
                     if (resp.reason === 'busy') {
                         showOnlineNotice('⏳', 'Player Busy', `${targetName} is currently busy playing another match and couldn't accept right now.`, null);
@@ -3616,8 +4176,18 @@
             const req = reqs[reqId];
             onlineActiveIncoming = { reqId, req };
             const busy = document.getElementById('game-screen').style.display !== 'none';
-            let msg = `${req.fromName} wants to play a ${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'} match with you.`;
+            const bet = Math.max(0, Math.floor(Number(req.bet) || 0));
+            let msg = bet > 0
+                ? `${req.fromName} wants to play a ${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'} match with you for 🪙 ${bet.toLocaleString()} coins.`
+                : `${req.fromName} wants to play a ${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'} match with you.`;
             if (busy) msg += ' You are currently in a game — accepting will end it.';
+            const acceptBtn = document.getElementById('online-request-accept-btn');
+            if (bet > myCoins) {
+                msg += ` You need 🪙 ${bet.toLocaleString()} coins to accept but only have ${myCoins.toLocaleString()}.`;
+                if (acceptBtn) { acceptBtn.disabled = true; acceptBtn.style.opacity = '0.4'; }
+            } else if (acceptBtn) {
+                acceptBtn.disabled = false; acceptBtn.style.opacity = '';
+            }
             document.getElementById('online-request-text').innerText = msg;
             document.getElementById('online-request-modal').style.display = 'flex';
         }
@@ -3625,17 +4195,33 @@
         document.getElementById('online-request-accept-btn') && (document.getElementById('online-request-accept-btn').onclick = function () {
             if (!onlineActiveIncoming) return;
             const { reqId, req } = onlineActiveIncoming;
+            const bet = Math.max(0, Math.floor(Number(req.bet) || 0));
+            if (bet > myCoins) return; // button is disabled in this state, but guard anyway
             // Popped up mid-match (local or online)? Confirm before wiping it out.
             const busy = document.getElementById('game-screen').style.display !== 'none';
             if (busy && !confirm('You are currently in a game. Accept anyway and start the new match? Your current game will end.')) {
                 return; // leave the popup open — they can still Decline, or Accept again
             }
             document.getElementById('online-request-modal').style.display = 'none';
-            window.LudoOnline.acceptRequest(reqId, req);
             const myProf = window.LudoOnline.getProfile();
-            startOnlineGame('Yellow', req.roomId, req.mode, req.fromName, myProf.name);
+            const startMatch = () => {
+                window.LudoOnline.acceptRequest(reqId, req);
+                startOnlineGame('Yellow', req.roomId, req.mode, req.fromName, myProf.name, bet);
+            };
+            if (bet > 0) {
+                window.LudoOnline.deductCoins(bet).then(ok => {
+                    if (!ok) {
+                        showOnlineNotice('🪙', 'Not Enough Coins', `You no longer have enough coins to cover this ${bet.toLocaleString()} coin match.`, null);
+                        return;
+                    }
+                    startMatch();
+                });
+            } else {
+                startMatch();
+            }
             onlineActiveIncoming = null;
         });
+
 
         document.getElementById('online-request-decline-btn') && (document.getElementById('online-request-decline-btn').onclick = function () {
             if (!onlineActiveIncoming) return;
