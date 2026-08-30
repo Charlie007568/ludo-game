@@ -4998,36 +4998,83 @@
         // economy (client-authoritative via Firebase) — a real click opens
         // the ad in a new tab, and a minimum dwell-away time before crediting
         // guards against a reflex tab-switch-back counting as a "watch".
+        //
+        // BUG FIX: previously, if the ad tab/popup got blocked (very common
+        // inside an app WebView) or simply never triggered a
+        // visibilitychange event, the button would stay stuck on
+        // "Watching Ad…" forever — permanently disabled, looking "hidden"/
+        // broken to the player. Now: (1) a blocked popup is detected
+        // immediately and never enters the pending state at all, and (2) a
+        // safety timeout guarantees the button always comes back to normal
+        // even if no return-signal ever fires. Either way — closing the ad
+        // without really watching earns no coins, but the option itself
+        // never gets stuck.
         let _adWatchPending = false;
         let _adWatchClickedAt = 0;
+        let _adWatchSafetyTimer = null;
         const AD_MIN_AWAY_MS = 5000;
+        const AD_SAFETY_TIMEOUT_MS = 90000;
+
+        function resetAdWatchButton() {
+            const btn = document.getElementById('coin-ad-btn');
+            if (btn) { btn.disabled = false; btn.textContent = '🎬 Watch Ad for 500 Coins'; }
+        }
 
         function handleWatchAdForCoins() {
             if (_adWatchPending) return;
-            _adWatchPending = true;
-            _adWatchClickedAt = Date.now();
-            const btn = document.getElementById('coin-ad-btn');
-            if (btn) { btn.disabled = true; btn.textContent = '🎬 Watching Ad… come back here after'; }
 
             // Prefer the Admin Panel's dedicated Rewarded Ad URL (a Monetag
             // Direct Link/Smart Link is meant exactly for this "click → view
             // → return" flow). If the admin hasn't set one, fall back to
             // simply opening this game's own URL in a new tab — a real click
             // is what most ad networks' popunder/interstitial scripts (already
-              // injected via injectAdsIfNeeded) need in order to fire at all.
+            // injected via injectAdsIfNeeded) need in order to fire at all.
             const adUrl = (window._rewardAdUrl || '').trim();
-            try { window.open(adUrl || window.location.href, '_blank'); } catch (e) {}
+            let adWindow = null;
+            try { adWindow = window.open(adUrl || window.location.href, '_blank'); } catch (e) { adWindow = null; }
+
+            if (!adWindow) {
+                // Blocked by the browser/WebView's popup blocker — nothing
+                // actually opened, so there's nothing to "come back" from.
+                // Reset immediately instead of leaving the button stuck.
+                resetAdWatchButton();
+                alert('Could not open the ad. Please allow pop-ups for this app and try again.');
+                return;
+            }
+
+            _adWatchPending = true;
+            _adWatchClickedAt = Date.now();
+            const btn = document.getElementById('coin-ad-btn');
+            if (btn) { btn.disabled = true; btn.textContent = '🎬 Watching Ad… come back here after'; }
+
+            // Safety net — guarantees the button is never stuck, even if the
+            // browser never fires a visibilitychange/focus event for this
+            // tab (some in-app WebViews don't, when the "new tab" is really
+            // a separate Chrome Custom Tab / external browser).
+            if (_adWatchSafetyTimer) clearTimeout(_adWatchSafetyTimer);
+            _adWatchSafetyTimer = setTimeout(() => {
+                if (!_adWatchPending) return;
+                _adWatchPending = false;
+                resetAdWatchButton();
+            }, AD_SAFETY_TIMEOUT_MS);
+        }
+
+        function resolveAdWatchReturn() {
+            if (!_adWatchPending) return;
+            const elapsed = Date.now() - _adWatchClickedAt;
+            _adWatchPending = false;
+            if (_adWatchSafetyTimer) { clearTimeout(_adWatchSafetyTimer); _adWatchSafetyTimer = null; }
+            resetAdWatchButton();
+            if (elapsed < AD_MIN_AWAY_MS) return; // closed too quickly — didn't really watch, no coins
+            if (window.LudoOnline) window.LudoOnline.creditAdReward();
         }
 
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState !== 'visible' || !_adWatchPending) return;
-            const btn = document.getElementById('coin-ad-btn');
-            const elapsed = Date.now() - _adWatchClickedAt;
-            _adWatchPending = false;
-            if (btn) { btn.disabled = false; btn.textContent = '🎬 Watch Ad for 500 Coins'; }
-            if (elapsed < AD_MIN_AWAY_MS) return; // too quick — likely no real ad view happened
-            if (window.LudoOnline) window.LudoOnline.creditAdReward();
+            if (document.visibilityState === 'visible') resolveAdWatchReturn();
         });
+        // Extra fallback for WebViews that don't fire visibilitychange
+        // reliably on return from an external tab/browser.
+        window.addEventListener('focus', resolveAdWatchReturn);
 
         function openOnlineScreen() {
             document.getElementById('menu-screen').style.display = 'none';
