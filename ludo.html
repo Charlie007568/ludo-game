@@ -155,6 +155,17 @@
         .botcount-pill.active { background: linear-gradient(135deg, var(--brass-light), var(--brass) 55%, var(--brass-dark)); border-color: var(--brass-light); color: #1a1206; }
         #edit-name-modal .onl-modal-card { max-width: 300px; }
 
+        /* ── Persistent Account (Save Account / Login) modal ────────────── */
+        #account-modal {
+            display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 275; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+        }
+        #account-modal .onl-modal-card { max-width: 340px; max-height: 88vh; overflow-y: auto; }
+        .acct-tab-row { display: flex; gap: 6px; margin-bottom: 12px; }
+        .acct-tab-btn { flex: 1; padding: 9px 4px; border-radius: 10px; border: 1px solid rgba(201,162,75,0.28); background: rgba(255,255,255,0.05); color: var(--ivory-dim); font-weight: 800; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.3px; cursor: pointer; }
+        .acct-tab-btn.active { background: linear-gradient(135deg, var(--brass-light), var(--brass) 55%, var(--brass-dark)); border-color: var(--brass-light); color: #1a1206; }
+        .acct-error { background: rgba(220,38,38,0.18); border: 1px solid rgba(220,38,38,0.4); color: #ffb3b3; font-size: 0.68rem; font-weight: 700; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; line-height: 1.4; }
+        .acct-success { background: rgba(22,163,74,0.18); border: 1px solid rgba(22,163,74,0.4); color: #b7f5c9; font-size: 0.68rem; font-weight: 700; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; line-height: 1.4; }
+
         /* =================================================================
            ONLINE MULTIPLAYER — Lobby screen, request popups, player list.
            Kept in its own namespace (.onl-*, #online-*) so nothing here can
@@ -655,12 +666,42 @@
         <p id="loading-status-msg" style="font-size:0.66rem; color:#888; margin-top:22px; max-width:260px; line-height:1.6;"></p>
     </div>
 
-    <!-- NAME ENTRY (first run — asked before the menu is ever shown) -->
+    <!-- WELCOME (first run — asked before the menu is ever shown): choose to
+         log into a saved account, or continue as Guest exactly like before
+         (asks for a display name). Editing your name later still happens
+         from the "Your Name" card in the menu, same as always. -->
     <div id="name-entry-screen" class="glass-panel">
-        <div class="name-entry-icon">🧑‍🎲</div>
-        <h1 class="title-text" style="font-size:1.35rem; margin-bottom:16px;">Welcome!</h1>
-        <input type="text" id="player-name-input" class="name-entry-input" placeholder="Apna naam likhein" maxlength="18" onkeydown="if(event.key==='Enter') submitPlayerName();">
-        <button class="btn btn-green" style="margin-top:14px;" onclick="submitPlayerName()">Continue</button>
+
+        <!-- Step 1: choice -->
+        <div id="welcome-choice-view">
+            <div class="name-entry-icon">🧑‍🎲</div>
+            <h1 class="title-text" style="font-size:1.35rem; margin-bottom:6px;">Welcome!</h1>
+            <p class="name-entry-sub" style="margin-bottom:18px;">Log in to bring back a saved account, or jump straight in as a Guest.</p>
+            <button class="btn btn-green" onclick="showWelcomeLogin()">🔐 Login to Your Account</button>
+            <button class="btn" style="margin-top:10px;" onclick="showWelcomeGuest()">👤 Continue as Guest</button>
+        </div>
+
+        <!-- Step 2a: login form (same account system as the menu's Account
+             card — see window.LudoOnline.loginWithEmail in the module
+             script; all the same validation/error handling applies here) -->
+        <div id="welcome-login-view" style="display:none;">
+            <div class="name-entry-icon">🔐</div>
+            <h1 class="title-text" style="font-size:1.2rem; margin-bottom:12px;">Login to Your Account</h1>
+            <div id="welcome-login-msg" style="display:none;"></div>
+            <input type="email" id="welcome-login-email" class="name-entry-input" placeholder="Email address" autocomplete="email">
+            <input type="password" id="welcome-login-password" class="name-entry-input" style="margin-top:10px;" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter') submitWelcomeLogin();">
+            <button class="btn btn-green" style="margin-top:14px;" onclick="submitWelcomeLogin()" id="welcome-login-btn">Log In</button>
+            <button class="onl-back-btn" style="width:100%; margin-top:10px;" onclick="showWelcomeChoice()">Back</button>
+        </div>
+
+        <!-- Step 2b: guest name entry — UNCHANGED from the original flow -->
+        <div id="welcome-guest-view" style="display:none;">
+            <div class="name-entry-icon">🧑‍🎲</div>
+            <h1 class="title-text" style="font-size:1.35rem; margin-bottom:16px;">Welcome!</h1>
+            <input type="text" id="player-name-input" class="name-entry-input" placeholder="Apna naam likhein" maxlength="18" onkeydown="if(event.key==='Enter') submitPlayerName();">
+            <button class="btn btn-green" style="margin-top:14px;" onclick="submitPlayerName()">Continue</button>
+            <button class="onl-back-btn" style="width:100%; margin-top:10px;" onclick="showWelcomeChoice()">Back</button>
+        </div>
     </div>
 
     <!-- MAIN MENU -->
@@ -686,6 +727,20 @@
             <div class="coin-claim-row" id="coin-ad-row">
                 <button class="coin-claim-btn coin-ad-btn" id="coin-ad-btn" onclick="handleWatchAdForCoins()">🎬 Watch Ad for 500 Coins</button>
                 <span class="coin-claim-countdown">Watch as many times as you like</span>
+            </div>
+        </div>
+
+        <div class="dash-card" id="account-menu-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🔐 Account</span>
+            </div>
+            <div class="selector-tile" onclick="openAccountModal()">
+                <span class="mode-icon-badge" id="account-status-icon" style="background:linear-gradient(150deg, var(--brass-light), rgba(0,0,0,0.3));">👤</span>
+                <span style="flex:1;">
+                    <span class="mode-name" id="account-status-title" style="display:block;">Playing as Guest</span>
+                    <span class="mode-sub" id="account-status-sub">Save your account so coins never reset</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
             </div>
         </div>
 
@@ -861,6 +916,44 @@
             <input type="text" id="edit-name-input" class="name-entry-input" maxlength="18" onkeydown="if(event.key==='Enter') saveEditedPlayerName();">
             <button class="btn btn-green" onclick="saveEditedPlayerName()">Save</button>
             <button class="onl-back-btn" style="width:100%;" onclick="closeEditNameModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Persistent Account (Save Account / Login) — ties coins/progress to
+         an email+password account instead of just this device, so Clear
+         Cache/Clear Data or switching phones never resets them. -->
+    <div id="account-modal">
+        <div class="onl-modal-card" style="text-align:left;">
+            <div class="onl-modal-title" style="text-align:center;">🔐 Your Account</div>
+
+            <!-- Logged-in view -->
+            <div id="account-logged-in-view" style="display:none;">
+                <p style="font-size:0.78rem; color:var(--ivory); margin-bottom:14px; text-align:center; line-height:1.6;">
+                    Signed in as<br><strong id="account-logged-in-email" style="color:var(--brass-light);"></strong>
+                    <br><span style="font-size:0.62rem; color:var(--ivory-dim);">Your coins are safe under this account on any device.</span>
+                </p>
+                <button class="btn btn-primary" onclick="handleAccountLogout()">Log Out</button>
+            </div>
+
+            <!-- Guest view: tabs for Save (link) / Login -->
+            <div id="account-guest-view">
+                <p class="onl-modal-sub" style="text-align:center; margin-bottom:14px;" id="account-modal-intro">
+                    You're playing as a Guest. Save your account so your coins never reset if the app's cache/data is cleared or you switch phones.
+                </p>
+                <div class="acct-tab-row">
+                    <button type="button" class="acct-tab-btn active" id="acct-tab-signup-btn" onclick="switchAccountTab('signup')">Save Account</button>
+                    <button type="button" class="acct-tab-btn" id="acct-tab-login-btn" onclick="switchAccountTab('login')">Already Have One?</button>
+                </div>
+
+                <div id="acct-msg" style="display:none;"></div>
+
+                <input type="email" id="account-email-input" class="onl-name-input" placeholder="Email address" autocomplete="email">
+                <input type="password" id="account-password-input" class="onl-name-input" style="margin-top:8px;" placeholder="Password (min 6 characters)" autocomplete="new-password" onkeydown="if(event.key==='Enter') submitAccountForm();">
+
+                <button class="btn btn-green" style="margin-top:12px;" id="account-submit-btn" onclick="submitAccountForm()">Save My Account</button>
+            </div>
+
+            <button class="onl-back-btn" style="width:100%; margin-top:10px;" onclick="closeAccountModal()">Close</button>
         </div>
     </div>
 
@@ -1200,7 +1293,7 @@
          ============================================================ -->
     <script type="module">
         import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getDatabase, ref, set, update, remove, onDisconnect, serverTimestamp, onValue, get, off, push, query, limitToLast, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
@@ -1464,6 +1557,17 @@
                 // data → permanently stuck on Connecting…" bug at its root.
                 startMasterControlListener();
             }
+            // ─── Persistent Account status broadcast ───────────────────────
+            // Fires on every sign-in change: initial anonymous sign-in,
+            // successfully linking an email/password, logging into an
+            // existing saved account, or logging out. The menu's Account
+            // card/modal (in the classic script below) listens for this to
+            // stay in sync without polling.
+            try {
+                window.dispatchEvent(new CustomEvent('lm-account-status', {
+                    detail: user ? { ready: true, isAnonymous: user.isAnonymous, email: user.email || null } : { ready: false }
+                }));
+            } catch (e) {}
         });
         // Belt-and-braces: also remove/flip immediately on a normal tab
         // close, so status updates right away instead of waiting for the
@@ -1796,25 +1900,75 @@
         function registerOnlineIdentity(uid) {
             if (!uid) return;
             onlineUid = uid;
-            const userRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`);
+            const userRef    = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`);
+            const idIndexRef = ref(rtdb, `${ONLINE_ROOT}/idIndex/${onlinePublicId}`);
             // Use update(), not set(): set() blindly overwrites the WHOLE
             // record every time the app opens, which used to wipe out this
             // player's coin balance/coinsZeroAt back to nothing on every
             // single reload. get() first so a returning player's coins are
             // only initialized once, never reset.
-            get(userRef).then(snap => {
-                const existing = snap.exists() ? snap.val() : null;
-                const base = {
-                    uid: onlineUid, name: onlineName, publicId: onlinePublicId,
-                    online: true, status: 'idle', roomId: null, updatedAt: serverTimestamp()
-                };
-                if (!existing || typeof existing.coins !== 'number') {
+            //
+            // ── BUG FIX (coins resetting to 5000 after Clear Cache/Clear
+            // Data, then reopening) ─────────────────────────────────────────
+            // Coins are stored under `users/{onlineUid}`, keyed by the
+            // Firebase Anonymous Auth UID. That auth session is cached by
+            // the Firebase SDK, but clearing the app/browser's storage can
+            // wipe just that cached session while `onlinePublicId` (a
+            // separate, independently-generated ID already saved in
+            // localStorage as 'lm_online_id') survives. When that happens,
+            // signInAnonymously() silently mints a BRAND NEW uid, which has
+            // no `users/{uid}` record yet — and the code used to treat that
+            // as a first-ever launch and hand it a fresh 5000 coins, even
+            // though it's actually the same returning player.
+            //
+            // Fix: `idIndex/{onlinePublicId}` already stores which uid this
+            // publicId was last linked to. Before defaulting a "new" uid to
+            // 5000 coins, check that index — if it still points at a
+            // DIFFERENT (older) uid, this is a returning player whose auth
+            // session rotated but whose publicId survived, so their old
+            // balance is copied over onto the new uid instead of resetting.
+            get(idIndexRef).then(idSnap => {
+                const oldUid = idSnap.exists() ? idSnap.val() : null;
+
+                return get(userRef).then(snap => {
+                    const existing = snap.exists() ? snap.val() : null;
+                    const base = {
+                        uid: onlineUid, name: onlineName, publicId: onlinePublicId,
+                        online: true, status: 'idle', roomId: null, updatedAt: serverTimestamp()
+                    };
+
+                    if (existing && typeof existing.coins === 'number') {
+                        // This uid already has its own coin record — never touch it.
+                        return update(userRef, base);
+                    }
+
+                    if (oldUid && oldUid !== onlineUid) {
+                        // Same player (same publicId), rotated uid — recover balance.
+                        return get(ref(rtdb, `${ONLINE_ROOT}/users/${oldUid}`)).then(oldSnap => {
+                            const old = oldSnap.exists() ? oldSnap.val() : null;
+                            if (old && typeof old.coins === 'number') {
+                                base.coins           = old.coins;
+                                base.coinsZeroAt      = old.coinsZeroAt || null;
+                                base.lastDailyBonusAt = old.lastDailyBonusAt || null;
+                            } else {
+                                base.coins = 5000;
+                                base.coinsZeroAt = null;
+                            }
+                            return update(userRef, base);
+                        }).catch(() => {
+                            base.coins = 5000;
+                            base.coinsZeroAt = null;
+                            return update(userRef, base);
+                        });
+                    }
+
+                    // Genuinely never seen this publicId before — real first launch.
                     base.coins = 5000;
                     base.coinsZeroAt = null;
-                }
-                return update(userRef, base);
+                    return update(userRef, base);
+                });
             }).catch(err => _onlineReportError('write:users', err));
-            set(ref(rtdb, `${ONLINE_ROOT}/idIndex/${onlinePublicId}`), onlineUid).catch(err => _onlineReportError('write:idIndex', err));
+            set(idIndexRef, onlineUid).catch(err => _onlineReportError('write:idIndex', err));
             // If the tab/app dies without a clean goodbye, the server itself
             // flips us to offline the instant the connection drops.
             onDisconnect(userRef).update({ online: false, status: 'offline' }).catch(() => {});
@@ -2346,6 +2500,62 @@
                     if (Object.keys(updates).length) update(ref(rtdb), updates).catch(() => {});
                 }
                 return finalRoom;
+            },
+
+            // ─── Persistent Account (Email/Password) ───────────────────────
+            // FEATURE: lets a player turn their anonymous session into a real
+            // account, so coins/progress survive a cleared cache, a new
+            // phone, or a reinstall — see getAccountStatus() for how the UI
+            // reads current status.
+            //
+            // Signing up LINKS the EXISTING anonymous Firebase user to this
+            // email/password (linkWithCredential) — this keeps the SAME uid,
+            // so every coin/progress record already stored under it is kept
+            // exactly as-is. It does NOT create a second, separate account.
+            async linkAccountWithEmail(email, password) {
+                if (!auth.currentUser) return { ok: false, reason: 'not-ready' };
+                try {
+                    const cred = EmailAuthProvider.credential(email, password);
+                    await linkWithCredential(auth.currentUser, cred);
+                    return { ok: true };
+                } catch (e) {
+                    return { ok: false, reason: e.code || 'error', message: e.message };
+                }
+            },
+
+            // Logging IN with an existing email/password switches the
+            // session to THAT account's own uid (and its own coin balance),
+            // wherever it's used — a new phone, a reinstalled app, etc.
+            async loginWithEmail(email, password) {
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    return { ok: true };
+                } catch (e) {
+                    return { ok: false, reason: e.code || 'error', message: e.message };
+                }
+            },
+
+            // Logging out drops the saved account and starts a brand-new
+            // guest session (so the app keeps working) — that fresh guest
+            // session starts at 5000 coins like any new player, same as
+            // normal for logging out of any account-based app.
+            async logoutAccount() {
+                try {
+                    await signOut(auth);
+                    await signInAnonymously(auth);
+                    return { ok: true };
+                } catch (e) {
+                    return { ok: false, reason: e.code || 'error', message: e.message };
+                }
+            },
+
+            // Current status for the Account UI: whether we're ready, and
+            // whether the signed-in user is still just an anonymous guest
+            // or has a saved email account.
+            getAccountStatus() {
+                const u = auth.currentUser;
+                if (!u) return { ready: false };
+                return { ready: true, isAnonymous: u.isAnonymous, email: u.email || null };
             }
         };
     </script>
@@ -2759,6 +2969,142 @@
             if (menuDisplay) menuDisplay.textContent = name;
         }
 
+        // ─── Persistent Account (Save Account / Login) UI ──────────────────
+        // The actual Firebase calls live in window.LudoOnline (module
+        // script above) — this just drives the modal and reflects status.
+        let accountFormMode = 'signup'; // 'signup' (link current guest) or 'login' (switch to existing account)
+
+        function updateAccountStatusUI(status) {
+            if (!status) {
+                status = (window.LudoOnline && typeof window.LudoOnline.getAccountStatus === 'function')
+                    ? window.LudoOnline.getAccountStatus() : { ready: false };
+            }
+            const icon  = document.getElementById('account-status-icon');
+            const title = document.getElementById('account-status-title');
+            const sub   = document.getElementById('account-status-sub');
+            const loggedInView = document.getElementById('account-logged-in-view');
+            const guestView     = document.getElementById('account-guest-view');
+            const loggedInEmail = document.getElementById('account-logged-in-email');
+            if (!status.ready) return; // not signed in yet — keep showing defaults
+
+            if (!status.isAnonymous && status.email) {
+                if (title) title.textContent = 'Account Saved';
+                if (sub)   sub.textContent   = status.email;
+                if (icon)  icon.textContent  = '✅';
+                if (loggedInView) loggedInView.style.display = 'block';
+                if (guestView)    guestView.style.display    = 'none';
+                if (loggedInEmail) loggedInEmail.textContent = status.email;
+            } else {
+                if (title) title.textContent = 'Playing as Guest';
+                if (sub)   sub.textContent   = 'Save your account so coins never reset';
+                if (icon)  icon.textContent  = '👤';
+                if (loggedInView) loggedInView.style.display = 'none';
+                if (guestView)    guestView.style.display    = 'block';
+            }
+        }
+        window.addEventListener('lm-account-status', e => updateAccountStatusUI(e.detail));
+
+        function showAccountMsg(text, kind) {
+            const el = document.getElementById('acct-msg');
+            if (!el) return;
+            el.className = kind === 'success' ? 'acct-success' : 'acct-error';
+            el.textContent = text;
+            el.style.display = 'block';
+        }
+        function clearAccountMsg() {
+            const el = document.getElementById('acct-msg');
+            if (el) { el.style.display = 'none'; el.textContent = ''; }
+        }
+
+        function openAccountModal() {
+            clearAccountMsg();
+            document.getElementById('account-email-input').value = '';
+            document.getElementById('account-password-input').value = '';
+            switchAccountTab('signup');
+            updateAccountStatusUI();
+            document.getElementById('account-modal').style.display = 'flex';
+        }
+        function closeAccountModal() {
+            document.getElementById('account-modal').style.display = 'none';
+        }
+
+        function switchAccountTab(mode) {
+            accountFormMode = mode;
+            clearAccountMsg();
+            const signupBtn = document.getElementById('acct-tab-signup-btn');
+            const loginBtn  = document.getElementById('acct-tab-login-btn');
+            const submitBtn = document.getElementById('account-submit-btn');
+            const intro     = document.getElementById('account-modal-intro');
+            if (mode === 'login') {
+                if (signupBtn) signupBtn.classList.remove('active');
+                if (loginBtn)  loginBtn.classList.add('active');
+                if (submitBtn) submitBtn.textContent = 'Log In';
+                if (intro) intro.textContent = 'Already saved your account before? Log in here to bring your coins to this device.';
+            } else {
+                if (signupBtn) signupBtn.classList.add('active');
+                if (loginBtn)  loginBtn.classList.remove('active');
+                if (submitBtn) submitBtn.textContent = 'Save My Account';
+                if (intro) intro.textContent = "You're playing as a Guest. Save your account so your coins never reset if the app's cache/data is cleared or you switch phones.";
+            }
+        }
+
+        // Friendly text for the Firebase Auth error codes we're most likely
+        // to hit here — anything unrecognized falls back to the raw message.
+        function accountErrorMessage(reason, fallback) {
+            const map = {
+                'auth/email-already-in-use': 'This email is already linked to an account. Try "Already Have One?" to log in instead.',
+                'auth/credential-already-in-use': 'This email is already linked to another account. Try logging in with it instead.',
+                'auth/invalid-email': 'Please enter a valid email address.',
+                'auth/weak-password': 'Password should be at least 6 characters.',
+                'auth/wrong-password': 'Incorrect password. Please try again.',
+                'auth/invalid-credential': 'Incorrect email or password. Please try again.',
+                'auth/user-not-found': 'No account found with that email.',
+                'auth/too-many-requests': 'Too many attempts. Please wait a bit and try again.',
+                'auth/network-request-failed': 'Network error — please check your connection and try again.'
+            };
+            return map[reason] || fallback || 'Something went wrong. Please try again.';
+        }
+
+        async function submitAccountForm() {
+            const email    = (document.getElementById('account-email-input').value || '').trim();
+            const password = document.getElementById('account-password-input').value || '';
+            clearAccountMsg();
+
+            if (!email || !password) { showAccountMsg('Please enter both an email and a password.'); return; }
+            if (password.length < 6) { showAccountMsg('Password should be at least 6 characters.'); return; }
+            if (!window.LudoOnline) { showAccountMsg('Not ready yet — please try again in a moment.'); return; }
+
+            const submitBtn = document.getElementById('account-submit-btn');
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Please wait…'; }
+
+            const result = accountFormMode === 'login'
+                ? await window.LudoOnline.loginWithEmail(email, password)
+                : await window.LudoOnline.linkAccountWithEmail(email, password);
+
+            if (submitBtn) submitBtn.disabled = false;
+            switchAccountTab(accountFormMode); // restores correct button label
+
+            if (result.ok) {
+                showAccountMsg(accountFormMode === 'login' ? 'Logged in! Your coins are now synced.' : 'Account saved! Your coins are now protected.', 'success');
+                updateAccountStatusUI();
+                setTimeout(() => { closeAccountModal(); }, 1200);
+            } else {
+                showAccountMsg(accountErrorMessage(result.reason, result.message));
+            }
+        }
+
+        async function handleAccountLogout() {
+            if (!window.LudoOnline) return;
+            if (!confirm('Log out of this account? You will continue as a new Guest with a fresh 5000 coin balance on this device.')) return;
+            const result = await window.LudoOnline.logoutAccount();
+            if (result.ok) {
+                updateAccountStatusUI();
+                switchAccountTab('signup');
+            } else {
+                showAccountMsg(accountErrorMessage(result.reason, result.message));
+            }
+        }
+
         // Lets the player rename themselves right from the main menu (before
         // a game has even started) — reuses the same edit-name-modal as the
         // in-game player box, just with a special 'MENU' target instead of
@@ -2768,6 +3114,80 @@
             document.getElementById('edit-name-input').value = loadSavedPlayerName() || '';
             document.getElementById('edit-name-modal').style.display = 'flex';
             setTimeout(() => document.getElementById('edit-name-input').focus(), 50);
+        }
+
+        // ─── Welcome screen: Login vs Guest choice (first run only) ────────
+        function openWelcomeScreen() {
+            const n = document.getElementById('name-entry-screen');
+            if (n) n.style.display = 'block';
+            showWelcomeChoice();
+        }
+        function showWelcomeChoice() {
+            document.getElementById('welcome-choice-view').style.display = 'block';
+            document.getElementById('welcome-login-view').style.display  = 'none';
+            document.getElementById('welcome-guest-view').style.display  = 'none';
+        }
+        function showWelcomeLogin() {
+            document.getElementById('welcome-choice-view').style.display = 'none';
+            document.getElementById('welcome-login-view').style.display  = 'block';
+            document.getElementById('welcome-guest-view').style.display  = 'none';
+            const msgEl = document.getElementById('welcome-login-msg');
+            if (msgEl) msgEl.style.display = 'none';
+            setTimeout(() => { const el = document.getElementById('welcome-login-email'); if (el) el.focus(); }, 50);
+        }
+        function showWelcomeGuest() {
+            document.getElementById('welcome-choice-view').style.display = 'none';
+            document.getElementById('welcome-login-view').style.display  = 'none';
+            document.getElementById('welcome-guest-view').style.display  = 'block';
+            setTimeout(() => { const el = document.getElementById('player-name-input'); if (el) el.focus(); }, 50);
+        }
+        function showWelcomeLoginMsg(text) {
+            const el = document.getElementById('welcome-login-msg');
+            if (!el) return;
+            el.className = 'acct-error';
+            el.textContent = text;
+            el.style.display = 'block';
+        }
+
+        // Same account system as the menu's Account card (window.LudoOnline
+        // .loginWithEmail — see the module script) — just reachable at
+        // first launch too, before the player ever sees the menu.
+        async function submitWelcomeLogin() {
+            const email    = (document.getElementById('welcome-login-email').value || '').trim();
+            const password = document.getElementById('welcome-login-password').value || '';
+            const msgEl = document.getElementById('welcome-login-msg');
+            if (msgEl) msgEl.style.display = 'none';
+
+            if (!email || !password) { showWelcomeLoginMsg('Please enter both an email and a password.'); return; }
+            if (!window.LudoOnline) { showWelcomeLoginMsg('Not ready yet — please try again in a moment.'); return; }
+
+            const btn = document.getElementById('welcome-login-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Please wait…'; }
+            const result = await window.LudoOnline.loginWithEmail(email, password);
+            if (btn) { btn.disabled = false; btn.textContent = 'Log In'; }
+
+            if (!result.ok) {
+                showWelcomeLoginMsg(accountErrorMessage(result.reason, result.message));
+                return;
+            }
+
+            // Logged in — the coin balance now comes from the account, but a
+            // local display name (used by the Red player-box, name-red
+            // input, etc.) still needs to exist. Never overwrite a name
+            // already saved on this device; only fill one in if missing —
+            // same default pattern the Guest flow already used.
+            const existingName = loadSavedPlayerName();
+            if (!existingName) {
+                savePlayerNameEverywhere('Player' + Math.floor(1000 + Math.random() * 9000));
+            } else {
+                document.getElementById('name-red').value = existingName;
+                const menuDisplay = document.getElementById('menu-player-name-display');
+                if (menuDisplay) menuDisplay.textContent = existingName;
+            }
+
+            document.getElementById('name-entry-screen').style.display = 'none';
+            document.getElementById('menu-screen').style.display = 'block';
+            updateAccountStatusUI();
         }
 
         function submitPlayerName() {
@@ -2783,6 +3203,7 @@
             window._menuRevealed = true;
             const l = document.getElementById('loading-screen');
             if (l) { l.style.opacity = '0'; setTimeout(() => { l.style.display = 'none'; }, 400); }
+            updateAccountStatusUI();
 
             // If a game was in progress when the page got reloaded (most
             // often: an accidental ad click navigated the same tab away and
@@ -2792,11 +3213,10 @@
             if (!tryRestoreResumeState()) {
                 const savedName = loadSavedPlayerName();
                 if (!savedName) {
-                    // First time ever opening the game on this device — ask
-                    // for a name before showing anything else. The menu
+                    // First time ever opening the game on this device — show
+                    // the Login/Guest choice before anything else. The menu
                     // (and every other screen) only appears once this is done.
-                    const n = document.getElementById('name-entry-screen');
-                    if (n) n.style.display = 'block';
+                    openWelcomeScreen();
                 } else {
                     document.getElementById('name-red').value = savedName;
                     const menuDisplay = document.getElementById('menu-player-name-display');
