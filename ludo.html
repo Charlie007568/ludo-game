@@ -133,9 +133,11 @@
             border: 1px solid rgba(201,162,75,0.24); color: var(--ivory); text-align: left;
         }
         .selector-tile .selector-value { flex: 1; font-size: 0.78rem; font-weight: 800; color: var(--brass-light); }
-        #mode-select-modal, #edit-name-modal {
+        #mode-select-modal, #edit-name-modal, #match-settings-modal {
             display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 275; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
         }
+        #match-settings-modal .onl-modal-card { max-width: 340px; text-align: left; max-height: 88vh; overflow-y: auto; }
+        #match-settings-modal .dash-card { margin: 8px 0; }
         #mode-select-modal .onl-modal-card { max-width: 340px; text-align: left; }
         #mode-select-modal .mode-grid { margin-top: 10px; }
         #mode-select-modal .onl-back-btn { margin-top: 4px; }
@@ -170,10 +172,14 @@
         .onl-invite-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(180,140,255,0.45); background: linear-gradient(140deg, rgba(142,36,170,0.5), rgba(94,53,177,0.5)); color: var(--ivory); font-weight: 800; font-size: 0.6rem; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
         .onl-empty { font-size: 0.64rem; color: var(--ivory-dim); text-align: center; padding: 14px 6px; line-height: 1.6; }
 
-        #online-request-modal, #online-waiting-modal, #online-notice-modal {
+        #online-request-modal, #online-waiting-modal, #online-notice-modal, #online-search-modal, #online-lobby-modal {
             display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 270; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
         }
-        #online-request-modal .btn, #online-waiting-modal .btn, #online-notice-modal .btn { display: inline-block; width: 100%; }
+        #online-request-modal .btn, #online-waiting-modal .btn, #online-notice-modal .btn, #online-search-modal .btn, #online-lobby-modal .btn { display: inline-block; width: 100%; }
+        .onl-lobby-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 4px; font-size: 0.68rem; font-weight: 700; border-bottom: 1px solid rgba(201,162,75,0.12); }
+        .onl-lobby-row:last-child { border-bottom: none; }
+        .onl-lobby-row .onl-lobby-slot-color { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .onl-lobby-row.empty-slot { color: var(--ivory-dim); font-weight: 600; opacity: 0.6; }
         .onl-modal-card { background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); border: 1px solid rgba(180,140,255,0.4); border-radius: 20px; padding: 26px 24px; max-width: 300px; width: 100%; text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.7); animation: slideIn 0.4s cubic-bezier(.2,.8,.2,1); }
         .onl-modal-icon { font-size: 2rem; margin-bottom: 8px; }
         .onl-modal-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--brass-light); margin-bottom: 6px; font-weight: 800; }
@@ -434,8 +440,15 @@
         .cell-blue-path { background: linear-gradient(155deg, var(--blue-light), var(--blue)) !important; }
 
         .star-icon {
-            position: absolute; width: 62%; height: 62%; display: flex; justify-content: center; align-items: center;
-            font-size: 12px; font-weight: bold; color: rgba(15,23,42,0.65); pointer-events: none;
+            /* Sized larger than the token's own footprint (see .token below,
+               ~94% box but the actual pawn silhouette inside that box is
+               narrower/tapered) so the star's points still peek out from
+               behind a token sitting on this cell — otherwise the star used
+               to disappear completely under a token, making it impossible
+               to tell "this cell is a safe star" once a piece landed on it.
+               Empty star cells simply look a bit bigger too, which is fine. */
+            position: absolute; width: 92%; height: 92%; display: flex; justify-content: center; align-items: center;
+            font-size: 17px; font-weight: bold; color: rgba(15,23,42,0.65); pointer-events: none;
             background: radial-gradient(circle, rgba(255,255,255,0.55), transparent 70%); border-radius: 50%;
             z-index: 2;
         }
@@ -472,6 +485,66 @@
         .token-barrier::before {
             content: '🔒'; position: absolute; top: -2px; left: 0; right: 0; display: flex; align-items: center; justify-content: center;
             font-size: 9px; z-index: 25; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.8));
+        }
+
+        /* ── Capture ("cut") sword-slash effect — a quick diagonal swipe
+           over the cell where a token just got sent home, so a capture
+           reads as a decisive hit instead of the piece just quietly
+           vanishing. Purely visual, auto-removed after it plays once. */
+        .sword-slash-fx {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            font-size: 1.9rem; pointer-events: none; z-index: 40;
+            animation: swordSlashAnim 0.5s cubic-bezier(.3,.9,.4,1) forwards;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
+        }
+        @keyframes swordSlashAnim {
+            0%   { transform: translate(-55%,-55%) rotate(-45deg) scale(0.3); opacity: 0; }
+            35%  { transform: translate(0,0) rotate(-45deg) scale(1.35); opacity: 1; }
+            65%  { transform: translate(30%,30%) rotate(-45deg) scale(1.05); opacity: 1; }
+            100% { transform: translate(60%,60%) rotate(-45deg) scale(0.85); opacity: 0; }
+        }
+        .sword-slash-fx::after {
+            content: ''; position: absolute; width: 140%; height: 3px; background: linear-gradient(90deg, transparent, #fff, transparent);
+            transform: rotate(90deg); opacity: 0.9; box-shadow: 0 0 6px 1px rgba(255,255,255,0.8);
+        }
+
+        /* ── Home-arrival "cheer" burst — a few emoji pop up and fade over
+           the center triangle whenever any token completes its journey. */
+        .home-cheer-fx {
+            position: absolute; font-size: 1.3rem; pointer-events: none; z-index: 45; left: 50%; top: 50%;
+            animation: homeCheerAnim 0.9s ease-out forwards;
+        }
+        @keyframes homeCheerAnim {
+            0%   { transform: translate(-50%,-50%) scale(0.4); opacity: 0; }
+            25%  { opacity: 1; }
+            100% { transform: translate(calc(-50% + var(--cx,0px)), calc(-50% + var(--cy,-40px))) scale(1.15) rotate(var(--cr,0deg)); opacity: 0; }
+        }
+
+        /* ── 1st/2nd/3rd place celebration toast ────────────────────────── */
+        #rank-celebration-toast {
+            position: fixed; top: 16%; left: 50%; z-index: 260; display: flex; flex-direction: column; align-items: center; gap: 6px;
+            opacity: 0; pointer-events: none; transform: translate(-50%, -16px); transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        #rank-celebration-toast.show { opacity: 1; transform: translate(-50%, 0); }
+        .rank-medal { font-size: 2.8rem; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6)); animation: rankMedalPop 0.55s cubic-bezier(.2,.8,.2,1); }
+        @keyframes rankMedalPop {
+            0%   { transform: scale(0.3) rotate(-20deg); opacity: 0; }
+            60%  { transform: scale(1.3) rotate(10deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .rank-title {
+            font-family: 'Playfair Display', serif; font-weight: 800; color: var(--brass-light); font-size: 0.95rem;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.6); background: rgba(10,8,4,0.8); padding: 7px 18px; border-radius: 20px;
+            border: 1px solid rgba(201,162,75,0.45); white-space: nowrap;
+        }
+        .confetti-piece {
+            position: absolute; top: 50%; left: 50%; font-size: 1.1rem; pointer-events: none;
+            animation: confettiFall 1.1s ease-out forwards;
+        }
+        @keyframes confettiFall {
+            0%   { transform: translate(-50%,-50%) translate(0,0) rotate(0deg) scale(0.6); opacity: 0; }
+            15%  { opacity: 1; }
+            100% { transform: translate(-50%,-50%) translate(var(--fx,0px), var(--fy,90px)) rotate(var(--fr,180deg)) scale(1); opacity: 0; }
         }
 
         .btn { display: block; width: 100%; padding: 10px; margin-top: 6px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); font-weight: 800; font-size: 0.75rem; cursor: pointer; color: var(--ivory); text-align: center; letter-spacing: 0.3px; transition: transform 0.15s, filter 0.15s; box-shadow: 0 4px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2); }
@@ -565,8 +638,7 @@
     <!-- NAME ENTRY (first run — asked before the menu is ever shown) -->
     <div id="name-entry-screen" class="glass-panel">
         <div class="name-entry-icon">🧑‍🎲</div>
-        <h1 class="title-text" style="font-size:1.35rem;">Welcome!</h1>
-        <p class="name-entry-sub">Khelne se pehle apna naam likhein — yehi naam aapke player box me dikhega. Baad me bhi ise kabhi change kar sakte hain.</p>
+        <h1 class="title-text" style="font-size:1.35rem; margin-bottom:16px;">Welcome!</h1>
         <input type="text" id="player-name-input" class="name-entry-input" placeholder="Apna naam likhein" maxlength="18" onkeydown="if(event.key==='Enter') submitPlayerName();">
         <button class="btn btn-green" style="margin-top:14px;" onclick="submitPlayerName()">Continue</button>
     </div>
@@ -591,6 +663,20 @@
             </div>
         </div>
 
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">👤 Your Name</span>
+            </div>
+            <div class="selector-tile" onclick="openMenuNameEdit()">
+                <span class="mode-icon-badge" style="background:linear-gradient(150deg, var(--brass-light), rgba(0,0,0,0.3));">🧑</span>
+                <span style="flex:1;">
+                    <span class="mode-name" id="menu-player-name-display" style="display:block;">Player</span>
+                    <span class="mode-sub">Tap to change your name</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">✎</span>
+            </div>
+        </div>
+
         <!-- Player name inputs kept in the DOM (hidden) so startGame() and
              the rest of the game logic can read them exactly as before —
              only the visible name entry now happens on the first-run
@@ -605,24 +691,15 @@
 
         <div class="dash-card">
             <div class="dash-card-head">
-                <span class="dash-card-title">🤝 Partner Mode (4 Players)</span>
+                <span class="dash-card-title">⚙️ Match Settings</span>
             </div>
-            <div class="difficulty-pills">
-                <div class="diff-pill partner-pill active" id="partner-off" onclick="setPartnerMode('off', this)">Off</div>
-                <div class="diff-pill partner-pill" id="partner-assist" onclick="setPartnerMode('assist', this)">Assist</div>
-                <div class="diff-pill partner-pill" id="partner-full" onclick="setPartnerMode('full', this)">Full Control</div>
-            </div>
-
-        </div>
-
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <span class="dash-card-title">🚧 Barrier Mode</span>
-            </div>
-            <div class="difficulty-pills">
-                <div class="diff-pill barrier-pill active" id="barrier-off" onclick="setBarrierMode('off', this)">Off</div>
-                <div class="diff-pill barrier-pill" id="barrier-on" onclick="setBarrierMode('on', this)">On</div>
-                <div class="diff-pill barrier-pill" id="barrier-partner" onclick="setBarrierMode('partner', this)">Partner</div>
+            <div class="selector-tile" onclick="openMatchSettingsModal()">
+                <span class="mode-icon-badge" id="settings-selector-icon">🤝</span>
+                <span style="flex:1;">
+                    <span class="mode-name" style="display:block;">Partner &amp; Barrier Mode</span>
+                    <span class="mode-sub" id="settings-selector-current">Partner: Off · Barrier: Off</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
             </div>
         </div>
 
@@ -669,6 +746,37 @@
         </div>
 
         <p class="dev-credit">Designed &amp; Developed by <span>Rahbar Waris</span></p>
+    </div>
+
+    <!-- MATCH SETTINGS DIALOG (Partner Mode + Barrier Mode together) -->
+    <div id="match-settings-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-title" style="text-align:center;">Match Settings</div>
+
+            <div class="dash-card" style="margin-top:10px;">
+                <div class="dash-card-head">
+                    <span class="dash-card-title">🤝 Partner Mode (4 Players)</span>
+                </div>
+                <div class="difficulty-pills">
+                    <div class="diff-pill partner-pill active" id="partner-off" onclick="setPartnerMode('off', this)">Off</div>
+                    <div class="diff-pill partner-pill" id="partner-assist" onclick="setPartnerMode('assist', this)">Assist</div>
+                    <div class="diff-pill partner-pill" id="partner-full" onclick="setPartnerMode('full', this)">Full Control</div>
+                </div>
+            </div>
+
+            <div class="dash-card">
+                <div class="dash-card-head">
+                    <span class="dash-card-title">🚧 Barrier Mode</span>
+                </div>
+                <div class="difficulty-pills">
+                    <div class="diff-pill barrier-pill active" id="barrier-off" onclick="setBarrierMode('off', this)">Off</div>
+                    <div class="diff-pill barrier-pill" id="barrier-on" onclick="setBarrierMode('on', this)">On</div>
+                    <div class="diff-pill barrier-pill" id="barrier-partner" onclick="setBarrierMode('partner', this)">Partner</div>
+                </div>
+            </div>
+
+            <button class="onl-back-btn" style="width:100%; margin-top:6px;" onclick="closeMatchSettingsModal()">Done</button>
+        </div>
     </div>
 
     <!-- GAME MODE SELECT DIALOG -->
@@ -778,6 +886,34 @@
 
         <div class="dash-card">
             <div class="dash-card-head">
+                <span class="dash-card-title">🔍 Quick Match</span>
+            </div>
+            <p class="onl-hint" style="margin-top:0;">Kitne players ka match chahiye?</p>
+            <div class="difficulty-pills">
+                <div class="diff-pill qm-count-pill active" data-count="2" onclick="setQuickMatchCount(2, this)">2 Player</div>
+                <div class="diff-pill qm-count-pill" data-count="3" onclick="setQuickMatchCount(3, this)">3 Player</div>
+                <div class="diff-pill qm-count-pill" data-count="4" onclick="setQuickMatchCount(4, this)">4 Player</div>
+            </div>
+            <button class="btn btn-green" onclick="startQuickMatch()">🔍 Search Online Match</button>
+            <p class="onl-hint">Automatically matches you with whoever else is searching, using the Match Type + Coin Bet above.</p>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🔗 Create Room (Play With Friends)</span>
+            </div>
+            <p class="onl-hint" style="margin-top:0;">Dosto ke sath khelna hai? Room banao aur unhe ID se invite karo.</p>
+            <div class="difficulty-pills">
+                <div class="diff-pill cr-count-pill active" data-count="2" onclick="setCreateRoomCount(2, this)">2 Player</div>
+                <div class="diff-pill cr-count-pill" data-count="3" onclick="setCreateRoomCount(3, this)">3 Player</div>
+                <div class="diff-pill cr-count-pill" data-count="4" onclick="setCreateRoomCount(4, this)">4 Player</div>
+            </div>
+            <button class="btn btn-green" onclick="createRoom()">🔗 Create Room</button>
+            <p class="onl-hint">Uses the Match Type + Coin Bet above. You'll get a room to invite friends into by ID.</p>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-card-head">
                 <span class="dash-card-title">✉️ Invite By ID</span>
             </div>
             <div class="onl-invite-row">
@@ -837,6 +973,36 @@
         </div>
     </div>
 
+    <!-- ONLINE: Quick Match searching progress -->
+    <div id="online-search-modal">
+        <div class="onl-modal-card">
+            <div class="onl-spinner"></div>
+            <div class="onl-modal-title">Searching…</div>
+            <div class="onl-modal-sub" id="online-search-sub">Looking for players…</div>
+            <button class="btn btn-primary" onclick="cancelQuickMatch()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- ONLINE: "Create Room" lobby — host waits for friends, or a friend
+         waits after accepting a room invite (before the room fills up) -->
+    <div id="online-lobby-modal">
+        <div class="onl-modal-card" style="max-width:340px; text-align:left;">
+            <div class="onl-modal-title" style="text-align:center;">🔗 Room Lobby</div>
+            <div class="onl-modal-sub" style="text-align:center; margin-bottom:10px;" id="online-lobby-sub">Waiting for players…</div>
+
+            <div id="online-lobby-host-controls" style="display:none;">
+                <div class="onl-invite-row">
+                    <input type="text" id="online-lobby-invite-input" placeholder="Friend's ID e.g. AB12CD" maxlength="8">
+                    <button onclick="inviteFriendToLobby()">Invite</button>
+                </div>
+            </div>
+
+            <div class="onl-list" id="online-lobby-players" style="margin-top:10px;"></div>
+
+            <button class="btn btn-primary" style="margin-top:10px;" onclick="leaveOnlineLobby()">Cancel / Leave</button>
+        </div>
+    </div>
+
     <!-- REPORT A BUG — kept top-level like the ONLINE popups above (see
          the comment there): a fixed-position element still inherits
          display:none from a hidden ancestor, so this needs to live
@@ -854,6 +1020,10 @@
             <button class="btn btn-primary" onclick="closeBugReportModal()">Cancel</button>
         </div>
     </div>
+
+    <!-- 1st/2nd/3rd place celebration toast — fixed like the popups above so
+         it floats over the board regardless of where it lives in the DOM. -->
+    <div id="rank-celebration-toast"></div>
 
     <!-- ONLINE: in-match chat + emoji panel — real-time, only ever shown
          while an online match is active (toggled from the 💬 Chat button in
@@ -1868,6 +2038,211 @@
                     await update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { coins: 5000, coinsZeroAt: null });
                     return { ok: true };
                 } catch (e) { _onlineReportError('coins:claim', e); return { ok: false, reason: 'error' }; }
+            },
+
+            // ─── Quick Match (auto matchmaking) + multi-friend room invites ──
+            // Everything below is purely ADDITIVE: it lives at its own
+            // `lm_online/queue/` path and reuses `lm_online/rooms/` with a
+            // generalized N-player `players` map instead of the classic
+            // 1:1 flow's hardcoded Red/Yellow shape. None of it touches
+            // sendRequest/acceptRequest/etc. above, so every existing
+            // "Invite by ID" match keeps working exactly as it does today.
+            _qmDetach: null,
+            _qmKey: null,
+
+            // Joins the matchmaking queue for the given player count +
+            // mode + bet. `onCount(found, needed)` fires on every queue
+            // update so the UI can show live progress. As soon as enough
+            // players are waiting in the same bucket, the earliest of them
+            // attempts to become "host" via a transaction-guarded lock —
+            // so exactly one device forms the room, even if several tabs
+            // notice the full bucket at the same moment.
+            joinQuickMatch(playerCount, mode, bet, onCount) {
+                playerCount = Math.min(4, Math.max(2, Math.floor(playerCount) || 2));
+                mode = mode === 'barrier' ? 'barrier' : 'normal';
+                bet = Math.max(0, Math.floor(Number(bet) || 0));
+                const key = `${playerCount}_${mode}_${bet}`;
+                this._qmKey = key;
+
+                const myEntryRef = ref(rtdb, `${ONLINE_ROOT}/queue/${key}/members/${onlineUid}`);
+                set(myEntryRef, { uid: onlineUid, name: onlineName, publicId: onlinePublicId, joinedAt: Date.now() })
+                    .catch(err => _onlineReportError('write:queue', err));
+                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'searching' }).catch(() => {});
+                onDisconnect(myEntryRef).remove().catch(() => {});
+
+                if (this._qmDetach) { try { this._qmDetach(); } catch (e) {} }
+                this._qmDetach = _onlineListen(`${ONLINE_ROOT}/queue/${key}/members`, members => {
+                    members = members || {};
+                    const list = Object.keys(members).map(uid => Object.assign({ uid }, members[uid]))
+                        .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+                    if (typeof onCount === 'function') onCount(list.length, playerCount);
+                    if (list.length < playerCount) return;
+                    const group = list.slice(0, playerCount);
+                    if (!group.some(m => m.uid === onlineUid)) return;   // I'm not part of this batch
+                    if (group[0].uid !== onlineUid) return;              // only the earliest joiner attempts to host
+
+                    const lockRef = ref(rtdb, `${ONLINE_ROOT}/queue/${key}/lock`);
+                    runTransaction(lockRef, cur => (cur ? undefined : onlineUid)).then(result => {
+                        if (!result.committed || result.snapshot.val() !== onlineUid) return;
+                        window.LudoOnline._formRoomFromGroup(group, playerCount, mode, bet, key);
+                    }).catch(err => _onlineReportError('queue:lock', err));
+                });
+            },
+
+            leaveQuickMatch() {
+                if (this._qmDetach) { try { this._qmDetach(); } catch (e) {} this._qmDetach = null; }
+                if (this._qmKey && onlineUid) {
+                    remove(ref(rtdb, `${ONLINE_ROOT}/queue/${this._qmKey}/members/${onlineUid}`)).catch(() => {});
+                }
+                this._qmKey = null;
+                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle' }).catch(() => {});
+            },
+
+            async _formRoomFromGroup(group, playerCount, mode, bet, key) {
+                const order = ['Red', 'Green', 'Yellow', 'Blue'];
+                const roomId = 'room_' + onlineUid.slice(0, 6) + '_' + Date.now();
+                const playersMap = {};
+                group.forEach((m, i) => { playersMap[order[i]] = { uid: m.uid, name: m.name }; });
+                const room = { mode, bet, playerCount, players: playersMap, status: 'active', hostUid: onlineUid, createdAt: serverTimestamp() };
+                try {
+                    await set(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`), room);
+                    const updates = {};
+                    group.forEach(m => {
+                        updates[`${ONLINE_ROOT}/users/${m.uid}/status`] = 'in_game';
+                        updates[`${ONLINE_ROOT}/users/${m.uid}/roomId`] = roomId;
+                    });
+                    await update(ref(rtdb), updates);
+                    const removals = {};
+                    group.forEach(m => { removals[`${ONLINE_ROOT}/queue/${key}/members/${m.uid}`] = null; });
+                    removals[`${ONLINE_ROOT}/queue/${key}/lock`] = null;
+                    await update(ref(rtdb), removals);
+                } catch (err) { _onlineReportError('queue:form', err); }
+            },
+
+            // Generic "my match is starting" watcher — used by BOTH Quick
+            // Match and room-invite lobbies below (never by the classic
+            // 1:1 flow above, which starts locally via its own
+            // listenRequestResponse/acceptRequest instead, so there's no
+            // double-start risk between the two systems). Fires once per
+            // new roomId written to my own user record.
+            watchForMatchStart(cb) {
+                let lastSeen = null;
+                return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}`, u => {
+                    if (!u || u.status !== 'in_game' || !u.roomId) return;
+                    if (u.roomId === lastSeen) return;
+                    lastSeen = u.roomId;
+                    cb(u.roomId);
+                });
+            },
+
+            async getRoom(roomId) {
+                try {
+                    const snap = await get(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`));
+                    return snap.exists() ? snap.val() : null;
+                } catch (e) { return null; }
+            },
+
+            // ─── "Create Room" — invite several friends into one room ───────
+            createLobbyRoom(playerCount, mode, bet) {
+                playerCount = Math.min(4, Math.max(2, Math.floor(playerCount) || 2));
+                mode = mode === 'barrier' ? 'barrier' : 'normal';
+                bet = Math.max(0, Math.floor(Number(bet) || 0));
+                const roomId = 'room_' + onlineUid.slice(0, 6) + '_' + Date.now();
+                const room = {
+                    mode, bet, playerCount, hostUid: onlineUid,
+                    players: { Red: { uid: onlineUid, name: onlineName } },
+                    status: 'waiting', createdAt: serverTimestamp()
+                };
+                set(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`), room).catch(err => _onlineReportError('write:room', err));
+                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'lobby_host', roomId }).catch(() => {});
+                return roomId;
+            },
+
+            listenLobbyRoom(roomId, cb) {
+                return _onlineListen(`${ONLINE_ROOT}/rooms/${roomId}`, data => { if (data) cb(data); });
+            },
+
+            cancelLobbyRoom(roomId) {
+                if (!roomId) return;
+                remove(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`)).catch(() => {});
+                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle', roomId: null }).catch(() => {});
+            },
+
+            // A joined (non-host) member backing out of a still-waiting
+            // lobby before it fills up — removes just their own seat
+            // rather than tearing down the whole room for the host.
+            leaveLobbyAsMember(roomId) {
+                if (!roomId || !onlineUid) return;
+                const roomRef = ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`);
+                runTransaction(roomRef, room => {
+                    if (!room || room.status !== 'waiting') return room;
+                    const players = Object.assign({}, room.players || {});
+                    Object.keys(players).forEach(c => { if (players[c] && players[c].uid === onlineUid) delete players[c]; });
+                    return Object.assign({}, room, { players });
+                }).catch(err => _onlineReportError('room:leave', err));
+                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle', roomId: null }).catch(() => {});
+            },
+
+            // Sends a "join my room" invite — distinct `type` from the
+            // classic sendRequest() above, so renderIncomingRequests can
+            // tell them apart and the existing Accept button's behaviour
+            // for classic 1:1 requests stays completely unchanged.
+            sendRoomInvite(targetUid, roomId, room) {
+                const reqId = 'ri' + Date.now() + '_' + Math.floor(Math.random() * 9999);
+                const payload = {
+                    type: 'room', fromUid: onlineUid, fromName: onlineName, fromPublicId: onlinePublicId,
+                    roomId, mode: room.mode, bet: room.bet, playerCount: room.playerCount,
+                    createdAt: serverTimestamp()
+                };
+                set(ref(rtdb, `${ONLINE_ROOT}/requests/${targetUid}/${reqId}`), payload).catch(err => _onlineReportError('write', err));
+                return reqId;
+            },
+
+            declineRoomInvite(reqId, req) {
+                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(err => _onlineReportError('write', err));
+            },
+
+            // Friend's device calls this on Accept. Atomically claims the
+            // next free colour slot (via a transaction on the room itself)
+            // so two friends accepting at the same instant can't collide
+            // on the same seat.
+            async acceptRoomInvite(reqId, req) {
+                const roomRef = ref(rtdb, `${ONLINE_ROOT}/rooms/${req.roomId}`);
+                const order = ['Red', 'Green', 'Yellow', 'Blue'];
+                let finalRoom = null;
+                try {
+                    const result = await runTransaction(roomRef, room => {
+                        if (!room || room.status !== 'waiting') return room; // gone / already full — no-op
+                        const players = Object.assign({}, room.players || {});
+                        const already = Object.keys(players).some(c => players[c] && players[c].uid === onlineUid);
+                        if (!already) {
+                            const freeColor = order.find(c => !players[c]);
+                            if (!freeColor) return room; // full — no-op
+                            players[freeColor] = { uid: onlineUid, name: onlineName };
+                        }
+                        const next = Object.assign({}, room, { players });
+                        if (Object.keys(players).length >= room.playerCount) next.status = 'active';
+                        return next;
+                    });
+                    if (result.committed) finalRoom = result.snapshot.val();
+                } catch (err) { _onlineReportError('room:accept', err); }
+                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(() => {});
+                if (!finalRoom) return null;
+                // Mark myself in_game so my OWN watchForMatchStart fires.
+                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'in_game', roomId: req.roomId }).catch(() => {});
+                // If the room just became full, every OTHER member needs
+                // their own users/ node updated too, so their listener
+                // fires and they transition into the game at the same time.
+                if (finalRoom.status === 'active') {
+                    const updates = {};
+                    Object.values(finalRoom.players).forEach(p => {
+                        if (p.uid === onlineUid) return;
+                        updates[`${ONLINE_ROOT}/users/${p.uid}/status`] = 'in_game';
+                        updates[`${ONLINE_ROOT}/users/${p.uid}/roomId`] = req.roomId;
+                    });
+                    if (Object.keys(updates).length) update(ref(rtdb), updates).catch(() => {});
+                }
+                return finalRoom;
             }
         };
     </script>
@@ -2036,6 +2411,8 @@
         let onlineChatOpen = false;       // is the chat panel currently open?
         let onlineChatSeenIds = new Set();// message ids already rendered — lets us tell which are NEW on each update
         let onlineChatUnread = 0;         // unread count shown on the 💬 button while the panel is closed
+        let onlineMatchPlayerCount = 2;   // how many total players are in the CURRENT online match — 2 for
+                                           // every classic 1:1 invite match, 2-4 for Quick Match / room invites
 
         // ─── Coin wagering state ────────────────────────────────────────────
         let myCoins = 5000;               // locally cached balance, kept in sync by listenCoins()
@@ -2156,9 +2533,21 @@
                 gain.gain.setValueAtTime(0.55, now);
                 osc.start(now); osc.stop(now + 0.07);
             } else if (type === 'cut') {
-                // Capture "smash" — a noise crash layered under the original
-                // descending tone, reading much more like a piece getting
-                // knocked off the board than a plain synth sweep.
+                // Sword-slice capture hit — a fast bright metallic "shing"
+                // swipe (ringing high partials) immediately followed by the
+                // original heavier knock/crash, so it reads as a blade
+                // cutting the piece down rather than just a soft bump.
+                [2200, 3100, 4400].forEach((freq, i) => {
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.connect(g); g.connect(ctx.destination);
+                    o.type = 'triangle';
+                    o.frequency.setValueAtTime(freq, now);
+                    o.frequency.exponentialRampToValueAtTime(freq * 0.5, now + 0.18);
+                    g.gain.setValueAtTime(0.22 - i * 0.05, now);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    o.start(now); o.stop(now + 0.2);
+                });
                 osc.type = 'sawtooth'; osc.frequency.setValueAtTime(800, now);
                 osc.frequency.exponentialRampToValueAtTime(80, now + 0.28);
                 gain.gain.setValueAtTime(0.6, now);
@@ -2172,7 +2561,9 @@
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
                 osc.start(now); osc.stop(now + 0.3);
             } else if (type === 'home') {
-                // A short, cheerful rising three-note chime.
+                // A short, cheerful rising three-note chime, topped with a
+                // quick sparkling shimmer so a token reaching Home sounds
+                // like a little celebration rather than a plain notification.
                 [523, 659, 784].forEach((freq, i) => {
                     const o = ctx.createOscillator();
                     const g = ctx.createGain();
@@ -2184,6 +2575,28 @@
                     g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
                     o.start(t0); o.stop(t0 + 0.22);
                 });
+                playNoiseKnock(ctx, now + 0.28, 5200, 5, 0.35, 0.16);
+            } else if (type === 'rank1' || type === 'rank2' || type === 'rank3') {
+                // Finishing celebration — a bright ascending arpeggio, longer
+                // and richer for 1st place and progressively shorter/simpler
+                // for 2nd/3rd, so the sound itself tells them their placing.
+                const notesByRank = {
+                    rank1: [523, 659, 784, 1047, 1319],
+                    rank2: [523, 659, 784, 988],
+                    rank3: [523, 659, 784]
+                };
+                notesByRank[type].forEach((freq, i) => {
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.connect(g); g.connect(ctx.destination);
+                    o.type = 'triangle';
+                    const t0 = now + i * 0.09;
+                    o.frequency.setValueAtTime(freq, t0);
+                    g.gain.setValueAtTime(0.45, t0);
+                    g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.3);
+                    o.start(t0); o.stop(t0 + 0.3);
+                });
+                if (type === 'rank1') playNoiseKnock(ctx, now + 0.4, 4800, 6, 0.4, 0.18);
             } else if (type === 'chat') {
                 // A quiet two-note "pop" — deliberately much softer/shorter
                 // than the game sounds above, since this can fire mid-match
@@ -2238,6 +2651,19 @@
             }
             const onlNameInput = document.getElementById('onl-name-input');
             if (onlNameInput) onlNameInput.value = name;
+            const menuDisplay = document.getElementById('menu-player-name-display');
+            if (menuDisplay) menuDisplay.textContent = name;
+        }
+
+        // Lets the player rename themselves right from the main menu (before
+        // a game has even started) — reuses the same edit-name-modal as the
+        // in-game player box, just with a special 'MENU' target instead of
+        // a live player color.
+        function openMenuNameEdit() {
+            editingNameColor = 'MENU';
+            document.getElementById('edit-name-input').value = loadSavedPlayerName() || '';
+            document.getElementById('edit-name-modal').style.display = 'flex';
+            setTimeout(() => document.getElementById('edit-name-input').focus(), 50);
         }
 
         function submitPlayerName() {
@@ -2269,6 +2695,8 @@
                     if (n) n.style.display = 'block';
                 } else {
                     document.getElementById('name-red').value = savedName;
+                    const menuDisplay = document.getElementById('menu-player-name-display');
+                    if (menuDisplay) menuDisplay.textContent = savedName;
                     const m = document.getElementById('menu-screen');
                     if (m && m.style.display !== 'block') m.style.display = 'block';
                 }
@@ -2459,6 +2887,24 @@
             }
         }
 
+        // Keeps the "Partner & Barrier Mode" tile on the main menu (and the
+        // settings modal's own icon) in sync with whatever was last chosen,
+        // so the player can see the active settings without opening the
+        // dialog every time.
+        function updateMatchSettingsSummary() {
+            const labels = { off: 'Off', assist: 'Assist', full: 'Full Control', on: 'On', partner: 'Partner' };
+            const el = document.getElementById('settings-selector-current');
+            if (el) el.textContent = `Partner: ${labels[partnerModeSetting] || 'Off'} · Barrier: ${labels[barrierModeSetting] || 'Off'}`;
+            const icon = document.getElementById('settings-selector-icon');
+            if (icon) icon.textContent = (partnerModeSetting !== 'off' || barrierModeSetting !== 'off') ? '⚙️' : '🤝';
+        }
+        function openMatchSettingsModal() {
+            document.getElementById('match-settings-modal').style.display = 'flex';
+        }
+        function closeMatchSettingsModal() {
+            document.getElementById('match-settings-modal').style.display = 'none';
+        }
+
         function setPartnerMode(mode, el) {
             // BUG FIX: tapping the pill that is ALREADY active used to do
             // nothing (same mode just got reassigned to itself) — so an
@@ -2489,6 +2935,7 @@
                     if (onPill) onPill.classList.add('active');
                 }
             }
+            updateMatchSettingsSummary();
         }
 
         function setBarrierMode(mode, el) {
@@ -2543,6 +2990,7 @@
                     if (lockMsg) lockMsg.style.display = 'none';
                 }
             }
+            updateMatchSettingsSummary();
         }
 
         // ─── Game-mode select dialog ───────────────────────────────────────
@@ -2594,6 +3042,16 @@
         function saveEditedPlayerName() {
             const name = (document.getElementById('edit-name-input').value || '').trim();
             if (!name || !editingNameColor) { closeEditNameModal(); return; }
+
+            // Renaming from the main menu (before any game has started) —
+            // just update the saved name everywhere; there's no live
+            // `players` array yet to touch.
+            if (editingNameColor === 'MENU') {
+                savePlayerNameEverywhere(name);
+                closeEditNameModal();
+                return;
+            }
+
             const p = players.find(pl => pl.color === editingNameColor);
             if (p) p.name = name;
             // Keep the matching menu input (name-red/green/yellow/blue) in sync
@@ -2767,13 +3225,23 @@
 
             if (isOnlineMode && onlineMyColor) {
                 const myTag = document.getElementById('tag-' + onlineMyColor);
-                const opponent = players.find(p => p.color !== onlineMyColor);
-                const otherTag = opponent ? document.getElementById('tag-' + opponent.color) : null;
                 // My own tag+dice sits at the RIGHT of the bottom row (easy
-                // to reach/tap with a right thumb) — the opponent's sits at
-                // the left of the top row, mirroring it.
+                // to reach/tap with a right thumb). With exactly one
+                // opponent (classic 1:1 matches) this is unchanged from
+                // before: they land at the left of the top row, mirroring
+                // it. Quick Match / room-invite matches can have 2-3
+                // opponents — they fill in the rest of the bottom-left,
+                // then top-right slots, so every seat still lands in one
+                // of the board's four fixed corners.
                 if (myTag) bottomRow.appendChild(myTag);
-                if (otherTag) topRow.insertBefore(otherTag, topRow.firstChild);
+                const others = players.filter(p => p.color !== onlineMyColor);
+                others.forEach((p, i) => {
+                    const tag = document.getElementById('tag-' + p.color);
+                    if (!tag) return;
+                    if (i === 0) topRow.insertBefore(tag, topRow.firstChild);
+                    else if (i === 1) bottomRow.insertBefore(tag, bottomRow.firstChild);
+                    else topRow.appendChild(tag);
+                });
             } else {
                 // Local/hotseat/bot: board is never rotated, so restore the
                 // fixed default layout (Red/Green top, Blue/Yellow bottom)
@@ -3398,7 +3866,7 @@
                 const interval = setInterval(() => {
                     movers.forEach(m => m.step++);
                     playSound('step');
-                    movers.forEach(m => { if (m.step === 56) { m.status = 'HOME'; hasBonusTurn = true; } });
+                    movers.forEach(m => { if (m.step === 56) { m.status = 'HOME'; hasBonusTurn = true; spawnHomeCheer(m.color); } });
                     movers.forEach(updateTokenPosition);
                     stepsLeft--;
 
@@ -3534,6 +4002,10 @@
             if (checkPlayerFinished(token.color)) {
                 if (!winnersList.includes(token.color)) {
                     winnersList.push(token.color);
+                    // Individual finish celebration — only meaningful with 3+
+                    // players at the table (in a 2-player game the single
+                    // winner-modal that follows already covers it).
+                    if (players.length >= 3) showRankCelebration(token.color, winnersList.length);
                 }
             }
 
@@ -3575,6 +4047,7 @@
                             ot.step = -1;
                             updateTokenPosition(ot);
                             playSound('cut');
+                            spawnSwordSlash(token.pos[0], token.pos[1]);
                             captured = true;
                         }
                     });
@@ -3599,6 +4072,7 @@
                     });
                     if (hit.length) {
                         playSound('cut');
+                        spawnSwordSlash(token.pos[0], token.pos[1]);
                         document.getElementById('msg-log').innerText = `💥 ${token.color}'s Barrier cut ${p.color}'s Barrier!`;
                         cut = true;
                     }
@@ -3617,6 +4091,77 @@
                 currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
             } while (isColorFinishedForSkip(players[currentPlayerIndex].color));
             updateTurnUI();
+        }
+
+        // ── Capture, home-arrival, and rank-finish visual effects ──────────
+        function spawnSwordSlash(r, c) {
+            const board = document.getElementById('board');
+            if (!board) return;
+            let cellEl = board.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+            if (r === 7 && c === 7) cellEl = board.querySelector('.center-home-cell');
+            if (!cellEl) return;
+            const fx = document.createElement('span');
+            fx.className = 'sword-slash-fx';
+            fx.textContent = '⚔️';
+            cellEl.appendChild(fx);
+            setTimeout(() => fx.remove(), 550);
+        }
+
+        function spawnHomeCheer(color) {
+            const board = document.getElementById('board');
+            const cellEl = board && board.querySelector('.center-home-cell');
+            if (!cellEl) return;
+            const emojis = ['🎉', '✨', '🎊'];
+            for (let i = 0; i < 5; i++) {
+                const fx = document.createElement('span');
+                fx.className = 'home-cheer-fx';
+                fx.textContent = emojis[i % emojis.length];
+                const angle = (i / 5) * Math.PI * 2;
+                fx.style.setProperty('--cx', `${Math.cos(angle) * 34}px`);
+                fx.style.setProperty('--cy', `${Math.sin(angle) * 34 - 20}px`);
+                fx.style.setProperty('--cr', `${(Math.random() * 60 - 30)}deg`);
+                fx.style.animationDelay = `${i * 0.03}s`;
+                cellEl.appendChild(fx);
+                setTimeout(() => fx.remove(), 950);
+            }
+        }
+
+        function spawnConfettiBurst(container, count) {
+            const emojis = ['🎉', '🎊', '✨', '⭐'];
+            for (let i = 0; i < count; i++) {
+                const piece = document.createElement('span');
+                piece.className = 'confetti-piece';
+                piece.textContent = emojis[i % emojis.length];
+                const fx = (Math.random() * 160 - 80);
+                const fy = 70 + Math.random() * 60;
+                piece.style.setProperty('--fx', `${fx}px`);
+                piece.style.setProperty('--fy', `${fy}px`);
+                piece.style.setProperty('--fr', `${Math.random() * 360}deg`);
+                piece.style.left = `${50 + (Math.random() * 40 - 20)}%`;
+                piece.style.animationDelay = `${Math.random() * 0.15}s`;
+                container.appendChild(piece);
+                setTimeout(() => piece.remove(), 1300);
+            }
+        }
+
+        // Shown when a player finishes (all 4 tokens Home) in a 3+ player
+        // game — a quick, non-blocking medal toast so 1st/2nd/3rd place each
+        // get their own little celebration as they happen, on top of the
+        // final winner-modal shown once the whole match ends.
+        function showRankCelebration(color, rank) {
+            if (rank > 3) return;
+            const p = players.find(pl => pl.color === color);
+            const name = (p && p.name) || color;
+            const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+            const ordinal = { 1: '1st', 2: '2nd', 3: '3rd' };
+            const toast = document.getElementById('rank-celebration-toast');
+            if (!toast) return;
+            toast.innerHTML = `<div class="rank-medal">${medals[rank]}</div><div class="rank-title">${name} finished ${ordinal[rank]}!</div>`;
+            toast.classList.add('show');
+            spawnConfettiBurst(toast, rank === 1 ? 16 : 9);
+            playSound(rank === 1 ? 'rank1' : rank === 2 ? 'rank2' : 'rank3');
+            clearTimeout(window._rankToastTimer);
+            window._rankToastTimer = setTimeout(() => { toast.classList.remove('show'); }, 2000);
         }
 
         function renderTokens() {
@@ -3752,7 +4297,7 @@
             // client only ever touches its own coin balance (never the
             // opponent's) — see LudoOnline.creditCoins.
             if (isOnlineMode && !teamColors && onlineBetAmount > 0 && winnersList[0] === onlineMyColor && window.LudoOnline) {
-                const winnings = onlineBetAmount * 2;
+                const winnings = onlineBetAmount * onlineMatchPlayerCount;
                 window.LudoOnline.creditCoins(winnings);
                 playSound('coinWin');
                 showCoinResultBanner(`🪙 You won ${winnings.toLocaleString()} coins!`);
@@ -3913,6 +4458,39 @@
         // a board that just stopped responding, they're shown a clear win —
         // the match is over and they didn't lose it.
         function handleOpponentLeftOnline(reason) {
+            // 3-4 player online matches (Quick Match / room invites): if
+            // one player leaves mid-match there's no single fair "winner"
+            // among the remaining players, so instead of guessing one, the
+            // match just ends for everyone and every stake is refunded —
+            // simpler and fairer than picking a survivor. Classic 1:1
+            // matches (onlineMatchPlayerCount === 2) keep the exact
+            // original "you win" behaviour below, unchanged.
+            if (onlineMatchPlayerCount > 2) {
+                document.getElementById('winner-title').innerText = 'Match Ended';
+                const winnerModal = document.getElementById('winner-modal');
+                let sub = winnerModal.querySelector('.online-forfeit-sub');
+                if (!sub) {
+                    sub = document.createElement('p');
+                    sub.className = 'online-forfeit-sub';
+                    sub.style.cssText = 'font-size:0.68rem; color:var(--ivory-dim); margin:-8px 0 14px; line-height:1.5;';
+                    document.getElementById('winner-title').insertAdjacentElement('afterend', sub);
+                }
+                sub.textContent = reason === 'disconnected'
+                    ? 'A player went offline / lost connection, so this match has ended for everyone.'
+                    : 'A player left the match, so it has ended for everyone.';
+                winnerModal.style.display = 'flex';
+                if (onlineBetAmount > 0 && window.LudoOnline) {
+                    window.LudoOnline.creditCoins(onlineBetAmount); // refund only — no fair single winner here
+                    onlineBetAmount = 0;
+                }
+                isOnlineMode = false;
+                onlineDetachFns.forEach(fn => { try { fn(); } catch (e) {} });
+                onlineDetachFns = [];
+                teardownOnlineChat();
+                saveResumeState();
+                return;
+            }
+
             const opponent = players.find(p => p.color !== onlineMyColor);
             const oppName = opponent ? opponent.name : 'The other player';
             let subtitle;
@@ -3968,6 +4546,7 @@
             onlineMyColor = null;
             onlineApplyingRemote = false;
             onlineBetAmount = 0;
+            onlineMatchPlayerCount = 2;
         }
 
         // Starts a live 2-player online match. Both devices call this
@@ -3998,6 +4577,7 @@
             onlineMyColor = myColor;
             onlineLeavingSelf = false;
             onlineBetAmount = Math.max(0, Math.floor(Number(bet) || 0));
+            onlineMatchPlayerCount = 2;
 
             const titleEl = document.getElementById('game-title-label');
             if (titleEl) titleEl.innerText = onlineBetAmount > 0
@@ -4019,6 +4599,91 @@
             attachOnlineRoomListeners(roomId);
         }
 
+        // Starts a live 2-4 player online match from a generalized `room`
+        // record (lm_online/rooms/{roomId}.players = { Red:{uid,name},
+        // Green:{...}, ... }) — used by BOTH Quick Match and "Create Room"
+        // friend invites below. The classic 1:1 startOnlineGame() above is
+        // left completely untouched; this is a separate, additive path.
+        function startOnlineGameMulti(myColor, roomId, room) {
+            if (isOnlineMode && onlineRoomId && onlineRoomId !== roomId) cleanupOnlineGame('forfeit');
+
+            document.getElementById('online-screen').style.display = 'none';
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+
+            winnersList = []; currentPlayerIndex = 0; consecutiveSixes = 0; currentRoll = 0;
+            botMode = false;
+            activePartnerMode = 'off';
+            activeBarrierMode = (room.mode === 'barrier') ? 'on' : 'off';
+
+            isOnlineMode = true;
+            onlineRoomId = roomId;
+            onlineMyColor = myColor;
+            onlineLeavingSelf = false;
+            onlineBetAmount = Math.max(0, Math.floor(Number(room.bet) || 0));
+
+            const order = ['Red', 'Green', 'Yellow', 'Blue'];
+            const colorHex = { Red: colors[0].hex, Green: colors[1].hex, Yellow: colors[2].hex, Blue: colors[3].hex };
+            players = order.filter(c => room.players && room.players[c]).map(c => ({
+                name: (room.players[c] && room.players[c].name) || c,
+                color: c, hex: colorHex[c], isBot: false,
+                uid: room.players[c] && room.players[c].uid
+            }));
+            onlineMatchPlayerCount = players.length || 2;
+
+            const titleEl = document.getElementById('game-title-label');
+            if (titleEl) titleEl.innerText = onlineBetAmount > 0
+                ? `Ludo Master Pro — 🪙 ${onlineBetAmount.toLocaleString()} Coin Match`
+                : 'Ludo Master Pro';
+            if (onlineBetAmount > 0) playSound('bet');
+
+            initTokens();
+            createBoard();
+            applyBoardRotation(myColor);
+            applyTagLayout();
+            renderScoreboard();
+            updateTurnUI();
+            attachOnlineRoomListeners(roomId);
+        }
+
+        // Fires the moment MY OWN user record flips to `in_game` with a
+        // fresh roomId — the single shared trigger both Quick Match and
+        // "Create Room" invites rely on to start the game for every
+        // participant (host included) the instant a room actually fills
+        // up, with no participant needing to poll or guess when it's
+        // ready. Attached only while the player is actively searching or
+        // sitting in a lobby (see startQuickMatch/createRoom below) so it
+        // can never fire during — or interfere with — a classic 1:1 match.
+        let onlineMatchStartDetach = null;
+        function armOnlineMatchStartWatcher() {
+            if (onlineMatchStartDetach) return;
+            onlineMatchStartDetach = window.LudoOnline.watchForMatchStart(async (roomId) => {
+                const room = await window.LudoOnline.getRoom(roomId);
+                if (!room || !room.players) return;
+                const myUid = window.LudoOnline.getUid();
+                const myColor = Object.keys(room.players).find(c => room.players[c].uid === myUid);
+                if (!myColor) return;
+                disarmOnlineMatchStartWatcher();
+                document.getElementById('online-search-modal').style.display = 'none';
+                document.getElementById('online-lobby-modal').style.display = 'none';
+                const bet = Math.max(0, Math.floor(Number(room.bet) || 0));
+                const finish = () => startOnlineGameMulti(myColor, roomId, room);
+                if (bet > 0) {
+                    window.LudoOnline.deductCoins(bet).then(ok => {
+                        if (!ok) {
+                            showOnlineNotice('🪙', 'Not Enough Coins', `You no longer have enough coins to cover this ${bet.toLocaleString()} coin match.`, null);
+                            return;
+                        }
+                        finish();
+                    });
+                } else {
+                    finish();
+                }
+            });
+        }
+        function disarmOnlineMatchStartWatcher() {
+            if (onlineMatchStartDetach) { try { onlineMatchStartDetach(); } catch (e) {} onlineMatchStartDetach = null; }
+        }
 
         // ─── In-match chat + emoji — real-time ─────────────────────────────
         function teardownOnlineChat() {
@@ -4117,7 +4782,7 @@
                 if (!onlineChatSeenIds._primed) return;
                 if (fromOpponent) {
                     if (!onlineChatOpen) { onlineChatUnread++; updateOnlineChatBadge(); playSound('chat'); }
-                    if (isLikelyEmojiOnly(m.text || '')) showFloatingEmojiPop(m.text);
+                    if (isLikelyEmojiOnly(m.text || '')) showFloatingEmojiPop(m.text, m.from);
                 }
             });
             onlineChatSeenIds._primed = true;
@@ -4132,8 +4797,14 @@
         // Pops a brief floating emoji over the OPPONENT's scoreboard tag —
         // a lightweight, real-time "reaction" on the board itself, so it
         // reads even if the recipient hasn't opened the chat panel.
-        function showFloatingEmojiPop(emoji) {
-            const opponent = players.find(p => p.color !== onlineMyColor);
+        function showFloatingEmojiPop(emoji, fromUid) {
+            // In a 3-4 player match there's more than one "opponent", so
+            // prefer matching the actual sender by uid (set on `players`
+            // by startOnlineGameMulti); classic 1:1 matches don't carry a
+            // uid on `players`, so this falls back to the original
+            // "the other player" lookup exactly as before.
+            let opponent = fromUid ? players.find(p => p.uid === fromUid) : null;
+            if (!opponent) opponent = players.find(p => p.color !== onlineMyColor);
             if (!opponent) return;
             const tag = document.getElementById('tag-' + opponent.color);
             if (!tag) return;
@@ -4327,6 +4998,120 @@
             });
         }
 
+        // ─── Quick Match + Create Room UI wiring (additive — sits next to,
+        // never inside, the classic 1:1 invite flow above/below) ──────────
+        let qmSelectedCount = 2;
+        let crSelectedCount = 2;
+        let currentLobbyRoomId = null;
+        let currentLobbyDetach = null;
+        let isLobbyHost = false;
+
+        function setQuickMatchCount(n, el) {
+            qmSelectedCount = n;
+            document.querySelectorAll('.qm-count-pill').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function setCreateRoomCount(n, el) {
+            crSelectedCount = n;
+            document.querySelectorAll('.cr-count-pill').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function startQuickMatch() {
+            if (onlineBetSetting > myCoins) {
+                showOnlineNotice('🪙', 'Not Enough Coins', `You don't have enough coins for a ${onlineBetSetting.toLocaleString()} coin match.`, null);
+                return;
+            }
+            document.getElementById('online-search-sub').innerText = `Looking for a ${qmSelectedCount}-player match… (0/${qmSelectedCount} found)`;
+            document.getElementById('online-search-modal').style.display = 'flex';
+            armOnlineMatchStartWatcher();
+            window.LudoOnline.joinQuickMatch(qmSelectedCount, onlineModeSetting, onlineBetSetting, (found, needed) => {
+                const sub = document.getElementById('online-search-sub');
+                if (sub) sub.innerText = `Looking for a ${needed}-player match… (${found}/${needed} found)`;
+            });
+        }
+
+        function cancelQuickMatch() {
+            document.getElementById('online-search-modal').style.display = 'none';
+            disarmOnlineMatchStartWatcher();
+            if (window.LudoOnline) window.LudoOnline.leaveQuickMatch();
+        }
+
+        function createRoom() {
+            if (onlineBetSetting > myCoins) {
+                showOnlineNotice('🪙', 'Not Enough Coins', `You don't have enough coins for a ${onlineBetSetting.toLocaleString()} coin match.`, null);
+                return;
+            }
+            const roomId = window.LudoOnline.createLobbyRoom(crSelectedCount, onlineModeSetting, onlineBetSetting);
+            currentLobbyRoomId = roomId;
+            isLobbyHost = true;
+            document.getElementById('online-lobby-host-controls').style.display = 'block';
+            document.getElementById('online-lobby-modal').style.display = 'flex';
+            armOnlineMatchStartWatcher();
+            watchLobbyRoom(roomId);
+        }
+
+        function watchLobbyRoom(roomId) {
+            if (currentLobbyDetach) { try { currentLobbyDetach(); } catch (e) {} currentLobbyDetach = null; }
+            currentLobbyDetach = window.LudoOnline.listenLobbyRoom(roomId, renderOnlineLobby);
+        }
+
+        function renderOnlineLobby(room) {
+            const sub = document.getElementById('online-lobby-sub');
+            const list = document.getElementById('online-lobby-players');
+            if (!sub || !list) return;
+            const order = ['Red', 'Green', 'Yellow', 'Blue'];
+            const filled = room.players ? Object.keys(room.players).length : 0;
+            sub.innerText = room.status === 'active'
+                ? 'Room is full — starting…'
+                : `Waiting for players… (${filled}/${room.playerCount})`;
+            list.innerHTML = '';
+            order.slice(0, room.playerCount).forEach(c => {
+                const row = document.createElement('div');
+                row.className = 'onl-lobby-row' + (room.players && room.players[c] ? '' : ' empty-slot');
+                const dot = document.createElement('span');
+                dot.className = 'onl-lobby-slot-color';
+                dot.style.background = { Red: '#dc2626', Green: '#16a34a', Yellow: '#ca8a04', Blue: '#2563eb' }[c];
+                row.appendChild(dot);
+                const label = document.createElement('span');
+                label.textContent = room.players && room.players[c] ? (room.players[c].name || 'Player') : 'Empty seat';
+                row.appendChild(label);
+                list.appendChild(row);
+            });
+        }
+
+        function inviteFriendToLobby() {
+            if (!currentLobbyRoomId) return;
+            const idInput = document.getElementById('online-lobby-invite-input');
+            const id = (idInput.value || '').trim().toUpperCase();
+            if (!id) return;
+            window.LudoOnline.lookupByPublicId(id).then(u => {
+                if (!u || !u.online) {
+                    alert('No online player found with that ID.');
+                    return;
+                }
+                window.LudoOnline.getRoom(currentLobbyRoomId).then(room => {
+                    if (!room) return;
+                    window.LudoOnline.sendRoomInvite(u.uid, currentLobbyRoomId, room);
+                    idInput.value = '';
+                });
+            });
+        }
+
+        function leaveOnlineLobby() {
+            document.getElementById('online-lobby-modal').style.display = 'none';
+            document.getElementById('online-lobby-host-controls').style.display = 'none';
+            disarmOnlineMatchStartWatcher();
+            if (currentLobbyDetach) { try { currentLobbyDetach(); } catch (e) {} currentLobbyDetach = null; }
+            if (currentLobbyRoomId && window.LudoOnline) {
+                if (isLobbyHost) window.LudoOnline.cancelLobbyRoom(currentLobbyRoomId);
+                else window.LudoOnline.leaveLobbyAsMember(currentLobbyRoomId);
+            }
+            currentLobbyRoomId = null;
+            isLobbyHost = false;
+        }
+
         // Builds the list purely with DOM APIs (no inline onclick with
         // interpolated names/IDs) — safer, since a player's display name is
         // untrusted user text and could otherwise contain characters
@@ -4460,9 +5245,16 @@
             onlineActiveIncoming = { reqId, req };
             const busy = document.getElementById('game-screen').style.display !== 'none';
             const bet = Math.max(0, Math.floor(Number(req.bet) || 0));
-            let msg = bet > 0
-                ? `${req.fromName} wants to play a ${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'} match with you for 🪙 ${bet.toLocaleString()} coins.`
-                : `${req.fromName} wants to play a ${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'} match with you.`;
+            let msg;
+            if (req.type === 'room') {
+                msg = bet > 0
+                    ? `${req.fromName} invited you to a ${req.playerCount}-player room (${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'}) for 🪙 ${bet.toLocaleString()} coins.`
+                    : `${req.fromName} invited you to a ${req.playerCount}-player room (${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'}).`;
+            } else {
+                msg = bet > 0
+                    ? `${req.fromName} wants to play a ${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'} match with you for 🪙 ${bet.toLocaleString()} coins.`
+                    : `${req.fromName} wants to play a ${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'} match with you.`;
+            }
             if (busy) msg += ' You are currently in a game — accepting will end it.';
             const acceptBtn = document.getElementById('online-request-accept-btn');
             if (bet > myCoins) {
@@ -4487,6 +5279,37 @@
             }
             document.getElementById('online-request-modal').style.display = 'none';
             const myProf = window.LudoOnline.getProfile();
+
+            // Room invites (from "Create Room") join a shared N-player
+            // lobby instead of starting a 1:1 match directly — the actual
+            // game start is handled uniformly for every seat by
+            // armOnlineMatchStartWatcher() the instant the room fills up,
+            // so there's nothing more to do here than join + wait.
+            if (req.type === 'room') {
+                // NOTE: the coin stake for a room match is deducted once,
+                // uniformly for every seat (host included), the instant
+                // the room actually fills up and the game starts — see
+                // armOnlineMatchStartWatcher() below. Not here, since
+                // joining a still-waiting lobby shouldn't cost coins yet.
+                onlineActiveIncoming = null;
+                armOnlineMatchStartWatcher();
+                document.getElementById('online-lobby-host-controls').style.display = 'none';
+                document.getElementById('online-lobby-modal').style.display = 'flex';
+                window.LudoOnline.acceptRoomInvite(reqId, req).then(room => {
+                    if (!room) {
+                        document.getElementById('online-lobby-modal').style.display = 'none';
+                        disarmOnlineMatchStartWatcher();
+                        showOnlineNotice('🙁', 'Room Unavailable', 'This room is no longer available (it may have filled up or been cancelled).', null);
+                        return;
+                    }
+                    currentLobbyRoomId = req.roomId;
+                    isLobbyHost = false;
+                    renderOnlineLobby(room);
+                    watchLobbyRoom(req.roomId);
+                });
+                return;
+            }
+
             const startMatch = () => {
                 window.LudoOnline.acceptRequest(reqId, req);
                 startOnlineGame('Yellow', req.roomId, req.mode, req.fromName, myProf.name, bet);
@@ -4513,7 +5336,11 @@
             // in another match right now, or did we just not want to play?
             const busy = document.getElementById('game-screen').style.display !== 'none';
             document.getElementById('online-request-modal').style.display = 'none';
-            window.LudoOnline.declineRequest(reqId, req, busy ? 'busy' : 'declined');
+            if (req.type === 'room') {
+                window.LudoOnline.declineRoomInvite(reqId, req);
+            } else {
+                window.LudoOnline.declineRequest(reqId, req, busy ? 'busy' : 'declined');
+            }
             onlineActiveIncoming = null;
         });
 
