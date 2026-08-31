@@ -1308,10 +1308,47 @@
             measurementId:     "G-JM9QZ8QCWS"
         };
 
-        const app  = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db   = getFirestore(app);
-        const rtdb = getDatabase(app);
+        const app       = initializeApp(firebaseConfig);
+        const auth      = getAuth(app);
+        const db        = getFirestore(app);
+        const rtdb      = getDatabase(app);
+
+        // ─── SECURITY: coin economy lives server-side, via Cloudflare Pages
+        // Functions ───────────────────────────────────────────────────────
+        // All coin-balance changes (entry fees, match payouts, refunds, daily
+        // bonus, ad rewards) go through the Cloudflare Pages Functions
+        // deployed alongside this game (see functions/api/) instead of
+        // writing `coins` directly from the browser — see the "coins"
+        // Security Rule change in Realtime_database.html, which blocks the
+        // client from writing that field directly at all. Each function
+        // independently verifies the request server-side (room membership,
+        // the room's real locked-in bet amount, one-settlement-per-match,
+        // cooldowns) using a Firebase Service Account, instead of trusting
+        // whatever this client sends — this needs no Firebase Blaze plan,
+        // since it's just the free Realtime Database REST API with a
+        // Service Account token, not Cloud Functions.
+        //
+        // `_callFn` sends the player's own Firebase ID token so the function
+        // can verify who's really asking; relies on this HTML being served
+        // from the SAME Cloudflare Pages site the functions are deployed to
+        // (so this relative path resolves to that site's own functions — no
+        // CORS setup needed for the normal case).
+        async function _callFn(name, payload) {
+            const user = auth.currentUser;
+            if (!user) return { ok: false, reason: 'not-signed-in' };
+            try {
+                const idToken = await user.getIdToken();
+                const res = await fetch(`/api/${name}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+                    body: JSON.stringify(payload || {})
+                });
+                return await res.json();
+            } catch (e) {
+                console.error(`[Functions] ${name} failed:`, e);
+                return { ok: false, reason: 'network-error' };
+            }
+        }
 
         // ─── Anonymous sign-in, with retry (BUG FIX) ────────────────────────
         // Used to be a single fire-and-forget signInAnonymously() call. On a
@@ -1931,47 +1968,28 @@
             // DIFFERENT (older) uid, this is a returning player whose auth
             // session rotated but whose publicId survived, so their old
             // balance is copied over onto the new uid instead of resetting.
-            get(idIndexRef).then(idSnap => {
-                const oldUid = idSnap.exists() ? idSnap.val() : null;
+            // Non-coin fields (name/status/online/etc.) are still fine for
+            // the client to write directly — only the `coins` field itself
+            // is locked down (see the "coins" Security Rule).
+            const base = {
+                uid: onlineUid, name: onlineName, publicId: onlinePublicId,
+                online: true, status: 'idle', roomId: null, updatedAt: serverTimestamp()
+            };
+            update(userRef, base).catch(err => _onlineReportError('write:users', err));
 
-                return get(userRef).then(snap => {
-                    const existing = snap.exists() ? snap.val() : null;
-                    const base = {
-                        uid: onlineUid, name: onlineName, publicId: onlinePublicId,
-                        online: true, status: 'idle', roomId: null, updatedAt: serverTimestamp()
-                    };
+            // SECURITY: coin initialization (first-ever launch → 5000
+            // starting coins, or a device that lost its Auth session but
+            // still has its old publicId → recover the OLD balance instead
+            // of resetting) used to be a direct client write, which meant
+            // the client could just write ANY number here, not just 5000.
+            // Now it's the initAccount Cloud Function's job (see
+            // functions/index.js) — it does the exact same lookup
+            // server-side, using admin access that bypasses this file's
+            // rules entirely, and is a safe no-op if this uid already has a
+            // coins value (never resets an existing balance).
+            _callFn('initAccount', { publicId: onlinePublicId, name: onlineName })
+                .catch(err => _onlineReportError('write:initAccount', err));
 
-                    if (existing && typeof existing.coins === 'number') {
-                        // This uid already has its own coin record — never touch it.
-                        return update(userRef, base);
-                    }
-
-                    if (oldUid && oldUid !== onlineUid) {
-                        // Same player (same publicId), rotated uid — recover balance.
-                        return get(ref(rtdb, `${ONLINE_ROOT}/users/${oldUid}`)).then(oldSnap => {
-                            const old = oldSnap.exists() ? oldSnap.val() : null;
-                            if (old && typeof old.coins === 'number') {
-                                base.coins           = old.coins;
-                                base.coinsZeroAt      = old.coinsZeroAt || null;
-                                base.lastDailyBonusAt = old.lastDailyBonusAt || null;
-                            } else {
-                                base.coins = 5000;
-                                base.coinsZeroAt = null;
-                            }
-                            return update(userRef, base);
-                        }).catch(() => {
-                            base.coins = 5000;
-                            base.coinsZeroAt = null;
-                            return update(userRef, base);
-                        });
-                    }
-
-                    // Genuinely never seen this publicId before — real first launch.
-                    base.coins = 5000;
-                    base.coinsZeroAt = null;
-                    return update(userRef, base);
-                });
-            }).catch(err => _onlineReportError('write:users', err));
             set(idIndexRef, onlineUid).catch(err => _onlineReportError('write:idIndex', err));
             // If the tab/app dies without a clean goodbye, the server itself
             // flips us to offline the instant the connection drops.
@@ -2235,100 +2253,6 @@
                 } catch (e) { return 5000; }
             },
 
-            // Atomically subtracts `amount` from MY OWN balance. Refuses
-            // (returns false) if the balance is insufficient — runTransaction
-            // aborts by returning `undefined` from the updater, which is
-            // exactly what stops a double-spend if this ever ran twice in
-            // quick succession (e.g. a flaky double-tap on Accept).
-            async deductCoins(amount) {
-                if (!onlineUid || !amount) return true;
-                const coinsRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}/coins`);
-                try {
-                    const result = await runTransaction(coinsRef, (cur) => {
-                        const bal = typeof cur === 'number' ? cur : 5000;
-                        if (bal < amount) return; // abort — insufficient funds
-                        return bal - amount;
-                    });
-                    if (!result.committed) return false;
-                    if (result.snapshot.val() === 0) {
-                        update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { coinsZeroAt: serverTimestamp() }).catch(() => {});
-                    }
-                    return true;
-                } catch (e) { _onlineReportError('coins:deduct', e); return false; }
-            },
-
-            // Atomically adds `amount` to MY OWN balance (winnings). Returns
-            // the new balance on success, or undefined if it didn't happen
-            // (not ready / no uid / a Firebase error) — callers use this to
-            // confirm the credit actually landed instead of assuming it did.
-            async creditCoins(amount) {
-                if (!onlineUid || !amount) return undefined;
-                const coinsRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}/coins`);
-                try {
-                    const result = await runTransaction(coinsRef, (cur) => (typeof cur === 'number' ? cur : 5000) + amount);
-                    if (!result.committed) return undefined;
-                    update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { coinsZeroAt: null }).catch(() => {});
-                    return result.snapshot.val();
-                } catch (e) { _onlineReportError('coins:credit', e); return undefined; }
-            },
-
-            // Grants a free coin daily bonus — once every 24 hours,
-            // regardless of current balance (previously this only ever fired
-            // once the balance hit exactly 0, and refilled to a flat 5000).
-            // Re-checked against the server-stored timestamp so a player
-            // can't just change their phone's clock to claim early.
-            //
-            // BUG FIX: this used to be a plain get() (read balance) then a
-            // separate update() (write balance+500) a moment later — NOT
-            // atomic. If anything else touched this same users/{uid} record
-            // in between those two calls (most notably the identity-recovery
-            // logic in registerOnlineIdentity(), which can still be
-            // resolving right after the app opens), that other write could
-            // land in between and get silently overwritten, or overwrite
-            // this one — the reward could vanish even though this function
-            // reported success. Using runTransaction() makes the whole
-            // read-check-write a single atomic operation the database
-            // itself guarantees can't be clobbered by another write.
-            async claimDailyBonus() {
-                if (!onlineUid) return { ok: false, reason: 'not-ready' };
-                const DAY = 24 * 60 * 60 * 1000;
-                const userRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`);
-                try {
-                    const result = await runTransaction(userRef, (u) => {
-                        if (u === null) return u; // record not created yet — abort, nothing to claim against
-                        const lastClaim = u.lastDailyBonusAt;
-                        if (lastClaim && (Date.now() - lastClaim) < DAY) return; // abort — still on cooldown
-                        const bal = typeof u.coins === 'number' ? u.coins : 5000;
-                        u.coins = bal + DAILY_BONUS_AMOUNT;
-                        // NOTE: serverTimestamp() must not be used inside a
-                        // transaction updater (Firebase docs specifically warn
-                        // against it — it can make the transaction retry
-                        // forever). Date.now() is accurate enough for this
-                        // 24h cooldown check.
-                        u.lastDailyBonusAt = Date.now();
-                        u.coinsZeroAt = null;
-                        return u;
-                    });
-                    if (!result.committed) {
-                        const u = result.snapshot.exists() ? result.snapshot.val() : null;
-                        if (u && u.lastDailyBonusAt) {
-                            const elapsed = Date.now() - u.lastDailyBonusAt;
-                            if (elapsed < DAY) return { ok: false, reason: 'too-soon', remainingMs: DAY - elapsed };
-                        }
-                        return { ok: false, reason: 'not-ready' };
-                    }
-                    return { ok: true, newBalance: result.snapshot.val().coins };
-                } catch (e) { _onlineReportError('coins:claim', e); return { ok: false, reason: 'error', message: e.message }; }
-            },
-
-            // Rewarded-ad coin credit — called once the player watches an ad
-            // and returns to the game (see handleWatchAdForCoins() in the
-            // game-logic script below). No cap: as many ads as they watch,
-            // that many times they're credited.
-            async creditAdReward() {
-                return this.creditCoins(AD_REWARD_AMOUNT);
-            },
-
             // ─── Quick Match (auto matchmaking) + multi-friend room invites ──
             // Everything below is purely ADDITIVE: it lives at its own
             // `lm_online/queue/` path and reuses `lm_online/rooms/` with a
@@ -2532,6 +2456,75 @@
                     if (Object.keys(updates).length) update(ref(rtdb), updates).catch(() => {});
                 }
                 return finalRoom;
+            },
+
+            // ─── Coin economy — ALL server-side (Cloud Functions) ───────────
+            // SECURITY REWRITE: every one of these used to read/write
+            // `lm_online/users/{uid}/coins` directly from the browser via a
+            // client-side runTransaction(). That only ever checked WHO was
+            // writing (their own uid) — never WHETHER the amount being
+            // written was actually earned. Since the Firebase config in
+            // this file is necessarily public, anyone could open dev tools
+            // (or just call the Realtime Database REST API directly with
+            // their own valid login) and set their own coins to literally
+            // any number, completely bypassing match results.
+            //
+            // Now `coins` is not client-writable at all (see the Security
+            // Rules) — only a Cloud Function, running with admin
+            // privileges that bypass rules entirely, can touch it. Each
+            // function independently re-derives the correct amount from
+            // data IT already trusts (the room's locked-in `bet` and
+            // `players` list, a server-side timestamp for cooldowns) —
+            // never from a number the client sends — so a forged amount
+            // from a compromised/hostile client simply has nothing to grab
+            // onto.
+            //
+            // Pays MY entry fee for `roomId`, using the bet amount stored
+            // on the ROOM itself (server-side), not any amount the caller
+            // supplies. Safe to call more than once for the same room —
+            // the function tracks who has already paid and just confirms
+            // success without charging twice.
+            async payEntryFee(roomId) {
+                if (!roomId) return false;
+                const res = await _callFn('payEntryFee', { roomId });
+                return !!(res && res.ok);
+            },
+
+            // Settles `roomId` as a WIN for me. The payout (bet × player
+            // count) is computed server-side from the room record — never
+            // from a client-supplied number — and a room can only ever be
+            // settled once (whoever's settlement call lands first server-side
+            // wins the race; every other call, from any device, is rejected
+            // as "already-settled"), so this can't be called twice to double
+            // a payout.
+            async settleMatchWin(roomId) {
+                if (!roomId) return { ok: false };
+                return await _callFn('settleMatchWin', { roomId });
+            },
+
+            // Refunds MY OWN stake for `roomId` (used when a 3-4 player
+            // match ends early with no fair single winner). Each room
+            // member can claim their own refund once; the amount refunded
+            // is always exactly their own bet, read from the room record.
+            async settleMatchRefund(roomId) {
+                if (!roomId) return { ok: false };
+                return await _callFn('settleMatchRefund', { roomId });
+            },
+
+            // Daily free-coin bonus. The 24h cooldown is enforced against a
+            // server-stored timestamp inside the function, so changing the
+            // phone's clock can't unlock an early claim.
+            async claimDailyBonus() {
+                return await _callFn('claimDailyBonus', {});
+            },
+
+            // Rewarded-ad coin credit. Fixed server-side amount, with a
+            // short server-enforced cooldown between claims so a script
+            // calling this in a tight loop (instead of actually watching
+            // ads) can't farm coins.
+            async creditAdReward() {
+                const res = await _callFn('creditAdReward', {});
+                return res && res.ok ? res.newBalance : undefined;
             },
 
             // ─── Persistent Account (Email/Password) ───────────────────────
@@ -4872,18 +4865,23 @@
             }
             document.getElementById('winner-title').innerText = title;
 
-            // ─── Coin wager settlement ──────────────────────────────────
+            // ─── Coin wager settlement (SECURITY: server-verified) ──────────
             // endGame() with no teamColors (Partner Mode never runs online)
             // only ever fires on the device whose OWN move just finished all
             // 4 tokens — i.e. this branch only executes on the winner's own
-            // device, so it's always safe to credit "myself" here. Each
-            // client only ever touches its own coin balance (never the
-            // opponent's) — see LudoOnline.creditCoins.
+            // device. The actual payout is no longer trusted from this
+            // client's own math: settleMatchWin() asks the settleMatchWin
+            // Cloud Function to look up the room's real bet/player-count
+            // itself and pay out exactly that — and the room can only be
+            // settled once, ever, no matter how many devices try.
             if (isOnlineMode && !teamColors && onlineBetAmount > 0 && winnersList[0] === onlineMyColor && window.LudoOnline) {
-                const winnings = onlineBetAmount * onlineMatchPlayerCount;
-                window.LudoOnline.creditCoins(winnings);
-                playSound('coinWin');
-                showCoinResultBanner(`🪙 You won ${winnings.toLocaleString()} coins!`);
+                const settleRoomId = onlineRoomId;
+                window.LudoOnline.settleMatchWin(settleRoomId).then(res => {
+                    if (res && res.ok && res.payout) {
+                        playSound('coinWin');
+                        showCoinResultBanner(`🪙 You won ${res.payout.toLocaleString()} coins!`);
+                    }
+                });
                 onlineBetAmount = 0; // settled — never credit twice for this match
             }
 
@@ -5063,7 +5061,10 @@
                     : 'A player left the match, so it has ended for everyone.';
                 winnerModal.style.display = 'flex';
                 if (onlineBetAmount > 0 && window.LudoOnline) {
-                    window.LudoOnline.creditCoins(onlineBetAmount); // refund only — no fair single winner here
+                    // refund only — no fair single winner here. Server
+                    // re-derives the refund amount from the room's own
+                    // bet field and lets each member claim it once.
+                    window.LudoOnline.settleMatchRefund(onlineRoomId);
                     onlineBetAmount = 0;
                 }
                 isOnlineMode = false;
@@ -5095,12 +5096,15 @@
 
             // Same coin settlement as a normal finish (see endGame): the
             // player who STAYED — i.e. this device — wins the pot when the
-            // opponent leaves/disconnects mid-match.
+            // opponent leaves/disconnects mid-match. Server-verified, same
+            // as endGame() above.
             if (onlineBetAmount > 0 && window.LudoOnline) {
-                const winnings = onlineBetAmount * 2;
-                window.LudoOnline.creditCoins(winnings);
-                playSound('coinWin');
-                showCoinResultBanner(`🪙 You won ${winnings.toLocaleString()} coins!`);
+                window.LudoOnline.settleMatchWin(onlineRoomId).then(res => {
+                    if (res && res.ok && res.payout) {
+                        playSound('coinWin');
+                        showCoinResultBanner(`🪙 You won ${res.payout.toLocaleString()} coins!`);
+                    }
+                });
                 onlineBetAmount = 0;
             }
 
@@ -5252,7 +5256,10 @@
                 const bet = Math.max(0, Math.floor(Number(room.bet) || 0));
                 const finish = () => startOnlineGameMulti(myColor, roomId, room);
                 if (bet > 0) {
-                    window.LudoOnline.deductCoins(bet).then(ok => {
+                    // SECURITY: payEntryFee re-reads the real bet from the
+                    // room record server-side — `bet` here is only used for
+                    // the "not enough coins" message text.
+                    window.LudoOnline.payEntryFee(roomId).then(ok => {
                         if (!ok) {
                             showOnlineNotice('🪙', 'Not Enough Coins', `You no longer have enough coins to cover this ${bet.toLocaleString()} coin match.`, null);
                             return;
@@ -5911,9 +5918,10 @@
                 if (resp.status === 'accepted') {
                     const myProf = window.LudoOnline.getProfile();
                     const agreedBet = Math.max(0, Math.floor(Number(resp.bet) || 0));
-                    const startMatch = () => startOnlineGame('Red', resp.roomId || onlinePendingReq.roomId, onlineModeSetting, myProf.name, targetName, agreedBet);
+                    const settleRoomId = resp.roomId || onlinePendingReq.roomId;
+                    const startMatch = () => startOnlineGame('Red', settleRoomId, onlineModeSetting, myProf.name, targetName, agreedBet);
                     if (agreedBet > 0) {
-                        window.LudoOnline.deductCoins(agreedBet).then(ok => {
+                        window.LudoOnline.payEntryFee(settleRoomId).then(ok => {
                             if (!ok) {
                                 showOnlineNotice('🪙', 'Not Enough Coins', `You no longer have enough coins to cover this ${agreedBet.toLocaleString()} coin match.`, null);
                                 return;
@@ -6028,7 +6036,7 @@
                 startOnlineGame('Yellow', req.roomId, req.mode, req.fromName, myProf.name, bet);
             };
             if (bet > 0) {
-                window.LudoOnline.deductCoins(bet).then(ok => {
+                window.LudoOnline.payEntryFee(req.roomId).then(ok => {
                     if (!ok) {
                         showOnlineNotice('🪙', 'Not Enough Coins', `You no longer have enough coins to cover this ${bet.toLocaleString()} coin match.`, null);
                         return;
