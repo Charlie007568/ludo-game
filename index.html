@@ -666,19 +666,21 @@
         <p id="loading-status-msg" style="font-size:0.66rem; color:#888; margin-top:22px; max-width:260px; line-height:1.6;"></p>
     </div>
 
-    <!-- WELCOME (first run — asked before the menu is ever shown): choose to
-         log into a saved account, or continue as Guest exactly like before
-         (asks for a display name). Editing your name later still happens
-         from the "Your Name" card in the menu, same as always. -->
+    <!-- WELCOME (first run — asked before the menu is ever shown): every
+         player now needs an account (email + password) — there is no
+         "Continue as Guest" path anymore, so two players can never end up
+         sharing one identity/name by accident. Editing your name later
+         still happens from the "Your Name" card in the menu, same as
+         always. -->
     <div id="name-entry-screen" class="glass-panel">
 
         <!-- Step 1: choice -->
         <div id="welcome-choice-view">
             <div class="name-entry-icon">🧑‍🎲</div>
             <h1 class="title-text" style="font-size:1.35rem; margin-bottom:6px;">Welcome!</h1>
-            <p class="name-entry-sub" style="margin-bottom:18px;">Log in to bring back a saved account, or jump straight in as a Guest.</p>
+            <p class="name-entry-sub" style="margin-bottom:18px;">Log in to your account, or create a new one to get started.</p>
             <button class="btn btn-green" onclick="showWelcomeLogin()">🔐 Login to Your Account</button>
-            <button class="btn" style="margin-top:10px;" onclick="showWelcomeGuest()">👤 Continue as Guest</button>
+            <button class="btn" style="margin-top:10px;" onclick="showWelcomeSignup()">✨ Create New Account</button>
         </div>
 
         <!-- Step 2a: login form (same account system as the menu's Account
@@ -694,12 +696,19 @@
             <button class="onl-back-btn" style="width:100%; margin-top:10px;" onclick="showWelcomeChoice()">Back</button>
         </div>
 
-        <!-- Step 2b: guest name entry — UNCHANGED from the original flow -->
-        <div id="welcome-guest-view" style="display:none;">
-            <div class="name-entry-icon">🧑‍🎲</div>
-            <h1 class="title-text" style="font-size:1.35rem; margin-bottom:16px;">Welcome!</h1>
-            <input type="text" id="player-name-input" class="name-entry-input" placeholder="Apna naam likhein" maxlength="18" onkeydown="if(event.key==='Enter') submitPlayerName();">
-            <button class="btn btn-green" style="margin-top:14px;" onclick="submitPlayerName()">Continue</button>
+        <!-- Step 2b: create a brand-new account — name + email + password
+             all at once. The name is claimed for uniqueness (see
+             window.LudoOnline.claimName) BEFORE the account is created, so
+             two players can never end up with the same display name — a
+             popup tells them to pick another one if it's already taken. -->
+        <div id="welcome-signup-view" style="display:none;">
+            <div class="name-entry-icon">✨</div>
+            <h1 class="title-text" style="font-size:1.2rem; margin-bottom:12px;">Create Your Account</h1>
+            <div id="welcome-signup-msg" style="display:none;"></div>
+            <input type="text" id="welcome-signup-name" class="name-entry-input" placeholder="Your display name" maxlength="18" autocomplete="off">
+            <input type="email" id="welcome-signup-email" class="name-entry-input" style="margin-top:10px;" placeholder="Email address" autocomplete="email">
+            <input type="password" id="welcome-signup-password" class="name-entry-input" style="margin-top:10px;" placeholder="Password (min 6 characters)" autocomplete="new-password" onkeydown="if(event.key==='Enter') submitWelcomeSignup();">
+            <button class="btn btn-green" style="margin-top:14px;" onclick="submitWelcomeSignup()" id="welcome-signup-btn">Create Account</button>
             <button class="onl-back-btn" style="width:100%; margin-top:10px;" onclick="showWelcomeChoice()">Back</button>
         </div>
     </div>
@@ -1918,6 +1927,11 @@
         const AD_REWARD_AMOUNT   = 100;
         let onlineUid = null;
         let onlineName = '';
+        // Normalized (lowercase, key-safe) form of onlineName — tracks which
+        // slot in lm_online/nameIndex this device currently "owns", so a
+        // rename can release the old slot instead of leaking it forever.
+        // See window.LudoOnline.claimName below.
+        let onlineNameKey = '';
         let onlinePublicId = '';
         const _onlineListenerRefs = {}; // path -> {ref, cb} so we can detach cleanly
 
@@ -1933,10 +1947,27 @@
             for (let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
             return id;
         }
+        // Turns a display name into a safe, case-insensitive Realtime
+        // Database key for lm_online/nameIndex — lowercased so "Ram" and
+        // "ram" collide on purpose, and with characters RTDB keys can't
+        // contain (. # $ [ ] /) plus whitespace collapsed to underscores.
+        function _normalizeNameKey(name) {
+            return String(name || '')
+                .trim()
+                .toLowerCase()
+                .replace(/[.#$\[\]\/\s]+/g, '_')
+                .slice(0, 40);
+        }
         onlinePublicId = _onlineLoad('lm_online_id', '');
         onlineName     = _onlineLoad('lm_online_name', '');
         if (!onlinePublicId) { onlinePublicId = _genPublicId(); _onlineSave('lm_online_id', onlinePublicId); }
         if (!onlineName)     { onlineName = 'Player' + Math.floor(1000 + Math.random() * 9000); _onlineSave('lm_online_name', onlineName); }
+        // Best-effort: assume this device already owns the nameIndex slot
+        // matching its last-known name (it claimed it at some point in the
+        // past) — claimName() below only needs this to know what to
+        // release on the NEXT rename, so a stale/wrong guess here just
+        // means, at worst, one old slot never gets cleaned up.
+        onlineNameKey = _onlineLoad('lm_online_name_key', '') || _normalizeNameKey(onlineName);
 
         function registerOnlineIdentity(uid) {
             if (!uid) return;
@@ -2042,11 +2073,74 @@
                 return { uid: onlineUid, name: onlineName, publicId: onlinePublicId };
             },
 
+            // Low-level, NOT uniqueness-checked — only used internally for
+            // the very first identity registration (see
+            // registerOnlineIdentity), where a machine-generated fallback
+            // name is acceptable without a claim. Every player-facing name
+            // change should go through claimName() below instead.
             setName(newName) {
                 newName = String(newName || '').trim().slice(0, 18) || onlineName;
                 onlineName = newName;
                 _onlineSave('lm_online_name', onlineName);
                 if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { name: onlineName }).catch(err => _onlineReportError('write', err));
+            },
+
+            // SECURITY / UX: claims `newName` exclusively for this uid via
+            // lm_online/nameIndex/{normalizedName} before ever touching the
+            // visible profile name — so two players can never end up
+            // sharing one display name. Uses a transaction (read-check-
+            // write as one atomic step) so two players racing to grab the
+            // same name at the same instant can't both "win": whichever
+            // request reaches the database first claims it; the other sees
+            // { ok: false, reason: 'name-taken' }.
+            //
+            // On success, also releases this device's PREVIOUS name slot
+            // (if any) so renaming doesn't leave old names permanently
+            // squatted — release is best-effort (rules only allow deleting
+            // your own claim, so a stale prior owner id here would just
+            // silently no-op rather than error).
+            async claimName(newName) {
+                newName = String(newName || '').trim().slice(0, 18);
+                if (!newName) return { ok: false, reason: 'empty' };
+                if (!onlineUid) return { ok: false, reason: 'not-ready' };
+
+                const normalized = _normalizeNameKey(newName);
+                if (!normalized) return { ok: false, reason: 'invalid' };
+
+                // Already own this exact slot (e.g. just fixing capitalization
+                // — "ram" -> "Ram") — no need to touch the index at all.
+                if (normalized === onlineNameKey) {
+                    onlineName = newName;
+                    _onlineSave('lm_online_name', onlineName);
+                    if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { name: onlineName }).catch(err => _onlineReportError('write', err));
+                    return { ok: true };
+                }
+
+                const nameRef = ref(rtdb, `${ONLINE_ROOT}/nameIndex/${normalized}`);
+                let committed = false;
+                try {
+                    const result = await runTransaction(nameRef, cur => {
+                        if (cur && cur !== onlineUid) return; // abort — someone else already has it
+                        return onlineUid;
+                    });
+                    committed = result.committed;
+                } catch (e) {
+                    _onlineReportError('claimName', e);
+                    return { ok: false, reason: 'error', message: e.message };
+                }
+                if (!committed) return { ok: false, reason: 'name-taken' };
+
+                const previousKey = onlineNameKey;
+                if (previousKey && previousKey !== normalized) {
+                    remove(ref(rtdb, `${ONLINE_ROOT}/nameIndex/${previousKey}`)).catch(() => {});
+                }
+
+                onlineNameKey = normalized;
+                onlineName = newName;
+                _onlineSave('lm_online_name', onlineName);
+                _onlineSave('lm_online_name_key', onlineNameKey);
+                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { name: onlineName }).catch(err => _onlineReportError('write', err));
+                return { ok: true };
             },
 
             // Live list of other online, idle (not already in a match) players.
@@ -2984,24 +3078,31 @@
         function loadSavedPlayerName() {
             try { return localStorage.getItem(PLAYER_NAME_KEY) || ''; } catch (e) { return ''; }
         }
-        // Single source of truth for "your" name — updates the hidden
-        // name-red input (used by startGame()), the saved value (so it's
-        // remembered next time / on the name-entry screen), and the online
-        // lobby profile name, all at once, from wherever it was changed.
-        function savePlayerNameEverywhere(name) {
+        // Single source of truth for "your" name — claims it (see
+        // window.LudoOnline.claimName, uniqueness-checked) and, only if
+        // that succeeds, updates the hidden name-red input (used by
+        // startGame()), the saved value (so it's remembered next time),
+        // and the online lobby profile name, all at once, from wherever
+        // it was changed. Returns { ok, reason } so callers can show a
+        // "name already taken" popup instead of silently applying nothing.
+        async function savePlayerNameEverywhere(name) {
             name = (name || '').trim();
-            if (!name) return;
+            if (!name) return { ok: false, reason: 'empty' };
+
+            if (window.LudoOnline && typeof window.LudoOnline.claimName === 'function') {
+                const claimResult = await window.LudoOnline.claimName(name);
+                if (!claimResult.ok) return claimResult;
+            }
+
             try { localStorage.setItem(PLAYER_NAME_KEY, name); } catch (e) {}
             const redInput = document.getElementById('name-red');
             if (redInput) redInput.value = name;
             try { localStorage.setItem('lm_online_name', name); } catch (e) {}
-            if (window.LudoOnline && typeof window.LudoOnline.setName === 'function') {
-                window.LudoOnline.setName(name);
-            }
             const onlNameInput = document.getElementById('onl-name-input');
             if (onlNameInput) onlNameInput.value = name;
             const menuDisplay = document.getElementById('menu-player-name-display');
             if (menuDisplay) menuDisplay.textContent = name;
+            return { ok: true };
         }
 
         // ─── Persistent Account (Save Account / Login) UI ──────────────────
@@ -3130,11 +3231,15 @@
 
         async function handleAccountLogout() {
             if (!window.LudoOnline) return;
-            if (!confirm('Log out of this account? You will continue as a new Guest with a fresh 5000 coin balance on this device.')) return;
+            if (!confirm("Log out of this account? You'll need to log in or create a new account to keep playing — there's no Guest mode anymore.")) return;
             const result = await window.LudoOnline.logoutAccount();
             if (result.ok) {
-                updateAccountStatusUI();
-                switchAccountTab('signup');
+                closeAccountModal();
+                // No more silent "continue as Guest" — send them back to the
+                // same Login/Create Account screen a first-time player sees,
+                // so the app is never left in a nameless/unclaimed state.
+                document.getElementById('menu-screen').style.display = 'none';
+                openWelcomeScreen();
             } else {
                 showAccountMsg(accountErrorMessage(result.reason, result.message));
             }
@@ -3151,7 +3256,7 @@
             setTimeout(() => document.getElementById('edit-name-input').focus(), 50);
         }
 
-        // ─── Welcome screen: Login vs Guest choice (first run only) ────────
+        // ─── Welcome screen: Login vs Create Account choice (first run) ────
         function openWelcomeScreen() {
             const n = document.getElementById('name-entry-screen');
             if (n) n.style.display = 'block';
@@ -3160,24 +3265,33 @@
         function showWelcomeChoice() {
             document.getElementById('welcome-choice-view').style.display = 'block';
             document.getElementById('welcome-login-view').style.display  = 'none';
-            document.getElementById('welcome-guest-view').style.display  = 'none';
+            document.getElementById('welcome-signup-view').style.display = 'none';
         }
         function showWelcomeLogin() {
             document.getElementById('welcome-choice-view').style.display = 'none';
             document.getElementById('welcome-login-view').style.display  = 'block';
-            document.getElementById('welcome-guest-view').style.display  = 'none';
+            document.getElementById('welcome-signup-view').style.display = 'none';
             const msgEl = document.getElementById('welcome-login-msg');
             if (msgEl) msgEl.style.display = 'none';
             setTimeout(() => { const el = document.getElementById('welcome-login-email'); if (el) el.focus(); }, 50);
         }
-        function showWelcomeGuest() {
+        function showWelcomeSignup() {
             document.getElementById('welcome-choice-view').style.display = 'none';
             document.getElementById('welcome-login-view').style.display  = 'none';
-            document.getElementById('welcome-guest-view').style.display  = 'block';
-            setTimeout(() => { const el = document.getElementById('player-name-input'); if (el) el.focus(); }, 50);
+            document.getElementById('welcome-signup-view').style.display = 'block';
+            const msgEl = document.getElementById('welcome-signup-msg');
+            if (msgEl) msgEl.style.display = 'none';
+            setTimeout(() => { const el = document.getElementById('welcome-signup-name'); if (el) el.focus(); }, 50);
         }
         function showWelcomeLoginMsg(text) {
             const el = document.getElementById('welcome-login-msg');
+            if (!el) return;
+            el.className = 'acct-error';
+            el.textContent = text;
+            el.style.display = 'block';
+        }
+        function showWelcomeSignupMsg(text) {
+            const el = document.getElementById('welcome-signup-msg');
             if (!el) return;
             el.className = 'acct-error';
             el.textContent = text;
@@ -3209,28 +3323,82 @@
             // Logged in — the coin balance now comes from the account, but a
             // local display name (used by the Red player-box, name-red
             // input, etc.) still needs to exist. Never overwrite a name
-            // already saved on this device; only fill one in if missing —
-            // same default pattern the Guest flow already used.
-            const existingName = loadSavedPlayerName();
-            if (!existingName) {
-                savePlayerNameEverywhere('Player' + Math.floor(1000 + Math.random() * 9000));
-            } else {
-                document.getElementById('name-red').value = existingName;
-                const menuDisplay = document.getElementById('menu-player-name-display');
-                if (menuDisplay) menuDisplay.textContent = existingName;
-            }
+            // already saved on this device; only fill one in if missing.
+            await assignDefaultNameIfMissing();
 
             document.getElementById('name-entry-screen').style.display = 'none';
             document.getElementById('menu-screen').style.display = 'block';
             updateAccountStatusUI();
         }
 
-        function submitPlayerName() {
-            const input = document.getElementById('player-name-input');
-            const name = (input.value || '').trim() || ('Player' + Math.floor(1000 + Math.random() * 9000));
-            savePlayerNameEverywhere(name);
+        // Creates a brand-new account: claims the requested display name
+        // FIRST (so two players can never end up sharing one name), then
+        // creates the email/password account itself. If the name is
+        // already taken, nothing is created — the player sees an inline
+        // error and can try a different name.
+        async function submitWelcomeSignup() {
+            const name     = (document.getElementById('welcome-signup-name').value || '').trim();
+            const email    = (document.getElementById('welcome-signup-email').value || '').trim();
+            const password = document.getElementById('welcome-signup-password').value || '';
+            const msgEl = document.getElementById('welcome-signup-msg');
+            if (msgEl) msgEl.style.display = 'none';
+
+            if (!name) { showWelcomeSignupMsg('Please enter a display name.'); return; }
+            if (!email || !password) { showWelcomeSignupMsg('Please enter both an email and a password.'); return; }
+            if (password.length < 6) { showWelcomeSignupMsg('Password should be at least 6 characters.'); return; }
+            if (!window.LudoOnline) { showWelcomeSignupMsg('Not ready yet — please try again in a moment.'); return; }
+
+            const btn = document.getElementById('welcome-signup-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Please wait…'; }
+
+            const nameResult = await window.LudoOnline.claimName(name);
+            if (!nameResult.ok) {
+                if (btn) { btn.disabled = false; btn.textContent = 'Create Account'; }
+                showWelcomeSignupMsg(nameResult.reason === 'name-taken'
+                    ? 'This name is already taken. Please choose another.'
+                    : 'Could not set that name — please try again.');
+                return;
+            }
+
+            const result = await window.LudoOnline.linkAccountWithEmail(email, password);
+            if (btn) { btn.disabled = false; btn.textContent = 'Create Account'; }
+
+            if (!result.ok) {
+                showWelcomeSignupMsg(accountErrorMessage(result.reason, result.message));
+                return;
+            }
+
+            try { localStorage.setItem(PLAYER_NAME_KEY, name); } catch (e) {}
+            try { localStorage.setItem('lm_online_name', name); } catch (e) {}
+            const redInput = document.getElementById('name-red');
+            if (redInput) redInput.value = name;
+            const menuDisplay = document.getElementById('menu-player-name-display');
+            if (menuDisplay) menuDisplay.textContent = name;
+
             document.getElementById('name-entry-screen').style.display = 'none';
             document.getElementById('menu-screen').style.display = 'block';
+            updateAccountStatusUI();
+        }
+
+        // Fills in a random default display name ONLY if this device has
+        // never had one saved — used after logging into an account that
+        // has no name yet. The wide random range (900,000 combinations)
+        // keeps a same-name clash astronomically unlikely; if the very
+        // rare clash still happens, it just quietly tries again once.
+        async function assignDefaultNameIfMissing() {
+            const existingName = loadSavedPlayerName();
+            if (existingName) {
+                document.getElementById('name-red').value = existingName;
+                const menuDisplay = document.getElementById('menu-player-name-display');
+                if (menuDisplay) menuDisplay.textContent = existingName;
+                if (window.LudoOnline) window.LudoOnline.claimName(existingName).catch(() => {});
+                return;
+            }
+            for (let i = 0; i < 3; i++) {
+                const candidate = 'Player' + Math.floor(100000 + Math.random() * 900000);
+                const result = await savePlayerNameEverywhere(candidate);
+                if (result && result.ok) return;
+            }
         }
 
         function revealMenu() {
@@ -3598,17 +3766,44 @@
             document.getElementById('edit-name-modal').style.display = 'none';
             editingNameColor = null;
         }
-        function saveEditedPlayerName() {
+        async function saveEditedPlayerName() {
             const name = (document.getElementById('edit-name-input').value || '').trim();
             if (!name || !editingNameColor) { closeEditNameModal(); return; }
 
             // Renaming from the main menu (before any game has started) —
             // just update the saved name everywhere; there's no live
-            // `players` array yet to touch.
+            // `players` array yet to touch. Goes through the uniqueness
+            // check (savePlayerNameEverywhere → claimName) — a taken name
+            // shows a popup instead of silently applying.
             if (editingNameColor === 'MENU') {
-                savePlayerNameEverywhere(name);
+                const btn = document.querySelector('#edit-name-modal .btn-green');
+                if (btn) btn.disabled = true;
+                const result = await savePlayerNameEverywhere(name);
+                if (btn) btn.disabled = false;
+                if (!result.ok) {
+                    closeEditNameModal();
+                    showOnlineNotice('⚠️', 'Name Already Taken', 'Someone else is already using that name. Please choose a different one.');
+                    return;
+                }
                 closeEditNameModal();
                 return;
+            }
+
+            // Editing your own (Red) name also updates the saved display
+            // name — checked for uniqueness the same way, since this name
+            // is what opponents see in the online lobby. Green/Yellow/Blue
+            // are local pass-and-play names only, never shown online, so
+            // they skip the uniqueness check entirely.
+            if (editingNameColor === 'Red') {
+                const btn = document.querySelector('#edit-name-modal .btn-green');
+                if (btn) btn.disabled = true;
+                const result = await savePlayerNameEverywhere(name);
+                if (btn) btn.disabled = false;
+                if (!result.ok) {
+                    closeEditNameModal();
+                    showOnlineNotice('⚠️', 'Name Already Taken', 'Someone else is already using that name. Please choose a different one.');
+                    return;
+                }
             }
 
             const p = players.find(pl => pl.color === editingNameColor);
@@ -3618,10 +3813,6 @@
             const inputByColor = { Red: 'name-red', Green: 'name-green', Yellow: 'name-yellow', Blue: 'name-blue' };
             const input = document.getElementById(inputByColor[editingNameColor]);
             if (input) input.value = name;
-            // Editing your own (Red) name also updates the saved display
-            // name, so it's remembered for next time and stays in sync with
-            // the very first name-entry screen — "dono jagah change ho jaye".
-            if (editingNameColor === 'Red') savePlayerNameEverywhere(name);
             renderScoreboard();
             updateTurnUI();
             closeEditNameModal();
@@ -5673,9 +5864,27 @@
             document.getElementById('menu-screen').style.display = 'block';
         }
 
-        function updateOnlineProfileName() {
-            const val = document.getElementById('onl-name-input').value;
-            if (window.LudoOnline) window.LudoOnline.setName(val);
+        async function updateOnlineProfileName() {
+            const input = document.getElementById('onl-name-input');
+            const val = (input.value || '').trim();
+            if (!val || !window.LudoOnline) return;
+            input.disabled = true;
+            const result = await window.LudoOnline.claimName(val);
+            input.disabled = false;
+            if (!result.ok) {
+                // Revert the box to whatever name is actually still active,
+                // and tell the player why it didn't take.
+                const current = window.LudoOnline.getProfile().name || '';
+                input.value = current;
+                showOnlineNotice('⚠️', 'Name Already Taken', 'Someone else is already using that name. Please choose a different one.');
+                return;
+            }
+            try { localStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) {}
+            try { localStorage.setItem('lm_online_name', val); } catch (e) {}
+            const redInput = document.getElementById('name-red');
+            if (redInput) redInput.value = val;
+            const menuDisplay = document.getElementById('menu-player-name-display');
+            if (menuDisplay) menuDisplay.textContent = val;
         }
 
         function copyOnlineId() {
