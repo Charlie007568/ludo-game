@@ -65,7 +65,8 @@
         .topbar-pill:active { transform: scale(0.96); }
         .topbar-coins .coin-balance-amount { font-size: 0.92rem; }
         .topbar-icon { font-size: 0.85rem; }
-        .topbar-name .mode-name { font-size: 0.72rem; font-weight: 800; color: var(--ivory); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .topbar-avatar { width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(150deg, var(--brass-light), rgba(0,0,0,0.3)); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.25); }
+        .topbar-name .mode-name { font-size: 0.72rem; font-weight: 800; color: var(--ivory); max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .brand-eyebrow { font-size: 0.58rem; letter-spacing: 3.5px; text-transform: uppercase; color: var(--brass); margin-bottom: 3px; font-weight: 700; }
         .title-text { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 800; letter-spacing: 0.5px; color: var(--brass-light); text-shadow: 0 2px 18px rgba(201,162,75,0.35); }
@@ -178,6 +179,23 @@
         .acct-tab-btn.active { background: linear-gradient(135deg, var(--brass-light), var(--brass) 55%, var(--brass-dark)); border-color: var(--brass-light); color: #1a1206; }
         .acct-error { background: rgba(220,38,38,0.18); border: 1px solid rgba(220,38,38,0.4); color: #ffb3b3; font-size: 0.68rem; font-weight: 700; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; line-height: 1.4; }
         .acct-success { background: rgba(22,163,74,0.18); border: 1px solid rgba(22,163,74,0.4); color: #b7f5c9; font-size: 0.68rem; font-weight: 700; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; line-height: 1.4; }
+
+        /* ── Profile card (avatar + name + win/loss stats) ───────────────── */
+        #profile-modal, #avatar-picker-modal {
+            display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 276; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+        }
+        #profile-modal .onl-modal-card, #avatar-picker-modal .onl-modal-card { max-width: 320px; max-height: 88vh; overflow-y: auto; }
+        .profile-avatar-circle { width: 84px; height: 84px; border-radius: 50%; background: linear-gradient(150deg, var(--brass-light), rgba(0,0,0,0.35)); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; margin: 6px auto 10px; border: 2px solid var(--brass-light); cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3); }
+        .profile-avatar-circle .avatar-edit-badge { display: none; }
+        .profile-name { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 800; color: var(--ivory); margin-bottom: 14px; text-align: center; }
+        .profile-stats-row { display: flex; gap: 6px; margin-bottom: 16px; }
+        .profile-stat { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(201,162,75,0.22); border-radius: 10px; padding: 8px 3px; text-align: center; }
+        .profile-stat-num { display: block; font-size: 1rem; font-weight: 900; color: var(--brass-light); }
+        .profile-stat-label { display: block; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--ivory-dim); margin-top: 2px; }
+        .avatar-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 10px 0 16px; max-height: 260px; overflow-y: auto; }
+        .avatar-choice { aspect-ratio: 1; border-radius: 50%; background: rgba(255,255,255,0.05); border: 2px solid rgba(201,162,75,0.25); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; cursor: pointer; transition: all 0.15s; }
+        .avatar-choice:active { transform: scale(0.9); }
+        .avatar-choice.selected { border-color: var(--brass-light); background: linear-gradient(150deg, rgba(245,215,127,0.28), rgba(0,0,0,0.2)); box-shadow: 0 0 0 2px rgba(245,215,127,0.3); }
 
         /* =================================================================
            ONLINE MULTIPLAYER — Lobby screen, request popups, player list.
@@ -738,8 +756,8 @@
             <div class="topbar-pill topbar-coins" onclick="document.getElementById('coin-balance-card').scrollIntoView({behavior:'smooth', block:'center'})">
                 <span class="coin-balance-amount" id="menu-coin-balance">5,000</span>
             </div>
-            <div class="topbar-pill topbar-name" onclick="openMenuNameEdit()">
-                <span class="topbar-icon">👤</span>
+            <div class="topbar-pill topbar-name" onclick="openProfileModal()">
+                <span class="topbar-avatar" id="topbar-avatar">🧑</span>
                 <span class="mode-name" id="menu-player-name-display">Player</span>
             </div>
         </div>
@@ -974,6 +992,33 @@
             </div>
 
             <button class="onl-back-btn" style="width:100%; margin-top:10px;" onclick="closeAccountModal()">Close</button>
+        </div>
+    </div>
+
+    <!-- PROFILE: avatar + name + win/loss stats -->
+    <div id="profile-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-title">👤 Your Profile</div>
+            <div class="profile-avatar-circle" id="profile-avatar-display" onclick="openAvatarPicker()">🧑</div>
+            <div class="profile-name" id="profile-name-display">Player</div>
+            <div class="profile-stats-row">
+                <div class="profile-stat"><span class="profile-stat-num" id="profile-stat-wins">0</span><span class="profile-stat-label">Wins</span></div>
+                <div class="profile-stat"><span class="profile-stat-num" id="profile-stat-losses">0</span><span class="profile-stat-label">Losses</span></div>
+                <div class="profile-stat"><span class="profile-stat-num" id="profile-stat-played">0</span><span class="profile-stat-label">Played</span></div>
+                <div class="profile-stat"><span class="profile-stat-num" id="profile-stat-ratio">0%</span><span class="profile-stat-label">Win Rate</span></div>
+            </div>
+            <button class="btn" onclick="openAvatarPicker()">🖼️ Change Avatar</button>
+            <button class="btn" style="margin-top:8px;" onclick="closeProfileModal(); openMenuNameEdit();">✏️ Edit Name</button>
+            <button class="onl-back-btn" style="width:100%; margin-top:10px;" onclick="closeProfileModal()">Close</button>
+        </div>
+    </div>
+
+    <!-- AVATAR PICKER -->
+    <div id="avatar-picker-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-title">🖼️ Choose Your Avatar</div>
+            <div class="avatar-grid" id="avatar-grid"></div>
+            <button class="onl-back-btn" style="width:100%; margin-top:4px;" onclick="closeAvatarPicker()">Close</button>
         </div>
     </div>
 
@@ -1947,6 +1992,10 @@
         // rename can release the old slot instead of leaking it forever.
         // See window.LudoOnline.claimName below.
         let onlineNameKey = '';
+        // Profile avatar — just an emoji string (see the AVATAR_CHOICES list
+        // near the picker UI in the regular script below); purely cosmetic,
+        // so it's a plain same-uid write, no uniqueness/claim needed.
+        let onlineAvatar = '';
         let onlinePublicId = '';
         const _onlineListenerRefs = {}; // path -> {ref, cb} so we can detach cleanly
 
@@ -1983,6 +2032,7 @@
         // release on the NEXT rename, so a stale/wrong guess here just
         // means, at worst, one old slot never gets cleaned up.
         onlineNameKey = _onlineLoad('lm_online_name_key', '') || _normalizeNameKey(onlineName);
+        onlineAvatar  = _onlineLoad('lm_online_avatar', '') || '🧑';
 
         function registerOnlineIdentity(uid) {
             if (!uid) return;
@@ -2085,7 +2135,42 @@
 
         window.LudoOnline = {
             getProfile() {
-                return { uid: onlineUid, name: onlineName, publicId: onlinePublicId };
+                return { uid: onlineUid, name: onlineName, publicId: onlinePublicId, avatar: onlineAvatar };
+            },
+
+            // Purely cosmetic — picks one of the AVATAR_CHOICES emoji to
+            // represent this account. No uniqueness needed (unlike names),
+            // so this is a simple direct write.
+            setAvatar(emoji) {
+                emoji = String(emoji || '').trim().slice(0, 8);
+                if (!emoji) return;
+                onlineAvatar = emoji;
+                _onlineSave('lm_online_avatar', onlineAvatar);
+                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { avatar: onlineAvatar }).catch(err => _onlineReportError('write', err));
+            },
+
+            // Cosmetic profile counter (wins/losses/gamesPlayed) — NOT
+            // money, so unlike coins this is a plain same-uid write rather
+            // than something needing a Cloud Function to arbitrate. See
+            // recordMatchStat() in the regular script for when this gets
+            // called and how double-counting is avoided.
+            async recordMatchResult(won) {
+                if (!onlineUid) return;
+                const statsRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}/stats`);
+                try {
+                    await runTransaction(statsRef, cur => {
+                        const s = cur || { wins: 0, losses: 0, gamesPlayed: 0 };
+                        s.gamesPlayed = (s.gamesPlayed || 0) + 1;
+                        if (won) s.wins = (s.wins || 0) + 1; else s.losses = (s.losses || 0) + 1;
+                        return s;
+                    });
+                } catch (e) { _onlineReportError('stats', e); }
+            },
+
+            // Live updates of MY OWN stats — used by the Profile card.
+            listenMyStats(cb) {
+                if (!onlineUid) return () => {};
+                return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}/stats`, data => cb(data || { wins: 0, losses: 0, gamesPlayed: 0 }));
             },
 
             // Low-level, NOT uniqueness-checked — only used internally for
@@ -2877,6 +2962,10 @@
         let myLastDailyBonusAt = null;    // server timestamp of the last 500-coin daily bonus claim
         let onlineBetSetting = 0;         // lobby pill: coin bet attached to requests I SEND (0 = free)
         let onlineBetAmount = 0;          // the AGREED bet for the CURRENT match (set once it starts)
+        // Guards win/loss profile-stat recording (see recordMatchStat below)
+        // against double-counting the same match — reset once per new game
+        // in initTokens(), set true the moment this device records a result.
+        let matchStatRecorded = false;
         let coinsDetach = null, coinsZeroDetach = null, dailyBonusDetach = null; // listener detach fns, attached once identity is ready
         let claimCountdownTimer = null;   // interval id for the 24h daily-bonus countdown display
 
@@ -3093,6 +3182,9 @@
         function loadSavedPlayerName() {
             try { return localStorage.getItem(PLAYER_NAME_KEY) || ''; } catch (e) { return ''; }
         }
+        function loadSavedAvatar() {
+            try { return localStorage.getItem('lm_online_avatar') || '🧑'; } catch (e) { return '🧑'; }
+        }
         // Single source of truth for "your" name — claims it (see
         // window.LudoOnline.claimName, uniqueness-checked) and, only if
         // that succeeds, updates the hidden name-red input (used by
@@ -3177,6 +3269,75 @@
         }
         function closeAccountModal() {
             document.getElementById('account-modal').style.display = 'none';
+        }
+
+        // ─── Profile (avatar + name + win/loss stats) ───────────────────────
+        // A fun set of emoji avatars to pick from — purely cosmetic, no
+        // uniqueness needed (unlike names), so any number of players can
+        // share the same one. See window.LudoOnline.setAvatar/getProfile.
+        const AVATAR_CHOICES = [
+            '🧑','👨','👩','🧔','👴','👵','🧑‍🦱','🧑‍🦰','👱','🧕',
+            '🥷','🧙','🧑‍🚀','🤴','👸','🦸','🦹','😎','🤠','🥸',
+            '🐯','🦁','🐘','🐍','🦚','🐆','🐺','🦅','🐉','🦊'
+        ];
+        let profileStatsDetach = null;
+
+        function openProfileModal() {
+            const prof = window.LudoOnline && window.LudoOnline.getProfile();
+            const name = (prof && prof.name) || loadSavedPlayerName() || 'Player';
+            const avatar = (prof && prof.avatar) || '🧑';
+            document.getElementById('profile-name-display').textContent = name;
+            document.getElementById('profile-avatar-display').textContent = avatar;
+
+            if (profileStatsDetach) { try { profileStatsDetach(); } catch (e) {} profileStatsDetach = null; }
+            if (window.LudoOnline && typeof window.LudoOnline.listenMyStats === 'function') {
+                profileStatsDetach = window.LudoOnline.listenMyStats(renderProfileStats);
+            }
+            document.getElementById('profile-modal').style.display = 'flex';
+        }
+        function closeProfileModal() {
+            document.getElementById('profile-modal').style.display = 'none';
+            if (profileStatsDetach) { try { profileStatsDetach(); } catch (e) {} profileStatsDetach = null; }
+        }
+        function renderProfileStats(stats) {
+            stats = stats || {};
+            const wins   = stats.wins || 0;
+            const losses = stats.losses || 0;
+            const played = stats.gamesPlayed || (wins + losses);
+            const ratio  = played > 0 ? Math.round((wins / played) * 100) : 0;
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            set('profile-stat-wins', wins);
+            set('profile-stat-losses', losses);
+            set('profile-stat-played', played);
+            set('profile-stat-ratio', ratio + '%');
+        }
+
+        function openAvatarPicker() {
+            const grid = document.getElementById('avatar-grid');
+            const current = (window.LudoOnline && window.LudoOnline.getProfile().avatar) || '🧑';
+            grid.innerHTML = '';
+            AVATAR_CHOICES.forEach(emoji => {
+                const el = document.createElement('div');
+                el.className = 'avatar-choice' + (emoji === current ? ' selected' : '');
+                el.textContent = emoji;
+                el.onclick = () => selectAvatar(emoji);
+                grid.appendChild(el);
+            });
+            document.getElementById('avatar-picker-modal').style.display = 'flex';
+        }
+        function closeAvatarPicker() {
+            document.getElementById('avatar-picker-modal').style.display = 'none';
+        }
+        function selectAvatar(emoji) {
+            if (window.LudoOnline) window.LudoOnline.setAvatar(emoji);
+            const topbarAv = document.getElementById('topbar-avatar');
+            if (topbarAv) topbarAv.textContent = emoji;
+            const profileAv = document.getElementById('profile-avatar-display');
+            if (profileAv) profileAv.textContent = emoji;
+            document.querySelectorAll('.avatar-choice').forEach(el => {
+                el.classList.toggle('selected', el.textContent === emoji);
+            });
+            closeAvatarPicker();
         }
 
         function switchAccountTab(mode) {
@@ -3439,6 +3600,8 @@
                     document.getElementById('name-red').value = savedName;
                     const menuDisplay = document.getElementById('menu-player-name-display');
                     if (menuDisplay) menuDisplay.textContent = savedName;
+                    const topbarAv = document.getElementById('topbar-avatar');
+                    if (topbarAv) topbarAv.textContent = loadSavedAvatar();
                     const m = document.getElementById('menu-screen');
                     if (m && m.style.display !== 'block') m.style.display = 'block';
                 }
@@ -3953,6 +4116,7 @@
         }
 
         function initTokens() {
+            matchStatRecorded = false;
             tokens = {};
             players.forEach(p => {
                 tokens[p.color] = [
@@ -5106,6 +5270,23 @@
             if (cp && cp.isBot) onDiceClick(cp.color);
         }
 
+        // Records a win/loss toward this account's profile stats — used for
+        // real online matches (both the winner's and the loser's own
+        // device each report their own result) and Vs Computer matches
+        // (the human's result only; bots aren't accounts). Guarded by
+        // matchStatRecorded so a game is only ever counted once even if
+        // this fires from more than one place (e.g. a synced state update
+        // arriving twice). This is a cosmetic profile counter, not money —
+        // see window.LudoOnline.recordMatchResult — so it's a plain
+        // same-uid RTDB write, not a Cloud Function.
+        function recordMatchStat(won) {
+            if (matchStatRecorded) return;
+            matchStatRecorded = true;
+            if (window.LudoOnline && typeof window.LudoOnline.recordMatchResult === 'function') {
+                window.LudoOnline.recordMatchResult(won).catch(() => {});
+            }
+        }
+
         function endGame(teamColors) {
             document.getElementById('winner-modal').style.display = 'flex';
             let title;
@@ -5137,6 +5318,18 @@
                     }
                 });
                 onlineBetAmount = 0; // settled — never credit twice for this match
+            }
+
+            // Profile win/loss stat — online: this device's own result
+            // (winner branch here; the loser's own device records its
+            // result independently in applyRemoteOnlineState below, since
+            // endGame() itself only ever runs on the winner's device — see
+            // the comment above). Vs Computer: the human's result either way.
+            if (isOnlineMode && !teamColors) {
+                recordMatchStat(winnersList[0] === onlineMyColor);
+            } else if (botMode && !teamColors) {
+                const human = players.find(p => !p.isBot);
+                recordMatchStat(!!human && winnersList[0] === human.color);
             }
 
             // Let the opponent's device know the match is over and show them
@@ -5230,6 +5423,13 @@
                 if (data.finished) {
                     document.getElementById('winner-title').innerText = data.winnerTitle || 'Game Over';
                     document.getElementById('winner-modal').style.display = 'flex';
+                    // This device's own result, from its own point of view —
+                    // covers the LOSING side specifically (the winner's own
+                    // device already recorded a win in endGame() itself,
+                    // before this synced snapshot ever left it).
+                    if (Array.isArray(winnersList) && winnersList[0] && winnersList[0] !== onlineMyColor) {
+                        recordMatchStat(false);
+                    }
                 }
             } finally {
                 onlineApplyingRemote = false;
@@ -5347,6 +5547,7 @@
             }
             sub.textContent = subtitle;
             winnerModal.style.display = 'flex';
+            recordMatchStat(true); // opponent left/disconnected — the player who stayed wins
 
             // Same coin settlement as a normal finish (see endGame): the
             // player who STAYED — i.e. this device — wins the pot when the
