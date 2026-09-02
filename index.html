@@ -197,6 +197,17 @@
         .avatar-choice:active { transform: scale(0.9); }
         .avatar-choice.selected { border-color: var(--brass-light); background: linear-gradient(150deg, rgba(245,215,127,0.28), rgba(0,0,0,0.2)); box-shadow: 0 0 0 2px rgba(245,215,127,0.3); }
 
+        /* ── Board theme picker ───────────────────────────────────────────── */
+        #theme-picker-modal { display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 276; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        #theme-picker-modal .onl-modal-card { max-width: 340px; max-height: 88vh; overflow-y: auto; }
+        .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0 16px; }
+        .theme-swatch-tile { border-radius: 12px; border: 2px solid rgba(201,162,75,0.25); cursor: pointer; overflow: hidden; transition: all 0.15s; text-align: center; padding-bottom: 6px; }
+        .theme-swatch-tile:active { transform: scale(0.95); }
+        .theme-swatch-tile.selected { border-color: var(--brass-light); box-shadow: 0 0 0 2px rgba(245,215,127,0.35); }
+        .theme-swatch-preview { width: 100%; height: 42px; border-bottom: 2px solid rgba(0,0,0,0.25); }
+        .theme-swatch-label { font-size: 0.58rem; font-weight: 700; color: var(--ivory-dim); display: block; margin-top: 5px; padding: 0 3px; }
+        .theme-swatch-badge { font-size: 1.1rem; }
+
         /* =================================================================
            ONLINE MULTIPLAYER — Lobby screen, request popups, player list.
            Kept in its own namespace (.onl-*, #online-*) so nothing here can
@@ -424,11 +435,29 @@
             border: 1px solid rgba(245,215,127,0.35);
         }
         .ludo-board {
-            width: 100%; height: 100%; background: #f8fafc; border-radius: 6px; overflow: hidden;
+            width: 100%; height: 100%; background: var(--board-bg, #f8fafc); border-radius: 6px; overflow: hidden;
             display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
-            border: 2px solid #0f172a; position: relative;
+            border: 2px solid var(--board-border, #0f172a); position: relative;
             box-shadow: inset 0 0 24px rgba(0,0,0,0.15);
+            /* Default ("Classic") theme values — every .theme-* class below
+               only needs to override the ones that actually differ. */
+            --board-bg: #f8fafc; --board-border: #0f172a;
+            --cell-bg: #ffffff; --cell-border: rgba(15,23,42,0.55);
+            --board-ink-strong: rgba(15,23,42,0.65); --board-ink-soft: rgba(15,23,42,0.55);
         }
+        /* ── Board themes — see openThemePicker()/selectTheme() in the
+           regular script. Applied as a class on #board itself; every piece
+           of CSS that reads var(--board-bg)/var(--cell-bg)/etc. above just
+           picks up whichever theme is active. Player colours (Red/Green/
+           Yellow/Blue path lanes, quadrants, tokens) are NEVER themed —
+           they carry real game meaning (whose piece is whose), so they stay
+           the same standard four colours in every theme for clarity. ── */
+        .ludo-board.theme-royal { --board-bg: #1a1033; --board-border: #c9a24b; --cell-bg: #2a1b4d; --cell-border: rgba(201,162,75,0.45); --board-ink-strong: rgba(245,222,179,0.9); --board-ink-soft: rgba(245,222,179,0.65); }
+        .ludo-board.theme-ocean { --board-bg: #eaf6fb; --board-border: #0c4a6e; --cell-bg: #ffffff; --cell-border: rgba(12,74,110,0.4); --board-ink-strong: rgba(12,74,110,0.75); --board-ink-soft: rgba(12,74,110,0.55); }
+        .ludo-board.theme-candy { --board-bg: #fff0f6; --board-border: #d6336c; --cell-bg: #fff8fa; --cell-border: rgba(214,51,108,0.35); --board-ink-strong: rgba(157,23,77,0.75); --board-ink-soft: rgba(157,23,77,0.55); }
+        .ludo-board.theme-wood { --board-bg: #dcb583; --board-border: #4a2e15; --cell-bg: #f0d9b0; --cell-border: rgba(74,46,21,0.5); --board-ink-strong: rgba(58,34,12,0.8); --board-ink-soft: rgba(58,34,12,0.6); }
+        .ludo-board.theme-midnight { --board-bg: #0b0f1a; --board-border: #38bdf8; --cell-bg: #111827; --cell-border: rgba(56,189,248,0.35); --board-ink-strong: rgba(224,242,254,0.9); --board-ink-soft: rgba(224,242,254,0.6); }
+        .ludo-board.theme-emerald { --board-bg: #e8f9f0; --board-border: #065f46; --cell-bg: #ffffff; --cell-border: rgba(6,95,70,0.35); --board-ink-strong: rgba(6,95,70,0.75); --board-ink-soft: rgba(6,95,70,0.55); }
         /* ── Online per-player board orientation ─────────────────────────────
            Applied only for online matches (see applyBoardRotation() in JS) so
            that whichever colour the LOCAL device is playing always appears
@@ -448,7 +477,7 @@
         /* 6x6 BASE QUADRANTS (NO INNER CELL LINES) */
         .base-quadrant {
             position: relative; display: flex; justify-content: center; align-items: center;
-            border: 2px solid #0f172a; z-index: 1; padding: 6%;
+            border: 2px solid var(--board-border, #0f172a); z-index: 1; padding: 6%;
         }
         .base-quadrant-red { grid-row: 1 / 7; grid-column: 1 / 7; background: linear-gradient(135deg, var(--red-light), var(--red), var(--red-dark)); }
         .base-quadrant-green { grid-row: 1 / 7; grid-column: 10 / 16; background: linear-gradient(135deg, var(--green-light), var(--green), var(--green-dark)); }
@@ -471,7 +500,7 @@
 
         /* CENTER HOME 3x3 TRIANGLES */
         .center-home-cell {
-            grid-row: 7 / 10; grid-column: 7 / 10; position: relative; border: 2px solid #0f172a;
+            grid-row: 7 / 10; grid-column: 7 / 10; position: relative; border: 2px solid var(--board-border, #0f172a);
             background: conic-gradient(from 45deg, var(--green) 0 90deg, var(--yellow) 90deg 180deg, var(--blue) 180deg 270deg, var(--red) 270deg 360deg);
             box-shadow: inset 0 0 10px rgba(0,0,0,0.35);
             /* FIX: finished tokens were appended here as plain absolute-
@@ -493,7 +522,7 @@
 
         /* PATH CELLS */
         .cell {
-            background-color: #ffffff; border: 1px solid rgba(15,23,42,0.55); display: flex; justify-content: center;
+            background-color: var(--cell-bg, #ffffff); border: 1px solid var(--cell-border, rgba(15,23,42,0.55)); display: flex; justify-content: center;
             align-items: center; position: relative; width: 100%; height: 100%;
         }
         .cell-red-path { background: linear-gradient(155deg, var(--red-light), var(--red)) !important; }
@@ -510,12 +539,12 @@
                to tell "this cell is a safe star" once a piece landed on it.
                Empty star cells simply look a bit bigger too, which is fine. */
             position: absolute; width: 92%; height: 92%; display: flex; justify-content: center; align-items: center;
-            font-size: 17px; font-weight: bold; color: rgba(15,23,42,0.65); pointer-events: none;
+            font-size: 17px; font-weight: bold; color: var(--board-ink-strong, rgba(15,23,42,0.65)); pointer-events: none;
             background: radial-gradient(circle, rgba(255,255,255,0.55), transparent 70%); border-radius: 50%;
             z-index: 2;
         }
         .star-white { color: rgba(255,255,255,0.92) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.35); }
-        .arrow-indicator { position: absolute; font-size: 13px; font-weight: 900; color: rgba(15,23,42,0.55); pointer-events: none; z-index: 2; }
+        .arrow-indicator { position: absolute; font-size: 13px; font-weight: 900; color: var(--board-ink-soft, rgba(15,23,42,0.55)); pointer-events: none; z-index: 2; }
 
         /* 3D PAWN TOKENS — a proper cone-and-ball Ludo pawn silhouette
            (built as an inline SVG per token, see pawnSVG()/createTokenElement()
@@ -682,7 +711,72 @@
         }
         #blocked-overlay .lock-inner h1 { color: #ff4d4d; }
 
-    </style>
+    
+        /* ─── Dice Theme Styles ───────────────────────────────────── */
+        .dice-theme-classic .dice-face { background: linear-gradient(145deg, #ffffff 0%, #f4f7fb 45%, #dbe3ec 100%); border-color: #cbd5e1; }
+        .dice-theme-classic .dice-pip { background: radial-gradient(circle at 30% 25%, #334155, #0f172a); box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 0.5px 1px rgba(0,0,0,0.35); }
+        .dice-theme-classic .dice-pip.red-pip { background: radial-gradient(circle at 30% 25%, #ef4444, #7f1d1d); box-shadow: inset 0 1px 1px rgba(255,255,255,0.55), 0 0.5px 1px rgba(0,0,0,0.4), 0 0 4px rgba(239,68,68,0.55); }
+
+        .dice-theme-midnight .dice-face { background: linear-gradient(145deg, #1e293b 0%, #0f172a 45%, #020617 100%); border-color: #334155; }
+        .dice-theme-midnight .dice-pip { background: radial-gradient(circle at 30% 25%, #e2e8f0, #94a3b8); box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 0.5px 1px rgba(0,0,0,0.5); }
+        .dice-theme-midnight .dice-pip.red-pip { background: radial-gradient(circle at 30% 25%, #f87171, #dc2626); box-shadow: inset 0 1px 1px rgba(255,255,255,0.4), 0 0.5px 1px rgba(0,0,0,0.5), 0 0 4px rgba(248,113,113,0.6); }
+
+        .dice-theme-royal .dice-face { background: linear-gradient(145deg, #fef3c7 0%, #fbbf24 45%, #d97706 100%); border-color: #b45309; }
+        .dice-theme-royal .dice-pip { background: radial-gradient(circle at 30% 25%, #451a03, #78350f); box-shadow: inset 0 1px 1px rgba(255,255,255,0.4), 0 0.5px 1px rgba(0,0,0,0.4); }
+        .dice-theme-royal .dice-pip.red-pip { background: radial-gradient(circle at 30% 25%, #dc2626, #991b1b); box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 0.5px 1px rgba(0,0,0,0.4), 0 0 4px rgba(220,38,38,0.55); }
+
+        .dice-theme-crimson .dice-face { background: linear-gradient(145deg, #fecaca 0%, #f87171 45%, #dc2626 100%); border-color: #991b1b; }
+        .dice-theme-crimson .dice-pip { background: radial-gradient(circle at 30% 25%, #ffffff, #e2e8f0); box-shadow: inset 0 1px 1px rgba(0,0,0,0.2), 0 0.5px 1px rgba(0,0,0,0.35); }
+        .dice-theme-crimson .dice-pip.red-pip { background: radial-gradient(circle at 30% 25%, #fbbf24, #d97706); box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 0.5px 1px rgba(0,0,0,0.4), 0 0 4px rgba(251,191,36,0.6); }
+
+        .dice-theme-ocean .dice-face { background: linear-gradient(145deg, #bfdbfe 0%, #60a5fa 45%, #2563eb 100%); border-color: #1e40af; }
+        .dice-theme-ocean .dice-pip { background: radial-gradient(circle at 30% 25%, #ffffff, #dbeafe); box-shadow: inset 0 1px 1px rgba(0,0,0,0.15), 0 0.5px 1px rgba(0,0,0,0.35); }
+        .dice-theme-ocean .dice-pip.red-pip { background: radial-gradient(circle at 30% 25%, #fbbf24, #d97706); box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 0.5px 1px rgba(0,0,0,0.4), 0 0 4px rgba(251,191,36,0.6); }
+
+        .dice-theme-forest .dice-face { background: linear-gradient(145deg, #bbf7d0 0%, #4ade80 45%, #16a34a 100%); border-color: #166534; }
+        .dice-theme-forest .dice-pip { background: radial-gradient(circle at 30% 25%, #ffffff, #dcfce7); box-shadow: inset 0 1px 1px rgba(0,0,0,0.15), 0 0.5px 1px rgba(0,0,0,0.35); }
+        .dice-theme-forest .dice-pip.red-pip { background: radial-gradient(circle at 30% 25%, #fbbf24, #d97706); box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 0.5px 1px rgba(0,0,0,0.4), 0 0 4px rgba(251,191,36,0.6); }
+
+        /* ─── Token Shape Styles ──────────────────────────────────── */
+        .token-shape-classic svg { display: block; width: 100%; height: 100%; }
+        .token-shape-coin { border-radius: 50%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 35% 30%, var(--token-light), var(--token-mid) 55%, var(--token-dark)); border: 2px solid rgba(255,255,255,0.6); box-shadow: inset 0 1px 2px rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.4); }
+        .token-shape-coin::after { content: '★'; position: absolute; font-size: 0.55rem; color: rgba(255,255,255,0.9); text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        .token-shape-cone { border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, var(--token-light), var(--token-mid) 50%, var(--token-dark)); border: 1.5px solid rgba(255,255,255,0.5); box-shadow: inset 0 1px 2px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.4); }
+        .token-shape-cone::after { content: ''; position: absolute; bottom: 15%; width: 40%; height: 8%; background: rgba(255,255,255,0.25); border-radius: 50%; }
+        .token-shape-crown { display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, var(--token-light), var(--token-mid) 50%, var(--token-dark)); clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); box-shadow: inset 0 1px 2px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.4); }
+        .token-shape-shield { border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, var(--token-light), var(--token-mid) 50%, var(--token-dark)); border: 1.5px solid rgba(255,255,255,0.5); box-shadow: inset 0 1px 2px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.4); }
+        .token-shape-shield::after { content: '◆'; position: absolute; font-size: 0.5rem; color: rgba(255,255,255,0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+
+        /* ─── Local Bet Card ──────────────────────────────────────── */
+        .local-bet-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+        .local-bet-chip { padding: 8px 4px; border-radius: 8px; border: 1px solid rgba(201,162,75,0.28); background: rgba(255,255,255,0.05); color: var(--ivory-dim); font-size: 0.62rem; font-weight: 800; text-align: center; cursor: pointer; transition: all 0.15s; }
+        .local-bet-chip.active { background: linear-gradient(135deg, var(--brass-light), var(--brass) 55%, var(--brass-dark)); border-color: var(--brass-light); color: #1a1206; box-shadow: 0 2px 10px rgba(201,162,75,0.45), inset 0 1px 0 rgba(255,255,255,0.5); }
+        .local-bet-chip:disabled { opacity: 0.35; cursor: not-allowed; }
+        .local-bet-input { width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid rgba(245,215,127,0.45); background: rgba(0,0,0,0.35); color: var(--ivory); font-size: 0.8rem; font-weight: 700; text-align: center; margin-top: 8px; }
+        .local-bet-input:focus { outline: none; border-color: var(--brass-light); box-shadow: 0 0 0 2px rgba(245,215,127,0.25); }
+
+        /* ─── Dice & Token Picker Modals ──────────────────────────── */
+        #dice-picker-modal, #token-picker-modal { display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 276; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        #dice-picker-modal .onl-modal-card, #token-picker-modal .onl-modal-card { max-width: 340px; max-height: 88vh; overflow-y: auto; }
+        .dice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0 16px; }
+        .dice-preview-box { border-radius: 12px; border: 2px solid rgba(201,162,75,0.25); cursor: pointer; overflow: hidden; transition: all 0.15s; text-align: center; padding: 12px 6px; }
+        .dice-preview-box:active { transform: scale(0.95); }
+        .dice-preview-box.selected { border-color: var(--brass-light); box-shadow: 0 0 0 2px rgba(245,215,127,0.35); }
+        .dice-preview-cube { width: 36px; height: 36px; margin: 0 auto 6px; position: relative; transform-style: preserve-3d; transform: rotateX(-15deg) rotateY(25deg); }
+        .dice-preview-face { position: absolute; inset: 0; width: 36px; height: 36px; border-radius: 5px; display: flex; justify-content: center; align-items: center; backface-visibility: hidden; border: 1.5px solid; }
+        .dice-preview-label { font-size: 0.58rem; font-weight: 700; color: var(--ivory-dim); display: block; }
+        .token-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0 16px; }
+        .token-preview-box { border-radius: 12px; border: 2px solid rgba(201,162,75,0.25); cursor: pointer; overflow: hidden; transition: all 0.15s; text-align: center; padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .token-preview-box:active { transform: scale(0.95); }
+        .token-preview-box.selected { border-color: var(--brass-light); box-shadow: 0 0 0 2px rgba(245,215,127,0.35); }
+        .token-preview-shape { width: 32px; height: 32px; position: relative; }
+        .token-preview-label { font-size: 0.58rem; font-weight: 700; color: var(--ivory-dim); display: block; }
+
+        /* ─── Tag spacer for layout ───────────────────────────────── */
+        .tag-spacer { flex: 0 1 48%; visibility: hidden; pointer-events: none; }
+
+</style>
+<base target="_blank">
 </head>
 <body>
     <!-- LOADING SCREEN -->
@@ -823,6 +917,63 @@
         </div>
 
         <div class="dash-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🎨 Board Theme</span>
+            </div>
+            <div class="selector-tile" onclick="openThemePicker()">
+                <span class="mode-icon-badge theme-swatch-badge" id="theme-selector-swatch">🎨</span>
+                <span style="flex:1;">
+                    <span class="mode-name" id="theme-selector-name" style="display:block;">Classic</span>
+                    <span class="mode-sub">Tap to change how the board looks</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+        </div>
+
+        
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🎲 Dice Style</span>
+            </div>
+            <div class="selector-tile" onclick="openDicePicker()">
+                <span class="mode-icon-badge" id="dice-selector-swatch" style="background:linear-gradient(150deg, #ffffff, #cbd5e1); color:#0f172a; font-size:0.7rem;">🎲</span>
+                <span style="flex:1;">
+                    <span class="mode-name" id="dice-selector-name" style="display:block;">Classic White</span>
+                    <span class="mode-sub">Tap to change how the dice looks</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">♟️ Token Design</span>
+            </div>
+            <div class="selector-tile" onclick="openTokenPicker()">
+                <span class="mode-icon-badge" id="token-selector-swatch" style="background:linear-gradient(150deg, var(--brass-light), rgba(0,0,0,0.3)); font-size:0.9rem;">♟️</span>
+                <span style="flex:1;">
+                    <span class="mode-name" id="token-selector-name" style="display:block;">Classic Pawn</span>
+                    <span class="mode-sub">Tap to change how your tokens look</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+        </div>
+
+        <div class="dash-card" id="local-bet-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🪙 Local Coin Match</span>
+            </div>
+            <p style="font-size:0.62rem; color:var(--ivory-dim); margin-bottom:8px; line-height:1.5;">Set a coin stake for local games. Winner takes the pot! (0 = free play)</p>
+            <div class="local-bet-grid">
+                <div class="local-bet-chip active" data-bet="0" onclick="setLocalBet(0, this)">Free</div>
+                <div class="local-bet-chip" data-bet="100" onclick="setLocalBet(100, this)">100</div>
+                <div class="local-bet-chip" data-bet="500" onclick="setLocalBet(500, this)">500</div>
+                <div class="local-bet-chip" data-bet="1000" onclick="setLocalBet(1000, this)">1K</div>
+            </div>
+            <input type="number" id="local-bet-custom" class="local-bet-input" placeholder="Custom amount…" min="0" max="50000" step="1" inputmode="numeric" oninput="handleLocalBetCustom(this.value)">
+            <p style="font-size:0.58rem; color:var(--ivory-dim); margin-top:6px; text-align:center;">Your balance: <span id="local-bet-balance-display">🪙 5,000</span></p>
+        </div>
+<div class="dash-card">
             <div class="dash-card-head">
                 <span class="dash-card-title">🎮 Game Mode</span>
             </div>
@@ -1020,6 +1171,34 @@
             <div class="avatar-grid" id="avatar-grid"></div>
             <button class="onl-back-btn" style="width:100%; margin-top:4px;" onclick="closeAvatarPicker()">Close</button>
         </div>
+    </div>
+
+    <!-- BOARD THEME PICKER -->
+    <div id="theme-picker-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-title">🎨 Choose a Board Theme</div>
+            <div class="theme-grid" id="theme-grid"></div>
+            <button class="onl-back-btn" style="width:100%; margin-top:4px;" onclick="closeThemePicker()">Close</button>
+        </div>
+
+    <!-- DICE THEME PICKER -->
+    <div id="dice-picker-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-title">🎲 Choose a Dice Style</div>
+            <div class="dice-grid" id="dice-grid"></div>
+            <button class="onl-back-btn" style="width:100%; margin-top:4px;" onclick="closeDicePicker()">Close</button>
+        </div>
+    </div>
+
+    <!-- TOKEN SHAPE PICKER -->
+    <div id="token-picker-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-title">♟️ Choose a Token Design</div>
+            <div class="token-grid" id="token-grid"></div>
+            <button class="onl-back-btn" style="width:100%; margin-top:4px;" onclick="closeTokenPicker()">Close</button>
+        </div>
+    </div>
+
     </div>
 
     <!-- ONLINE MULTIPLAYER LOBBY -->
@@ -3017,6 +3196,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             const btn = document.getElementById('sound-toggle-btn');
             if (btn) btn.textContent = soundEnabled ? '🔊' : '🔇';
+            applyBoardTheme(loadSavedTheme());
+            applyDiceTheme(loadSavedDiceTheme());
+            applyTokenShape(loadSavedTokenShape());
         });
         let noiseBuffer = null; // shared white-noise buffer, generated once and reused for every "rattle"/"crash" sound
         function getAudioContext() {
@@ -3340,6 +3522,239 @@
             closeAvatarPicker();
         }
 
+        // ─── Board themes ────────────────────────────────────────────────────
+        // Only the BOARD's own look changes between themes — path-cell
+        // background, board frame, star/arrow ink colour. Player colours
+        // (Red/Green/Yellow/Blue quadrants, path lanes, tokens) stay the
+        // same standard four colours in every theme, since they carry real
+        // game meaning (whose piece is whose) that shouldn't be reskinned.
+        // Saved locally per device (purely cosmetic, no account sync needed).
+        const BOARD_THEMES = [
+            { id: 'classic',  name: 'Classic',        swatch: ['#f8fafc', '#0f172a'] },
+            { id: 'royal',    name: 'Royal Night',     swatch: ['#1a1033', '#c9a24b'] },
+            { id: 'ocean',    name: 'Ocean Breeze',    swatch: ['#eaf6fb', '#0c4a6e'] },
+            { id: 'candy',    name: 'Candy Pink',      swatch: ['#fff0f6', '#d6336c'] },
+            { id: 'wood',     name: 'Wooden Table',    swatch: ['#dcb583', '#4a2e15'] },
+            { id: 'midnight', name: 'Midnight Neon',   swatch: ['#0b0f1a', '#38bdf8'] },
+            { id: 'emerald',  name: 'Emerald Garden',  swatch: ['#e8f9f0', '#065f46'] }
+        ];
+        const BOARD_THEME_KEY = 'lm_board_theme';
+
+        function loadSavedTheme() {
+            try { return localStorage.getItem(BOARD_THEME_KEY) || 'classic'; } catch (e) { return 'classic'; }
+        }
+
+        // Applies `themeId` to the actual board element (safe to call any
+        // time — createBoard() only ever clears the board's CHILDREN via
+        // innerHTML, never its own class, so the theme class survives every
+        // new game/board redraw without needing to be re-applied there) and
+        // refreshes the little swatch + label shown on the menu card.
+        function applyBoardTheme(themeId) {
+            const theme = BOARD_THEMES.find(t => t.id === themeId) || BOARD_THEMES[0];
+            const board = document.getElementById('board');
+            if (board) {
+                BOARD_THEMES.forEach(t => board.classList.remove('theme-' + t.id));
+                if (theme.id !== 'classic') board.classList.add('theme-' + theme.id);
+            }
+            const nameEl = document.getElementById('theme-selector-name');
+            if (nameEl) nameEl.textContent = theme.name;
+            const swatchEl = document.getElementById('theme-selector-swatch');
+            if (swatchEl) swatchEl.style.background = `linear-gradient(135deg, ${theme.swatch[0]}, ${theme.swatch[1]})`;
+        }
+
+        function openThemePicker() {
+            const grid = document.getElementById('theme-grid');
+            const current = loadSavedTheme();
+            grid.innerHTML = '';
+            BOARD_THEMES.forEach(theme => {
+                const tile = document.createElement('div');
+                tile.className = 'theme-swatch-tile' + (theme.id === current ? ' selected' : '');
+                tile.onclick = () => selectTheme(theme.id);
+                const preview = document.createElement('div');
+                preview.className = 'theme-swatch-preview';
+                preview.style.background = `linear-gradient(135deg, ${theme.swatch[0]}, ${theme.swatch[1]})`;
+                const label = document.createElement('span');
+                label.className = 'theme-swatch-label';
+                label.textContent = theme.name;
+                tile.appendChild(preview);
+                tile.appendChild(label);
+                grid.appendChild(tile);
+            });
+            document.getElementById('theme-picker-modal').style.display = 'flex';
+        }
+        function closeThemePicker() {
+            document.getElementById('theme-picker-modal').style.display = 'none';
+        }
+        function selectTheme(themeId) {
+            try { localStorage.setItem(BOARD_THEME_KEY, themeId); } catch (e) {}
+            applyBoardTheme(themeId);
+            document.querySelectorAll('.theme-swatch-tile').forEach((el, i) => {
+                el.classList.toggle('selected', BOARD_THEMES[i].id === themeId);
+            });
+            closeThemePicker();
+        }
+
+
+        // ─── Dice Themes ───────────────────────────────────────────────────
+        const DICE_THEMES = [
+            { id: 'classic',  name: 'Classic White',  className: 'dice-theme-classic' },
+            { id: 'midnight', name: 'Midnight Black', className: 'dice-theme-midnight' },
+            { id: 'royal',    name: 'Royal Gold',     className: 'dice-theme-royal' },
+            { id: 'crimson',  name: 'Crimson Red',    className: 'dice-theme-crimson' },
+            { id: 'ocean',    name: 'Ocean Blue',     className: 'dice-theme-ocean' },
+            { id: 'forest',   name: 'Forest Green',   className: 'dice-theme-forest' }
+        ];
+        const DICE_THEME_KEY = 'lm_dice_theme';
+
+        function loadSavedDiceTheme() {
+            try { return localStorage.getItem(DICE_THEME_KEY) || 'classic'; } catch (e) { return 'classic'; }
+        }
+        function applyDiceTheme(themeId) {
+            const theme = DICE_THEMES.find(t => t.id === themeId) || DICE_THEMES[0];
+            const board = document.getElementById('board');
+            if (board) {
+                DICE_THEMES.forEach(t => board.classList.remove(t.className));
+                board.classList.add(theme.className);
+            }
+            const nameEl = document.getElementById('dice-selector-name');
+            if (nameEl) nameEl.textContent = theme.name;
+            const swatchEl = document.getElementById('dice-selector-swatch');
+            if (swatchEl) {
+                if (theme.id === 'midnight') swatchEl.style.background = 'linear-gradient(135deg, #1e293b, #0f172a)';
+                else if (theme.id === 'royal') swatchEl.style.background = 'linear-gradient(135deg, #fef3c7, #d97706)';
+                else if (theme.id === 'crimson') swatchEl.style.background = 'linear-gradient(135deg, #fecaca, #dc2626)';
+                else if (theme.id === 'ocean') swatchEl.style.background = 'linear-gradient(135deg, #bfdbfe, #2563eb)';
+                else if (theme.id === 'forest') swatchEl.style.background = 'linear-gradient(135deg, #bbf7d0, #16a34a)';
+                else swatchEl.style.background = 'linear-gradient(135deg, #ffffff, #cbd5e1)';
+            }
+        }
+        function openDicePicker() {
+            const grid = document.getElementById('dice-grid');
+            const current = loadSavedDiceTheme();
+            grid.innerHTML = '';
+            DICE_THEMES.forEach(theme => {
+                const tile = document.createElement('div');
+                tile.className = 'dice-preview-box' + (theme.id === current ? ' selected' : '');
+                tile.onclick = () => selectDiceTheme(theme.id);
+                const cube = document.createElement('div');
+                cube.className = 'dice-preview-cube ' + theme.className;
+                const face = document.createElement('div');
+                face.className = 'dice-preview-face dice-face-front';
+                face.innerHTML = '<div class="dice-pip-grid"><span class="dice-pip on" style="opacity:1;transform:scale(1);grid-column:2;grid-row:2;"></span></div>';
+                cube.appendChild(face);
+                const label = document.createElement('span');
+                label.className = 'dice-preview-label';
+                label.textContent = theme.name;
+                tile.appendChild(cube);
+                tile.appendChild(label);
+                grid.appendChild(tile);
+            });
+            document.getElementById('dice-picker-modal').style.display = 'flex';
+        }
+        function closeDicePicker() {
+            document.getElementById('dice-picker-modal').style.display = 'none';
+        }
+        function selectDiceTheme(themeId) {
+            try { localStorage.setItem(DICE_THEME_KEY, themeId); } catch (e) {}
+            applyDiceTheme(themeId);
+            document.querySelectorAll('.dice-preview-box').forEach((el, i) => {
+                el.classList.toggle('selected', DICE_THEMES[i].id === themeId);
+            });
+            closeDicePicker();
+        }
+
+        // ─── Token Shapes ──────────────────────────────────────────────────
+        const TOKEN_SHAPES = [
+            { id: 'classic', name: 'Classic Pawn',   className: 'token-shape-classic' },
+            { id: 'coin',    name: 'Royal Coin',     className: 'token-shape-coin' },
+            { id: 'cone',    name: 'Sleek Cone',     className: 'token-shape-cone' },
+            { id: 'crown',   name: 'Imperial Crown', className: 'token-shape-crown' },
+            { id: 'shield',  name: 'Knight Shield',  className: 'token-shape-shield' }
+        ];
+        const TOKEN_SHAPE_KEY = 'lm_token_shape';
+
+        function loadSavedTokenShape() {
+            try { return localStorage.getItem(TOKEN_SHAPE_KEY) || 'classic'; } catch (e) { return 'classic'; }
+        }
+        function applyTokenShape(shapeId) {
+            const shape = TOKEN_SHAPES.find(s => s.id === shapeId) || TOKEN_SHAPES[0];
+            const nameEl = document.getElementById('token-selector-name');
+            if (nameEl) nameEl.textContent = shape.name;
+        }
+        function openTokenPicker() {
+            const grid = document.getElementById('token-grid');
+            const current = loadSavedTokenShape();
+            grid.innerHTML = '';
+            TOKEN_SHAPES.forEach(shape => {
+                const tile = document.createElement('div');
+                tile.className = 'token-preview-box' + (shape.id === current ? ' selected' : '');
+                tile.onclick = () => selectTokenShape(shape.id);
+                const preview = document.createElement('div');
+                preview.className = 'token-preview-shape ' + shape.className;
+                preview.style.cssText = '--token-light:#f87171; --token-mid:#dc2626; --token-dark:#7f1d1d;';
+                if (shape.id === 'classic') {
+                    preview.innerHTML = '<svg viewBox="0 0 100 140" style="width:100%;height:100%;"><circle cx="50" cy="26" r="22" fill="#dc2626"/></svg>';
+                }
+                const label = document.createElement('span');
+                label.className = 'token-preview-label';
+                label.textContent = shape.name;
+                tile.appendChild(preview);
+                tile.appendChild(label);
+                grid.appendChild(tile);
+            });
+            document.getElementById('token-picker-modal').style.display = 'flex';
+        }
+        function closeTokenPicker() {
+            document.getElementById('token-picker-modal').style.display = 'none';
+        }
+        function selectTokenShape(shapeId) {
+            try { localStorage.setItem(TOKEN_SHAPE_KEY, shapeId); } catch (e) {}
+            applyTokenShape(shapeId);
+            document.querySelectorAll('.token-preview-box').forEach((el, i) => {
+                el.classList.toggle('selected', TOKEN_SHAPES[i].id === shapeId);
+            });
+            closeTokenPicker();
+        }
+
+        // ─── Local Coin Betting (for local/bot games) ──────────────────────
+        let localBetAmount = 0;
+        const LOCAL_BET_KEY = 'lm_local_bet';
+        function loadSavedLocalBet() {
+            try { return parseInt(localStorage.getItem(LOCAL_BET_KEY) || '0', 10) || 0; } catch (e) { return 0; }
+        }
+        function saveLocalBet(amt) {
+            localBetAmount = Math.max(0, Math.floor(amt) || 0);
+            try { localStorage.setItem(LOCAL_BET_KEY, String(localBetAmount)); } catch (e) {}
+            renderLocalBetUI();
+        }
+        function setLocalBet(bet, el) {
+            document.querySelectorAll('.local-bet-chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            saveLocalBet(bet);
+            const customInput = document.getElementById('local-bet-custom');
+            if (customInput) customInput.value = '';
+        }
+        function handleLocalBetCustom(val) {
+            let n = Math.floor(Number(val) || 0);
+            if (n < 0) n = 0;
+            if (n > myCoins) n = myCoins;
+            saveLocalBet(n);
+            document.querySelectorAll('.local-bet-chip').forEach(c => c.classList.remove('active'));
+            const input = document.getElementById('local-bet-custom');
+            if (input && String(n) !== String(val)) input.value = n;
+        }
+        function renderLocalBetUI() {
+            const display = document.getElementById('local-bet-balance-display');
+            if (display) display.textContent = '🪙 ' + myCoins.toLocaleString();
+            const chips = document.querySelectorAll('.local-bet-chip');
+            chips.forEach(c => {
+                const amt = Number(c.dataset.bet || 0);
+                if (amt > myCoins) c.setAttribute('disabled', 'disabled');
+                else c.removeAttribute('disabled');
+                c.classList.toggle('active', amt === localBetAmount && localBetAmount > 0);
+            });
+        }
+
         function switchAccountTab(mode) {
             accountFormMode = mode;
             clearAccountMsg();
@@ -3583,6 +3998,12 @@
             const l = document.getElementById('loading-screen');
             if (l) { l.style.opacity = '0'; setTimeout(() => { l.style.display = 'none'; }, 400); }
             updateAccountStatusUI();
+
+            // Initialize dice theme & token shape
+            applyDiceTheme(loadSavedDiceTheme());
+            applyTokenShape(loadSavedTokenShape());
+            localBetAmount = loadSavedLocalBet();
+            renderLocalBetUI();
 
             // If a game was in progress when the page got reloaded (most
             // often: an accidental ad click navigated the same tab away and
@@ -4033,6 +4454,17 @@
             // match or the online lobby. The old opponent (if any) gets a
             // clear "forfeit" win screen instead of the sync just stopping.
             if (isOnlineMode) cleanupOnlineGame('forfeit');
+
+            // ─── Local Coin Bet settlement (before starting) ─────────────
+            localBetAmount = loadSavedLocalBet();
+            if (localBetAmount > 0 && !isOnlineMode) {
+                if (localBetAmount > myCoins) {
+                    showOnlineNotice('🪙', 'Not Enough Coins', `You need 🪙 ${localBetAmount.toLocaleString()} coins for this match but only have ${myCoins.toLocaleString()}.`, null);
+                    return;
+                }
+                myCoins -= localBetAmount;
+                renderCoinUI();
+            }
             // Partner Mode (Assist / Full Control) only makes sense in the 4-player Full
             // Table — block any other mode from opening while it's active, instead of
             // silently starting a game partner mode can't apply to.
@@ -4192,34 +4624,54 @@
                     else topRow.appendChild(tag);
                 });
             } else if (botMode) {
-                // Vs Computer: the ONE human's tag+dice always lands at the
-                // LEFT of the bottom row — closest to their own thumb — no
-                // matter which colour they were dealt this game. The board
-                // itself was already rotated to match in startGame(), so
-                // their token base visually sits in that same corner too.
-                // Every one of the 4 tag elements gets exactly one
-                // appendChild call below (active opponents first, any
-                // colour not in play this match parked in the top row,
-                // hidden the same way it always was) so the final order is
-                // fully deterministic regardless of the previous match's
-                // layout.
+                // Vs Computer: human ALWAYS bottom-RIGHT (easy thumb reach),
+                // first bot ALWAYS top-RIGHT (diagonal opponent). Board
+                // rotation already puts human base bottom-left, so this
+                // mirrors that diagonal. Spacers keep single-item rows
+                // aligned to the right side as intended.
                 const human = players.find(p => !p.isBot);
                 const humanColor = human ? human.color : 'Red';
+                const bots = players.filter(p => p.isBot);
                 const allColors = ['Red', 'Green', 'Blue', 'Yellow'];
-                const activeOthers = players.filter(p => p.color !== humanColor).map(p => p.color);
-                const inactiveOthers = allColors.filter(c => c !== humanColor && !activeOthers.includes(c));
-                const orderedOthers = activeOthers.concat(inactiveOthers);
+                const activeColors = players.map(p => p.color);
+                const inactiveColors = allColors.filter(c => !activeColors.includes(c));
 
-                const humanTag = document.getElementById('tag-' + humanColor);
-                if (humanTag) bottomRow.appendChild(humanTag); // bottom-LEFT
-                if (orderedOthers[0]) {
-                    const t = document.getElementById('tag-' + orderedOthers[0]);
-                    if (t) bottomRow.appendChild(t); // bottom-RIGHT
-                }
-                orderedOthers.slice(1).forEach(c => {
+                // Clean up old spacers
+                document.querySelectorAll('.tag-spacer').forEach(s => s.remove());
+                const makeSpacer = () => {
+                    const s = document.createElement('div');
+                    s.className = 'tag-spacer';
+                    return s;
+                };
+
+                // Inactive colors: stash in top row (will be hidden by renderScoreboard)
+                inactiveColors.forEach(c => {
                     const t = document.getElementById('tag-' + c);
-                    if (t) topRow.appendChild(t); // top row, in order
+                    if (t) topRow.appendChild(t);
                 });
+
+                // Bots: first bot top-right, second bottom-left, third top-left
+                bots.forEach((bot, i) => {
+                    const t = document.getElementById('tag-' + bot.color);
+                    if (!t) return;
+                    if (i === 0) {
+                        topRow.appendChild(makeSpacer());
+                        topRow.appendChild(t);
+                    } else if (i === 1) {
+                        bottomRow.insertBefore(t, bottomRow.firstChild);
+                        bottomRow.appendChild(makeSpacer());
+                    } else {
+                        topRow.insertBefore(t, topRow.firstChild);
+                        topRow.appendChild(makeSpacer());
+                    }
+                });
+
+                // Human: bottom-right (always last = rightmost)
+                const humanTag = document.getElementById('tag-' + humanColor);
+                if (humanTag) {
+                    bottomRow.appendChild(makeSpacer());
+                    bottomRow.appendChild(humanTag);
+                }
             } else {
                 // Local hotseat/pass-and-play (no single "the human", no
                 // bots): restore the fixed default layout (Red/Green top,
@@ -5242,8 +5694,17 @@
         function createTokenElement(t) {
             const tEl = document.createElement('div');
             tEl.id = `t-${t.id}`;
-            tEl.className = `token token-${t.color.toLowerCase()}` + (t.barrier ? ' token-barrier' : '');
-            tEl.innerHTML = pawnSVG(t.color);
+            const shapeId = loadSavedTokenShape();
+            const shape = TOKEN_SHAPES.find(s => s.id === shapeId) || TOKEN_SHAPES[0];
+            const colorKey = t.color;
+            const c = PAWN_PALETTE[colorKey] || PAWN_PALETTE.Red;
+            tEl.className = `token token-${t.color.toLowerCase()}` + (t.barrier ? ' token-barrier' : '') + ' ' + shape.className;
+            tEl.style.cssText = `--token-light:${c.light}; --token-mid:${c.mid}; --token-dark:${c.dark};`;
+            if (shape.id === 'classic') {
+                tEl.innerHTML = pawnSVG(t.color);
+            } else {
+                tEl.innerHTML = '';
+            }
             tEl.onclick = (e) => {
                 e.stopPropagation();
                 handleTokenClick(t);
@@ -5299,6 +5760,22 @@
                 title = `${winner ? winner.name : 'Player'} Wins! 🎉`;
             }
             document.getElementById('winner-title').innerText = title;
+
+            // ─── Local Coin Match Settlement ────────────────────────────
+            if (!isOnlineMode && localBetAmount > 0) {
+                const winnerColor = winnersList[0];
+                const human = players.find(p => !p.isBot);
+                if (human && human.color === winnerColor) {
+                    const pot = localBetAmount * players.length;
+                    myCoins += pot;
+                    playSound('coinWin');
+                    showCoinResultBanner(`🪙 You won ${pot.toLocaleString()} coins!`);
+                } else {
+                    showCoinResultBanner(`🪙 You lost ${localBetAmount.toLocaleString()} coins. Better luck next time!`);
+                }
+                localBetAmount = 0;
+                renderCoinUI();
+            }
 
             // ─── Coin wager settlement (SECURITY: server-verified) ──────────
             // endGame() with no teamColors (Partner Mode never runs online)
@@ -5915,6 +6392,11 @@
             const lobbyBal = document.getElementById('onl-bet-balance');
             if (lobbyBal) lobbyBal.textContent = '🪙 ' + fmt;
             refreshBetPillAffordability();
+
+            // Update local bet UI too
+            const localDisplay = document.getElementById('local-bet-balance-display');
+            if (localDisplay) localDisplay.textContent = '🪙 ' + fmt;
+            renderLocalBetUI();
 
             const claimRow = document.getElementById('coin-claim-row');
             if (!claimRow) return;
