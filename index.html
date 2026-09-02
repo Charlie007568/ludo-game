@@ -207,6 +207,19 @@
         .theme-swatch-preview { width: 100%; height: 42px; border-bottom: 2px solid rgba(0,0,0,0.25); }
         .theme-swatch-label { font-size: 0.58rem; font-weight: 700; color: var(--ivory-dim); display: block; margin-top: 5px; padding: 0 3px; }
         .theme-swatch-badge { font-size: 1.1rem; }
+        .token-selector-preview { padding: 2px; }
+        .token-selector-preview svg { width: 100%; height: 100%; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4)); }
+
+        /* ── Token design picker ──────────────────────────────────────────── */
+        #token-picker-modal { display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 276; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        #token-picker-modal .onl-modal-card { max-width: 340px; max-height: 88vh; overflow-y: auto; }
+        .token-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0 16px; }
+        .token-swatch-tile { border-radius: 12px; border: 2px solid rgba(201,162,75,0.25); cursor: pointer; transition: all 0.15s; text-align: center; padding: 8px 4px 6px; background: rgba(255,255,255,0.04); }
+        .token-swatch-tile:active { transform: scale(0.95); }
+        .token-swatch-tile.selected { border-color: var(--brass-light); box-shadow: 0 0 0 2px rgba(245,215,127,0.35); background: rgba(245,215,127,0.08); }
+        .token-swatch-preview { width: 100%; height: 56px; display: flex; align-items: center; justify-content: center; }
+        .token-swatch-preview svg { width: 42px; height: 56px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.4)); }
+        .token-swatch-label { font-size: 0.56rem; font-weight: 700; color: var(--ivory-dim); display: block; margin-top: 4px; padding: 0 2px; }
 
         /* =================================================================
            ONLINE MULTIPLAYER — Lobby screen, request popups, player list.
@@ -904,6 +917,20 @@
 
         <div class="dash-card">
             <div class="dash-card-head">
+                <span class="dash-card-title">♟️ Token Design</span>
+            </div>
+            <div class="selector-tile" onclick="openTokenPicker()">
+                <span class="mode-icon-badge token-selector-preview" id="token-selector-preview"></span>
+                <span style="flex:1;">
+                    <span class="mode-name" id="token-selector-name" style="display:block;">Classic Pawn</span>
+                    <span class="mode-sub">Tap to change your pieces' shape</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-card-head">
                 <span class="dash-card-title">🎮 Game Mode</span>
             </div>
             <div class="selector-tile" onclick="openModeModal()">
@@ -1117,6 +1144,15 @@
             <div class="onl-modal-title">🎲 Choose a Dice Design</div>
             <div class="theme-grid" id="dice-grid"></div>
             <button class="onl-back-btn" style="width:100%; margin-top:4px;" onclick="closeDicePicker()">Close</button>
+        </div>
+    </div>
+
+    <!-- TOKEN SHAPE PICKER -->
+    <div id="token-picker-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-title">♟️ Choose a Token Design</div>
+            <div class="token-grid" id="token-grid"></div>
+            <button class="onl-back-btn" style="width:100%; margin-top:4px;" onclick="closeTokenPicker()">Close</button>
         </div>
     </div>
 
@@ -3117,6 +3153,7 @@
             if (btn) btn.textContent = soundEnabled ? '🔊' : '🔇';
             applyBoardTheme(loadSavedTheme());
             applyDiceSkin(loadSavedDiceSkin());
+            applyTokenSelectorPreview(loadSavedTokenDesign());
         });
         let noiseBuffer = null; // shared white-noise buffer, generated once and reused for every "rattle"/"crash" sound
         function getAudioContext() {
@@ -3578,6 +3615,55 @@
                 el.classList.toggle('selected', DICE_SKINS[i].id === skinId);
             });
             closeDicePicker();
+        }
+
+        // ─── Token designs (picker + apply) ──────────────────────────────────
+        // Refreshes the little preview badge + label on the menu card —
+        // called on load and right after a new design is picked.
+        function applyTokenSelectorPreview(designId) {
+            const design = TOKEN_DESIGNS.find(d => d.id === designId) || TOKEN_DESIGNS[0];
+            const nameEl = document.getElementById('token-selector-name');
+            if (nameEl) nameEl.textContent = design.name;
+            const previewEl = document.getElementById('token-selector-preview');
+            if (previewEl) previewEl.innerHTML = design.render('Red');
+        }
+
+        function openTokenPicker() {
+            const grid = document.getElementById('token-grid');
+            const current = loadSavedTokenDesign();
+            grid.innerHTML = '';
+            TOKEN_DESIGNS.forEach(design => {
+                const tile = document.createElement('div');
+                tile.className = 'token-swatch-tile' + (design.id === current ? ' selected' : '');
+                tile.onclick = () => selectTokenDesign(design.id);
+                const preview = document.createElement('div');
+                preview.className = 'token-swatch-preview';
+                preview.innerHTML = design.render('Green');
+                const label = document.createElement('span');
+                label.className = 'token-swatch-label';
+                label.textContent = design.name;
+                tile.appendChild(preview);
+                tile.appendChild(label);
+                grid.appendChild(tile);
+            });
+            document.getElementById('token-picker-modal').style.display = 'flex';
+        }
+        function closeTokenPicker() {
+            document.getElementById('token-picker-modal').style.display = 'none';
+        }
+        function selectTokenDesign(designId) {
+            try { localStorage.setItem(TOKEN_DESIGN_KEY, designId); } catch (e) {}
+            applyTokenSelectorPreview(designId);
+            document.querySelectorAll('#token-grid .token-swatch-tile').forEach((el, i) => {
+                el.classList.toggle('selected', TOKEN_DESIGNS[i].id === designId);
+            });
+            closeTokenPicker();
+            // If a game is already on screen, re-draw every token right away
+            // instead of waiting for the next game to start.
+            const gs = document.getElementById('game-screen');
+            if (gs && gs.style.display !== 'none' && typeof renderTokens === 'function' && players && players.length) {
+                renderTokens();
+            }
         }
 
         function switchAccountTab(mode) {
@@ -5454,7 +5540,18 @@
             Blue:   { light: '#60a5fa', mid: '#2563eb', dark: '#1e3a8a' }
         };
         let pawnSvgUid = 0;
-        function pawnSVG(color) {
+
+        // ─── Token designs ───────────────────────────────────────────────────
+        // Five selectable piece shapes (see openTokenPicker()/selectTokenDesign
+        // below) — each is its own self-contained SVG so the SILHOUETTE
+        // genuinely changes, not just a colour/CSS swap like the board
+        // themes or dice skins. All five share the same lighting approach
+        // (radial gradient body + soft ground shadow + a highlight
+        // ellipse/facet) so whichever one is picked still feels like it
+        // belongs on this same board, and all still take the player's
+        // Red/Green/Yellow/Blue colour from PAWN_PALETTE — the shape
+        // changes, the "whose piece is this" colour never does.
+        function pawnSVG_classic(color) {
             const c = PAWN_PALETTE[color] || PAWN_PALETTE.Red;
             const uid = 'pawn' + (pawnSvgUid++);
             return `<svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMid meet">
@@ -5477,6 +5574,123 @@
                 <ellipse cx="41" cy="17" rx="7" ry="5" fill="#ffffff" opacity="0.55"/>
                 <ellipse cx="38" cy="90" rx="7" ry="20" fill="#ffffff" opacity="0.16"/>
             </svg>`;
+        }
+
+        // Faceted crystal/gem standing on a small round base.
+        function pawnSVG_gem(color) {
+            const c = PAWN_PALETTE[color] || PAWN_PALETTE.Red;
+            const uid = 'pawn' + (pawnSvgUid++);
+            return `<svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <radialGradient id="${uid}b" cx="35%" cy="15%" r="95%">
+                        <stop offset="0%" stop-color="${c.light}"/>
+                        <stop offset="55%" stop-color="${c.mid}"/>
+                        <stop offset="100%" stop-color="${c.dark}"/>
+                    </radialGradient>
+                </defs>
+                <ellipse cx="50" cy="132" rx="26" ry="6" fill="rgba(0,0,0,0.32)"/>
+                <ellipse cx="50" cy="120" rx="22" ry="8" fill="${c.dark}" stroke="rgba(0,0,0,0.35)" stroke-width="2"/>
+                <polygon points="50,14 78,52 66,52 50,124 34,52 22,52" fill="url(#${uid}b)" stroke="rgba(0,0,0,0.4)" stroke-width="2" stroke-linejoin="round"/>
+                <polygon points="50,14 66,52 34,52" fill="#ffffff" opacity="0.32"/>
+                <polygon points="50,14 66,52 78,52" fill="#000000" opacity="0.14"/>
+                <polygon points="34,52 50,124 22,52" fill="#000000" opacity="0.16"/>
+            </svg>`;
+        }
+
+        // Slim, tapered modern minimal cone with a small flat cap.
+        function pawnSVG_cone(color) {
+            const c = PAWN_PALETTE[color] || PAWN_PALETTE.Red;
+            const uid = 'pawn' + (pawnSvgUid++);
+            return `<svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <linearGradient id="${uid}b" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="${c.dark}"/>
+                        <stop offset="45%" stop-color="${c.light}"/>
+                        <stop offset="100%" stop-color="${c.mid}"/>
+                    </linearGradient>
+                    <radialGradient id="${uid}h" cx="35%" cy="30%" r="75%">
+                        <stop offset="0%" stop-color="${c.light}"/>
+                        <stop offset="70%" stop-color="${c.mid}"/>
+                        <stop offset="100%" stop-color="${c.dark}"/>
+                    </radialGradient>
+                </defs>
+                <ellipse cx="50" cy="132" rx="28" ry="7" fill="rgba(0,0,0,0.32)"/>
+                <path d="M20 128 L37 42 Q50 33 63 42 L80 128 Z" fill="url(#${uid}b)" stroke="rgba(0,0,0,0.35)" stroke-width="2" stroke-linejoin="round"/>
+                <ellipse cx="50" cy="42" rx="13" ry="5" fill="${c.dark}" opacity="0.5"/>
+                <ellipse cx="50" cy="36" rx="11" ry="8" fill="url(#${uid}h)" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+                <path d="M32 122 L44 46" stroke="#ffffff" stroke-width="5" opacity="0.18" stroke-linecap="round"/>
+            </svg>`;
+        }
+
+        // Classic pawn body topped with a small gold crown instead of a
+        // plain sphere — the crown stays gold/brass on every colour (a
+        // consistent "royal" accent), only the body carries the player's
+        // own colour.
+        function pawnSVG_crown(color) {
+            const c = PAWN_PALETTE[color] || PAWN_PALETTE.Red;
+            const uid = 'pawn' + (pawnSvgUid++);
+            return `<svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <radialGradient id="${uid}b" cx="35%" cy="20%" r="90%">
+                        <stop offset="0%" stop-color="${c.light}"/>
+                        <stop offset="55%" stop-color="${c.mid}"/>
+                        <stop offset="100%" stop-color="${c.dark}"/>
+                    </radialGradient>
+                    <linearGradient id="${uid}g" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#f5d77f"/>
+                        <stop offset="100%" stop-color="#a3781f"/>
+                    </linearGradient>
+                </defs>
+                <ellipse cx="50" cy="132" rx="30" ry="7" fill="rgba(0,0,0,0.32)"/>
+                <path d="M 24 128 C 18 128 18 118 22 100 L 36 66 C 30 62 28 58 28 52 L 72 52 C 72 58 70 62 64 66 L 78 100 C 82 118 82 128 76 128 Z" fill="url(#${uid}b)" stroke="rgba(0,0,0,0.35)" stroke-width="2"/>
+                <ellipse cx="50" cy="54" rx="15" ry="4" fill="${c.dark}" opacity="0.5"/>
+                <path d="M30 52 L34 26 L44 40 L50 18 L56 40 L66 26 L70 52 Z" fill="url(#${uid}g)" stroke="rgba(0,0,0,0.4)" stroke-width="1.5" stroke-linejoin="round"/>
+                <circle cx="34" cy="26" r="3.4" fill="#fff3c4"/>
+                <circle cx="50" cy="18" r="4" fill="#fff3c4"/>
+                <circle cx="66" cy="26" r="3.4" fill="#fff3c4"/>
+                <rect x="30" y="50" width="40" height="6" rx="2" fill="url(#${uid}g)" stroke="rgba(0,0,0,0.4)" stroke-width="1"/>
+            </svg>`;
+        }
+
+        // Simple glossy sphere/marble resting on a thin ring base.
+        function pawnSVG_marble(color) {
+            const c = PAWN_PALETTE[color] || PAWN_PALETTE.Red;
+            const uid = 'pawn' + (pawnSvgUid++);
+            return `<svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <radialGradient id="${uid}b" cx="32%" cy="26%" r="80%">
+                        <stop offset="0%" stop-color="${c.light}"/>
+                        <stop offset="55%" stop-color="${c.mid}"/>
+                        <stop offset="100%" stop-color="${c.dark}"/>
+                    </radialGradient>
+                </defs>
+                <ellipse cx="50" cy="132" rx="26" ry="6" fill="rgba(0,0,0,0.32)"/>
+                <ellipse cx="50" cy="120" rx="24" ry="9" fill="${c.dark}" stroke="rgba(0,0,0,0.35)" stroke-width="1.5"/>
+                <circle cx="50" cy="68" r="46" fill="url(#${uid}b)" stroke="rgba(0,0,0,0.35)" stroke-width="2"/>
+                <ellipse cx="35" cy="44" rx="15" ry="10" fill="#ffffff" opacity="0.55"/>
+                <ellipse cx="50" cy="98" rx="30" ry="8" fill="#000000" opacity="0.12"/>
+            </svg>`;
+        }
+
+        const TOKEN_DESIGNS = [
+            { id: 'classic', name: 'Classic Pawn', render: pawnSVG_classic },
+            { id: 'gem',     name: 'Crystal Gem',  render: pawnSVG_gem },
+            { id: 'cone',    name: 'Modern Cone',  render: pawnSVG_cone },
+            { id: 'crown',   name: 'Royal Crown',  render: pawnSVG_crown },
+            { id: 'marble',  name: 'Glass Marble', render: pawnSVG_marble }
+        ];
+        const TOKEN_DESIGN_KEY = 'lm_token_design';
+        function loadSavedTokenDesign() {
+            try { return localStorage.getItem(TOKEN_DESIGN_KEY) || 'classic'; } catch (e) { return 'classic'; }
+        }
+        // The single entry point every token actually renders through
+        // (createTokenElement calls this exact function, unchanged) — picks
+        // whichever shape is currently saved. Kept as its own small
+        // dispatcher so nothing else in the file needs to know designs
+        // exist at all.
+        function pawnSVG(color) {
+            const design = TOKEN_DESIGNS.find(d => d.id === loadSavedTokenDesign()) || TOKEN_DESIGNS[0];
+            return design.render(color);
         }
 
         function createTokenElement(t) {
