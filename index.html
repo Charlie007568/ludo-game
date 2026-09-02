@@ -58,6 +58,15 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         
         #menu-screen { padding: 22px 22px calc(18px + env(safe-area-inset-bottom)); max-width: 420px; width: 92%; display: none; max-height: 94vh; overflow-y: auto; margin-top: var(--banner-space); transition: margin-top 0.2s ease; }
+
+        /* ── Persistent top bar: coins left, name right ──────────────────── */
+        .menu-topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .topbar-pill { display: flex; align-items: center; gap: 5px; background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(0,0,0,0.25)); border: 1px solid rgba(201,162,75,0.3); border-radius: 999px; padding: 5px 12px; cursor: pointer; transition: transform 0.12s; box-shadow: 0 3px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06); }
+        .topbar-pill:active { transform: scale(0.96); }
+        .topbar-coins .coin-balance-amount { font-size: 0.92rem; }
+        .topbar-icon { font-size: 0.85rem; }
+        .topbar-name .mode-name { font-size: 0.72rem; font-weight: 800; color: var(--ivory); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
         .brand-eyebrow { font-size: 0.58rem; letter-spacing: 3.5px; text-transform: uppercase; color: var(--brass); margin-bottom: 3px; font-weight: 700; }
         .title-text { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 800; letter-spacing: 0.5px; color: var(--brass-light); text-shadow: 0 2px 18px rgba(201,162,75,0.35); }
         .title-rule { width: 70px; height: 1px; margin: 8px auto 12px; background: linear-gradient(90deg, transparent, var(--brass), transparent); position: relative; }
@@ -70,7 +79,7 @@
         #announcement-banner .announce-highlight { background: rgba(245,215,127,0.3); color: var(--brass-light); padding: 0 3px; border-radius: 3px; }
         #announcement-banner .announce-big { font-size: 1.25em; font-weight: 800; }
 
-        .dash-card { background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.22)); border: 1px solid rgba(201,162,75,0.25); border-radius: 14px; padding: 11px 13px; margin: 9px 0; text-align: left; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 10px rgba(0,0,0,0.25); }
+        .dash-card { background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.22)); border: 1px solid rgba(201,162,75,0.25); border-radius: 14px; padding: 10px 13px; margin: 7px 0; text-align: left; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 10px rgba(0,0,0,0.25); }
         .dash-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .dash-card-title { font-size: 0.63rem; letter-spacing: 1.2px; text-transform: uppercase; color: var(--brass-light); font-weight: 800; }
         
@@ -96,6 +105,10 @@
         .bet-pill:active { transform: scale(0.96); }
         .bet-pill.active { background: linear-gradient(135deg, var(--brass-light), var(--brass) 55%, var(--brass-dark)); border-color: var(--brass-light); color: #1a1206; font-weight: 900; box-shadow: 0 2px 10px rgba(201,162,75,0.45), inset 0 1px 0 rgba(255,255,255,0.5); }
         .bet-pill[disabled] { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+        .bet-pill-custom { border-style: dashed; }
+        .bet-custom-row { margin-top: 8px; }
+        .bet-custom-input { width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid rgba(245,215,127,0.45); background: rgba(0,0,0,0.35); color: var(--ivory); font-size: 0.8rem; font-weight: 700; text-align: center; }
+        .bet-custom-input:focus { outline: none; border-color: var(--brass-light); box-shadow: 0 0 0 2px rgba(245,215,127,0.25); }
 
         .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .player-slot label { font-size: 0.58rem; letter-spacing: 0.6px; text-transform: uppercase; color: var(--ivory-dim); font-weight: 700; display: flex; align-items: center; gap: 4px; margin-bottom: 3px; }
@@ -715,19 +728,31 @@
 
     <!-- MAIN MENU -->
     <div id="menu-screen" class="glass-panel">
+        <!-- Slim persistent top bar: coins on the left, name on the right —
+             both are the SAME elements the rest of the app already updates
+             (menu-coin-balance / menu-player-name-display), just relocated
+             here, so every existing update call site keeps working with no
+             JS changes needed. Tapping either jumps straight to the
+             matching action (claim coins / edit name). -->
+        <div class="menu-topbar">
+            <div class="topbar-pill topbar-coins" onclick="document.getElementById('coin-balance-card').scrollIntoView({behavior:'smooth', block:'center'})">
+                <span class="coin-balance-amount" id="menu-coin-balance">5,000</span>
+            </div>
+            <div class="topbar-pill topbar-name" onclick="openMenuNameEdit()">
+                <span class="topbar-icon">👤</span>
+                <span class="mode-name" id="menu-player-name-display">Player</span>
+            </div>
+        </div>
+
         <p class="brand-eyebrow">Rahbar Engineering Presents</p>
         <h1 class="title-text">LUDO Master Pro</h1>
         <div class="title-rule"></div>
 
         <div id="announcement-banner"></div>
 
-        <div class="dash-card coin-balance-card">
+        <div class="dash-card coin-balance-card" id="coin-balance-card">
             <div class="dash-card-head">
-                <span class="dash-card-title">🪙 Your Coins</span>
-            </div>
-            <div class="coin-balance-row">
-                <span class="coin-balance-amount" id="menu-coin-balance">5,000</span>
-                <span class="coin-balance-label">used for Online coin matches</span>
+                <span class="dash-card-title">🪙 Get More Coins</span>
             </div>
             <div class="coin-claim-row" id="coin-claim-row">
                 <button class="coin-claim-btn" id="coin-claim-btn" onclick="handleClaimDailyBonus()">Claim Free 100 Coins</button>
@@ -753,25 +778,11 @@
             </div>
         </div>
 
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <span class="dash-card-title">👤 Your Name</span>
-            </div>
-            <div class="selector-tile" onclick="openMenuNameEdit()">
-                <span class="mode-icon-badge" style="background:linear-gradient(150deg, var(--brass-light), rgba(0,0,0,0.3));">🧑</span>
-                <span style="flex:1;">
-                    <span class="mode-name" id="menu-player-name-display" style="display:block;">Player</span>
-                    <span class="mode-sub">Tap to change your name</span>
-                </span>
-                <span style="font-size:1.1rem; opacity:0.8;">✎</span>
-            </div>
-        </div>
-
         <!-- Player name inputs kept in the DOM (hidden) so startGame() and
              the rest of the game logic can read them exactly as before —
-             only the visible name entry now happens on the first-run
-             name-entry-screen and via the in-game player-box edit (pencil)
-             icon. Red syncs both ways with that saved display name. -->
+             the visible name now lives in the top bar above (tap it to
+             change) and on the first-run welcome screen / in-game player
+             box edit. Red syncs both ways with that saved display name. -->
         <div style="display:none;">
             <input type="text" id="name-red" value="Player 1">
             <input type="text" id="name-green" value="Player 2">
@@ -1008,6 +1019,10 @@
                 <div class="bet-pill" data-bet="1000" onclick="setOnlineBetSetting(1000, this)">1,000</div>
                 <div class="bet-pill" data-bet="2000" onclick="setOnlineBetSetting(2000, this)">2,000</div>
                 <div class="bet-pill" data-bet="5000" onclick="setOnlineBetSetting(5000, this)">All-in</div>
+                <div class="bet-pill bet-pill-custom" data-bet="custom" onclick="selectCustomBetPill(this)">✏️ Custom</div>
+            </div>
+            <div class="bet-custom-row" id="bet-custom-row" style="display:none;">
+                <input type="number" id="bet-custom-input" class="bet-custom-input" placeholder="Enter any coin amount" min="0" step="1" inputmode="numeric" oninput="handleCustomBetInput(this.value)">
             </div>
             <p class="onl-hint">Winner takes the whole pot (both stakes). Your balance: <span id="onl-bet-balance">🪙 5,000</span></p>
         </div>
@@ -3594,7 +3609,7 @@
                 document.getElementById('menu-screen').style.display = 'none';
                 document.getElementById('game-screen').style.display = 'flex';
                 createBoard();
-                applyBoardRotation(isOnlineMode ? onlineMyColor : null);
+                applyBoardRotation(isOnlineMode ? onlineMyColor : (botMode ? (players.find(p => !p.isBot) || {}).color : null));
                 applyTagLayout();
                 renderScoreboard();
                 updateTurnUI();
@@ -3880,9 +3895,21 @@
             if (mode === 'computer') {
                 botMode = true;
                 const botNamesByColor = { Green: "Bot (Green)", Yellow: "Bot (Yellow)", Blue: "Bot (Blue)" };
-                const botColorOrder = ["Green", "Yellow", "Blue"];
                 const n = Math.min(Math.max(selectedBotCount || 1, 1), 3); // 1-3 bots => 2-4 total players
                 players = [{ name: redName, color: "Red", hex: colors[0].hex, isBot: false }];
+                let botColorOrder;
+                if (n === 1) {
+                    // Classic 1-on-1 duel: the single bot always takes the
+                    // human's DIAGONALLY OPPOSITE colour (Red↔Yellow,
+                    // Green↔Blue) rather than just "the next colour in
+                    // order" — this is also what puts the human's own base
+                    // and the bot's base on opposite corners of the board,
+                    // which is the natural head-to-head layout.
+                    const DIAGONAL_OPPOSITE = { Red: 'Yellow', Yellow: 'Red', Green: 'Blue', Blue: 'Green' };
+                    botColorOrder = [DIAGONAL_OPPOSITE['Red']]; // human is always "Red" here
+                } else {
+                    botColorOrder = ["Green", "Yellow", "Blue"];
+                }
                 for (let i = 0; i < n; i++) {
                     const c = botColorOrder[i];
                     const colorDef = colors.find(cd => cd.name === c);
@@ -3913,7 +3940,13 @@
 
             initTokens();
             createBoard();
-            applyBoardRotation(null); // local/hotseat/bot: never rotated, one shared screen
+            // Vs Computer: rotate the board (and, in applyTagLayout() below,
+            // the tag+dice row) so the human's own base and dice always land
+            // bottom-left, whichever colour they happen to be playing.
+            // Local hotseat/pass-and-play (2/3/4 real players sharing one
+            // screen) stays un-rotated, same as before — there's no single
+            // "the human" to personalise it for.
+            applyBoardRotation(botMode ? (players.find(p => !p.isBot) || {}).color : null);
             applyTagLayout();
             renderScoreboard();
             updateTurnUI();
@@ -3976,7 +4009,6 @@
             if (!topRow || !bottomRow) return;
 
             if (isOnlineMode && onlineMyColor) {
-                const myTag = document.getElementById('tag-' + onlineMyColor);
                 // My own tag+dice sits at the RIGHT of the bottom row (easy
                 // to reach/tap with a right thumb). With exactly one
                 // opponent (classic 1:1 matches) this is unchanged from
@@ -3985,6 +4017,7 @@
                 // opponents — they fill in the rest of the bottom-left,
                 // then top-right slots, so every seat still lands in one
                 // of the board's four fixed corners.
+                const myTag = document.getElementById('tag-' + onlineMyColor);
                 if (myTag) bottomRow.appendChild(myTag);
                 const others = players.filter(p => p.color !== onlineMyColor);
                 others.forEach((p, i) => {
@@ -3994,10 +4027,40 @@
                     else if (i === 1) bottomRow.insertBefore(tag, bottomRow.firstChild);
                     else topRow.appendChild(tag);
                 });
+            } else if (botMode) {
+                // Vs Computer: the ONE human's tag+dice always lands at the
+                // LEFT of the bottom row — closest to their own thumb — no
+                // matter which colour they were dealt this game. The board
+                // itself was already rotated to match in startGame(), so
+                // their token base visually sits in that same corner too.
+                // Every one of the 4 tag elements gets exactly one
+                // appendChild call below (active opponents first, any
+                // colour not in play this match parked in the top row,
+                // hidden the same way it always was) so the final order is
+                // fully deterministic regardless of the previous match's
+                // layout.
+                const human = players.find(p => !p.isBot);
+                const humanColor = human ? human.color : 'Red';
+                const allColors = ['Red', 'Green', 'Blue', 'Yellow'];
+                const activeOthers = players.filter(p => p.color !== humanColor).map(p => p.color);
+                const inactiveOthers = allColors.filter(c => c !== humanColor && !activeOthers.includes(c));
+                const orderedOthers = activeOthers.concat(inactiveOthers);
+
+                const humanTag = document.getElementById('tag-' + humanColor);
+                if (humanTag) bottomRow.appendChild(humanTag); // bottom-LEFT
+                if (orderedOthers[0]) {
+                    const t = document.getElementById('tag-' + orderedOthers[0]);
+                    if (t) bottomRow.appendChild(t); // bottom-RIGHT
+                }
+                orderedOthers.slice(1).forEach(c => {
+                    const t = document.getElementById('tag-' + c);
+                    if (t) topRow.appendChild(t); // top row, in order
+                });
             } else {
-                // Local/hotseat/bot: board is never rotated, so restore the
-                // fixed default layout (Red/Green top, Blue/Yellow bottom)
-                // matching the board's fixed physical quadrants.
+                // Local hotseat/pass-and-play (no single "the human", no
+                // bots): restore the fixed default layout (Red/Green top,
+                // Blue/Yellow bottom) matching the board's fixed physical
+                // quadrants.
                 const tagRed = document.getElementById('tag-Red');
                 const tagGreen = document.getElementById('tag-Green');
                 const tagBlue = document.getElementById('tag-Blue');
@@ -5906,12 +5969,41 @@
             onlineBetSetting = bet;
             document.querySelectorAll('.bet-pill').forEach(p => p.classList.remove('active'));
             el.classList.add('active');
+            const customRow = document.getElementById('bet-custom-row');
+            if (customRow) customRow.style.display = 'none';
+        }
+
+        // "Custom" pill — lets the player type ANY coin amount instead of
+        // being limited to the preset pills, up to whatever they can
+        // currently afford.
+        function selectCustomBetPill(el) {
+            document.querySelectorAll('.bet-pill').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+            const customRow = document.getElementById('bet-custom-row');
+            if (customRow) customRow.style.display = 'block';
+            const input = document.getElementById('bet-custom-input');
+            if (input) {
+                input.max = myCoins;
+                setTimeout(() => input.focus(), 50);
+                handleCustomBetInput(input.value);
+            }
+        }
+
+        function handleCustomBetInput(val) {
+            let n = Math.floor(Number(val) || 0);
+            if (n < 0) n = 0;
+            if (n > myCoins) n = myCoins;
+            onlineBetSetting = n;
+            const input = document.getElementById('bet-custom-input');
+            if (input && String(n) !== String(val)) input.value = n;
         }
 
         // Greys out any bet pill above the current balance — you can't wager
-        // more coins than you actually have.
+        // more coins than you actually have. The Custom pill is never
+        // disabled this way (its own input is clamped live instead).
         function refreshBetPillAffordability() {
             document.querySelectorAll('.bet-pill').forEach(p => {
+                if (p.dataset.bet === 'custom') return;
                 const amt = Number(p.dataset.bet || 0);
                 if (amt > myCoins) {
                     p.setAttribute('disabled', 'disabled');
@@ -5925,6 +6017,11 @@
                     p.removeAttribute('disabled');
                 }
             });
+            const customRow = document.getElementById('bet-custom-row');
+            const customInput = document.getElementById('bet-custom-input');
+            if (customRow && customInput && customRow.style.display !== 'none') {
+                handleCustomBetInput(customInput.value);
+            }
         }
 
         // ─── Quick Match + Create Room UI wiring (additive — sits next to,
