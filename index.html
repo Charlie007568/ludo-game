@@ -408,7 +408,7 @@
         /* ── FIX (Bug 8): Dice ko player-box jitna bada, aur box ko
              container bana do (naam/status hidden) ── */
         .dice-box-tag {
-            width: 100%; height: 100%; flex-shrink: 0; border-radius: 10px; margin-left: 0;
+            width: 62px; height: 62px; flex-shrink: 0; border-radius: 10px; margin-left: 0;
             background: transparent; color: #0f172a; display: none; justify-content: center; align-items: center;
             border: none; cursor: pointer; transition: transform 0.15s; perspective: 220px;
             padding: 0;
@@ -1352,7 +1352,7 @@
          ============================================================ -->
     <script type="module">
         import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword, signOut, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getDatabase, ref, set, update, remove, onDisconnect, serverTimestamp, onValue, get, off, push, query, limitToLast, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
@@ -1769,21 +1769,47 @@
         onlineNameKey = _onlineLoad('lm_online_name_key', '') || _normalizeNameKey(onlineName);
         onlineAvatar  = _onlineLoad('lm_online_avatar', '') || '🧑';
 
-        function registerOnlineIdentity(uid) {
+        async function registerOnlineIdentity(uid) {
             if (!uid) return;
             onlineUid = uid;
             const userRef    = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`);
-            const idIndexRef = ref(rtdb, `${ONLINE_ROOT}/idIndex/${onlinePublicId}`);
-            const base = {
-                uid: onlineUid, name: onlineName, publicId: onlinePublicId,
-                online: true, status: 'idle', roomId: null, updatedAt: serverTimestamp()
-            };
-            update(userRef, base).catch(err => _onlineReportError('write:users', err));
+
+            // 🔥 FIX: real accounts kept getting a fresh random "PlayerXXXX" name +
+            // ID every time they logged in on a new/cleared device, because we
+            // always pushed the LOCAL cached identity to the server and clobbered
+            // whatever real profile already existed for this uid. Now we check the
+            // server first and, if a profile already exists for this uid, we adopt
+            // ITS name/publicId/avatar instead of overwriting them.
+            let existing = null;
+            try {
+                const snap = await get(userRef);
+                existing = snap.exists() ? snap.val() : null;
+            } catch (e) { _onlineReportError('read:users', e); }
+
+            if (existing && existing.publicId) {
+                onlinePublicId = existing.publicId;
+                onlineName     = existing.name || onlineName;
+                onlineNameKey  = _normalizeNameKey(onlineName);
+                if (existing.avatar) onlineAvatar = existing.avatar;
+                _onlineSave('lm_online_id', onlinePublicId);
+                _onlineSave('lm_online_name', onlineName);
+                _onlineSave('lm_online_name_key', onlineNameKey);
+                _onlineSave('lm_online_avatar', onlineAvatar);
+                update(userRef, { online: true, status: 'idle', updatedAt: serverTimestamp() })
+                    .catch(err => _onlineReportError('write:users', err));
+            } else {
+                const idIndexRef = ref(rtdb, `${ONLINE_ROOT}/idIndex/${onlinePublicId}`);
+                const base = {
+                    uid: onlineUid, name: onlineName, publicId: onlinePublicId, avatar: onlineAvatar,
+                    online: true, status: 'idle', roomId: null, updatedAt: serverTimestamp()
+                };
+                update(userRef, base).catch(err => _onlineReportError('write:users', err));
+                set(idIndexRef, onlineUid).catch(err => _onlineReportError('write:idIndex', err));
+            }
 
             _callFn('initAccount', { publicId: onlinePublicId, name: onlineName })
                 .catch(err => _onlineReportError('write:initAccount', err));
 
-            set(idIndexRef, onlineUid).catch(err => _onlineReportError('write:idIndex', err));
             onDisconnect(userRef).update({ online: false, status: 'offline' }).catch(() => {});
             window.dispatchEvent(new CustomEvent('lm-online-ready', {
                 detail: { uid: onlineUid, name: onlineName, publicId: onlinePublicId }
@@ -2051,6 +2077,10 @@
                 return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}/lastDailyBonusAt`, val => cb(val || null));
             },
 
+            listenLastSpinAt(cb) {
+                return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}/lastSpinAt`, val => cb(val || null));
+            },
+
             async getCoinsFor(uid) {
                 try {
                     const snap = await get(ref(rtdb, `${ONLINE_ROOT}/users/${uid}/coins`));
@@ -2244,6 +2274,14 @@
                 return await _callFn('claimDailyBonus', {});
             },
 
+            // 🔥 FIX (Bug: spinner always credited a fixed 100 regardless of
+            // what the wheel showed, with no cooldown). The server now picks
+            // the real 50-500 prize itself and enforces a 24h cooldown, same
+            // pattern as claimDailyBonus — see /api/spinCoinWheel.
+            async spinCoinWheel() {
+                return await _callFn('spinCoinWheel', {});
+            },
+
             async creditAdReward() {
                 const res = await _callFn('creditAdReward', {});
                 return res && res.ok ? res.newBalance : undefined;
@@ -2254,6 +2292,20 @@
                 try {
                     const cred = EmailAuthProvider.credential(email, password);
                     await linkWithCredential(auth.currentUser, cred);
+                    // 🔥 Send a real verification email — this is what actually proves
+                    // the Gmail address is real and belongs to the person, not just
+                    // that it matches the @gmail.com pattern.
+                    try { await sendEmailVerification(auth.currentUser); } catch (e) {}
+                    return { ok: true };
+                } catch (e) {
+                    return { ok: false, reason: e.code || 'error', message: e.message };
+                }
+            },
+
+            async resendVerificationEmail() {
+                if (!auth.currentUser) return { ok: false, reason: 'not-ready' };
+                try {
+                    await sendEmailVerification(auth.currentUser);
                     return { ok: true };
                 } catch (e) {
                     return { ok: false, reason: e.code || 'error', message: e.message };
@@ -2282,7 +2334,7 @@
             getAccountStatus() {
                 const u = auth.currentUser;
                 if (!u) return { ready: false };
-                return { ready: true, isAnonymous: u.isAnonymous, email: u.email || null };
+                return { ready: true, isAnonymous: u.isAnonymous, email: u.email || null, emailVerified: !!u.emailVerified };
             }
         };
     </script>
@@ -2406,11 +2458,14 @@
         let myCoins = 5000;
         let myCoinsZeroAt = null;
         let myLastDailyBonusAt = null;
+        let myLastSpinAt = null;
         let onlineBetSetting = 0;
         let onlineBetAmount = 0;
         let matchStatRecorded = false;
-        let coinsDetach = null, coinsZeroDetach = null, dailyBonusDetach = null;
+        let coinsDetach = null, coinsZeroDetach = null, dailyBonusDetach = null, spinDetach = null;
         let claimCountdownTimer = null;
+        let spinCountdownTimer = null;
+        const SPIN_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
         const colors = [
             { name: "Red", hex: "#dc2626" },
@@ -2663,6 +2718,7 @@
             document.getElementById('spinner-result').textContent = '';
             buildSpinnerWheel();
             document.getElementById('coin-spinner-modal').classList.add('open');
+            renderSpinnerCooldownUI();
         }
         function closeCoinSpinner() {
             document.getElementById('coin-spinner-modal').classList.remove('open');
@@ -2683,49 +2739,96 @@
             });
         }
 
-        function spinCoinSpinner() {
-            if (spinnerSpinning) return;
-            spinnerSpinning = true;
-            const wheel = document.getElementById('spinner-wheel');
-            if (!wheel) { spinnerSpinning = false; return; }
+        // 🔥 FIX (spinner was fake): it used to always credit a flat 100 coins
+        // no matter what the wheel visually landed on, and had no cooldown at
+        // all — so a player could tap it back-to-back forever. The server is
+        // now the single source of truth: it picks the real 50-500 prize AND
+        // enforces the 24h cooldown atomically (see spinCoinWheel in the
+        // companion Cloud Function). The wheel only spins to *display* the
+        // prize the server actually paid — it never invents its own number.
+        function renderSpinnerCooldownUI() {
+            const center = document.querySelector('#coin-spinner-modal .spinner-center');
             const resultEl = document.getElementById('spinner-result');
+            if (!center || !resultEl) return;
+            if (spinCountdownTimer) { clearInterval(spinCountdownTimer); spinCountdownTimer = null; }
+            const tick = () => {
+                const remaining = myLastSpinAt ? (SPIN_COOLDOWN_MS - (Date.now() - myLastSpinAt)) : 0;
+                if (spinnerSpinning) return;
+                if (remaining <= 0) {
+                    center.style.pointerEvents = '';
+                    center.style.opacity = '';
+                    center.textContent = 'SPIN';
+                    if (!resultEl.dataset.locked) resultEl.textContent = '';
+                    if (spinCountdownTimer) { clearInterval(spinCountdownTimer); spinCountdownTimer = null; }
+                } else {
+                    center.style.pointerEvents = 'none';
+                    center.style.opacity = '0.5';
+                    const h = Math.floor(remaining / 3600000);
+                    const m = Math.floor((remaining % 3600000) / 60000);
+                    const s = Math.floor((remaining % 60000) / 1000);
+                    center.textContent = `${h}h ${m}m`;
+                    resultEl.textContent = `Next free spin in ${h}h ${m}m ${s}s`;
+                }
+            };
+            tick();
+            spinCountdownTimer = setInterval(tick, 1000);
+        }
+
+        async function spinCoinSpinner() {
+            if (spinnerSpinning) return;
+            const remaining = myLastSpinAt ? (SPIN_COOLDOWN_MS - (Date.now() - myLastSpinAt)) : 0;
+            if (remaining > 0) return; // still on cooldown — button is visually disabled too
+            const wheel = document.getElementById('spinner-wheel');
+            if (!wheel) return;
+            spinnerSpinning = true;
+            const resultEl = document.getElementById('spinner-result');
+            resultEl.dataset.locked = '1';
             resultEl.textContent = 'Spinning...';
-            const targetDeg = spinnerDeg + 360 * 5 + Math.floor(Math.random() * 360);
+
+            const ready = await waitForOnlineReady(5000);
+            if (!ready || !window.LudoOnline) {
+                resultEl.textContent = '⚠️ Not connected — please try again.';
+                delete resultEl.dataset.locked;
+                spinnerSpinning = false;
+                return;
+            }
+
+            // Ask the server for the real, verified prize FIRST — the wheel
+            // only animates to whatever the server actually credited.
+            const res = await window.LudoOnline.spinCoinWheel();
+            if (!res || !res.ok) {
+                if (res && res.reason === 'too-soon') {
+                    myLastSpinAt = res.lastSpinAt || Date.now();
+                    resultEl.textContent = 'Already claimed — come back after the cooldown.';
+                } else {
+                    resultEl.textContent = '⚠️ Could not spin — please check your connection and try again.';
+                }
+                delete resultEl.dataset.locked;
+                spinnerSpinning = false;
+                renderSpinnerCooldownUI();
+                return;
+            }
+
+            const prize = res.prize;
+            let idx = SPINNER_VALUES.indexOf(prize);
+            if (idx === -1) idx = 0; // safety net if server ever returns an off-list amount
+            const segAngle = 360 / SPINNER_VALUES.length;
+            // Land the pointer (top, 12 o'clock) in the middle of that segment.
+            const targetWithinTurn = 360 - (idx * segAngle) - (segAngle / 2);
+            const targetDeg = spinnerDeg - (spinnerDeg % 360) + 360 * 5 + targetWithinTurn;
+            spinnerDeg = targetDeg;
             wheel.style.transition = 'transform 2.5s cubic-bezier(.2,.8,.2,1)';
             wheel.style.transform = `rotate(${targetDeg}deg)`;
 
             setTimeout(() => {
-                const finalAngle = targetDeg % 360;
-                const segAngle = 360 / SPINNER_VALUES.length;
-                const idx = Math.floor(((360 - finalAngle) % 360) / segAngle) % SPINNER_VALUES.length;
-                const prize = SPINNER_VALUES[idx];
-                // Add coins via server (reuse claimDailyBonus? No — separate function)
-                addCoinsToBalance(prize);
+                if (typeof res.newBalance === 'number') { myCoins = res.newBalance; renderCoinUI(); }
+                myLastSpinAt = res.nextAvailableAt ? (res.nextAvailableAt - SPIN_COOLDOWN_MS) : Date.now();
                 resultEl.textContent = `🎉 +${prize} coins!`;
+                delete resultEl.dataset.locked;
                 playSound('coinWin');
                 spinnerSpinning = false;
+                renderSpinnerCooldownUI();
             }, 2600);
-        }
-
-        // Server-side coin credit for spinner (bypass client-side coins write — use claimDailyBonus mechanism)
-        // Since Cloud Function for spinner doesn't exist, we'll simulate locally but keep the server path: use creditAdReward (fixed 100) as a base? 
-        // Simplest: use a dedicated new Cloud Function call — but for now, we'll use the existing claimDailyBonus (which has cooldown).
-        // We'll create a generic "creditSpinner" call to the same `claimDailyBonus` function but with amount.
-        // Actually, let's use creditAdReward which has no cooldown and is server-verified. It adds 100. We need 50-500.
-        // We'll extend the Cloud Function later; for now, to avoid breaking the economy, we'll add coins directly only if the user is not signed in? No.
-        // Best approach: call `claimDailyBonus` which credits 100 via server, then if prize > 100, call `creditAdReward` multiple times? No.
-        // Let's make a simple client-side display increase, and ALSO call creditAdReward once to log it. For real implementation, 
-        // add a new Cloud Function `creditSpinner` in functions/index.js that allows 50-500.
-        // In this HTML we'll use creditAdReward (100) as a safe default, but the spinner visually shows the random prize.
-        // We'll write a local function that calls `creditAdReward` and then updates the UI with the prize.
-        async function addCoinsToBalance(prize) {
-            // NOTE: Using creditAdReward (server, 100 coins) as the actual credit.
-            // To handle 50-500 properly, you MUST deploy a new Cloud Function `creditSpinner`.
-            // For this file, we'll just call creditAdReward and show the visual prize.
-            if (window.LudoOnline) {
-                await window.LudoOnline.creditAdReward(); // server adds 100
-            }
-            // Visual display uses random prize 50-500
         }
 
         // ─── Account UI ────────────────────────────────────────────────
@@ -2743,9 +2846,9 @@
             const loggedInEmail = document.getElementById('account-logged-in-email');
             if (!status.ready) return;
             if (!status.isAnonymous && status.email) {
-                if (title) title.textContent = 'Account Saved';
-                if (sub)   sub.textContent   = status.email;
-                if (icon)  icon.textContent  = '✅';
+                if (title) title.textContent = status.emailVerified ? 'Account Saved' : 'Verify Your Email';
+                if (sub)   sub.textContent   = status.emailVerified ? status.email : status.email + ' — check your inbox to verify';
+                if (icon)  icon.textContent  = status.emailVerified ? '✅' : '📩';
                 if (loggedInView) loggedInView.style.display = 'block';
                 if (guestView)    guestView.style.display    = 'none';
                 if (loggedInEmail) loggedInEmail.textContent = status.email;
@@ -3030,6 +3133,14 @@
             }
         }
 
+        // 🔥 FIX: only accept real Gmail addresses (gmail.com / googlemail.com)
+        // so fake/throwaway emails from any domain can no longer be used.
+        function isGmailAddress(email) {
+            email = String(email || '').trim().toLowerCase();
+            return /^[^\s@]+@(gmail\.com|googlemail\.com)$/.test(email);
+        }
+        const GMAIL_ONLY_MSG = 'Please use a real Gmail address (must end in @gmail.com).';
+
         function accountErrorMessage(reason, fallback) {
             const map = {
                 'auth/email-already-in-use': 'This email is already linked to an account. Try "Already Have One?" to log in instead.',
@@ -3050,6 +3161,7 @@
             const password = document.getElementById('account-password-input').value || '';
             clearAccountMsg();
             if (!email || !password) { showAccountMsg('Please enter both an email and a password.'); return; }
+            if (!isGmailAddress(email)) { showAccountMsg(GMAIL_ONLY_MSG); return; }
             if (password.length < 6) { showAccountMsg('Password should be at least 6 characters.'); return; }
             if (!window.LudoOnline) { showAccountMsg('Not ready yet — please try again in a moment.'); return; }
             const submitBtn = document.getElementById('account-submit-btn');
@@ -3136,6 +3248,7 @@
             const msgEl = document.getElementById('welcome-login-msg');
             if (msgEl) msgEl.style.display = 'none';
             if (!email || !password) { showWelcomeLoginMsg('Please enter both an email and a password.'); return; }
+            if (!isGmailAddress(email)) { showWelcomeLoginMsg(GMAIL_ONLY_MSG); return; }
             if (!window.LudoOnline) { showWelcomeLoginMsg('Not ready yet — please try again in a moment.'); return; }
             const btn = document.getElementById('welcome-login-btn');
             if (btn) { btn.disabled = true; btn.textContent = 'Please wait…'; }
@@ -3159,6 +3272,7 @@
             if (msgEl) msgEl.style.display = 'none';
             if (!name) { showWelcomeSignupMsg('Please enter a display name.'); return; }
             if (!email || !password) { showWelcomeSignupMsg('Please enter both an email and a password.'); return; }
+            if (!isGmailAddress(email)) { showWelcomeSignupMsg(GMAIL_ONLY_MSG); return; }
             if (password.length < 6) { showWelcomeSignupMsg('Password should be at least 6 characters.'); return; }
             if (!window.LudoOnline) { showWelcomeSignupMsg('Not ready yet — please try again in a moment.'); return; }
             const btn = document.getElementById('welcome-signup-btn');
@@ -3196,6 +3310,23 @@
                 if (menuDisplay) menuDisplay.textContent = existingName;
                 if (window.LudoOnline) window.LudoOnline.claimName(existingName).catch(() => {});
                 return;
+            }
+            // 🔥 FIX: on a fresh device this local cache is empty even for a real,
+            // already-registered account — don't invent a new random name here.
+            // Adopt whatever name the account already has on the server first
+            // (registerOnlineIdentity restores it on login); only fall back to a
+            // brand-new random name if this is genuinely a new identity.
+            const ready = await waitForOnlineReady(6000);
+            if (ready && window.LudoOnline) {
+                const prof = window.LudoOnline.getProfile();
+                if (prof && prof.name) {
+                    try { localStorage.setItem(PLAYER_NAME_KEY, prof.name); } catch (e) {}
+                    try { localStorage.setItem('lm_online_name', prof.name); } catch (e) {}
+                    document.getElementById('name-red').value = prof.name;
+                    const menuDisplay = document.getElementById('menu-player-name-display');
+                    if (menuDisplay) menuDisplay.textContent = prof.name;
+                    return;
+                }
             }
             for (let i = 0; i < 3; i++) {
                 const candidate = 'Player' + Math.floor(100000 + Math.random() * 900000);
@@ -3621,6 +3752,10 @@
             const topRow = document.getElementById('corner-row-top');
             const bottomRow = document.getElementById('corner-row-bottom');
             if (!topRow || !bottomRow) return;
+            ['Red', 'Green', 'Blue', 'Yellow'].forEach(c => {
+                const t = document.getElementById('tag-' + c);
+                if (t) t.style.marginLeft = '';
+            });
 
             if (isOnlineMode && onlineMyColor) {
                 const myTag = document.getElementById('tag-' + onlineMyColor);
@@ -3640,21 +3775,34 @@
                 const activeOthers = players.filter(p => p.color !== humanColor).map(p => p.color);
                 const inactiveOthers = allColors.filter(c => c !== humanColor && !activeOthers.includes(c));
                 const orderedOthers = activeOthers.concat(inactiveOthers);
-
-                // 🔥 FIX: Pehle opponent ko bottom-LEFT (appendChild = LEFT)
-                if (orderedOthers[0]) {
-                    const t = document.getElementById('tag-' + orderedOthers[0]);
-                    if (t) bottomRow.appendChild(t);
-                }
-                // Human ko LAST append = RIGHT (human bottom-right)
                 const humanTag = document.getElementById('tag-' + humanColor);
-                if (humanTag) bottomRow.appendChild(humanTag);
 
-                // Baaki inactive/side opponents top row
-                orderedOthers.slice(1).forEach(c => {
-                    const t = document.getElementById('tag-' + c);
-                    if (t) topRow.appendChild(t);
-                });
+                if (players.length === 2) {
+                    // 🔥 1v1 vs Computer: bot dice ALWAYS top-LEFT, human dice ALWAYS
+                    // bottom-RIGHT — whatever colors the two sides actually are.
+                    const botTag = orderedOthers[0] ? document.getElementById('tag-' + orderedOthers[0]) : null;
+                    if (botTag) topRow.insertBefore(botTag, topRow.firstChild);
+                    if (humanTag) {
+                        bottomRow.appendChild(humanTag);
+                        humanTag.style.marginLeft = 'auto';
+                    }
+                    orderedOthers.slice(1).forEach(c => {
+                        const t = document.getElementById('tag-' + c);
+                        if (t) topRow.appendChild(t);
+                    });
+                } else {
+                    // 3-4 player bot matches: keep first opponent bottom-left, human bottom-right
+                    if (humanTag) humanTag.style.marginLeft = '';
+                    if (orderedOthers[0]) {
+                        const t = document.getElementById('tag-' + orderedOthers[0]);
+                        if (t) bottomRow.appendChild(t);
+                    }
+                    if (humanTag) bottomRow.appendChild(humanTag);
+                    orderedOthers.slice(1).forEach(c => {
+                        const t = document.getElementById('tag-' + c);
+                        if (t) topRow.appendChild(t);
+                    });
+                }
             } else {
                 const tagRed = document.getElementById('tag-Red');
                 const tagGreen = document.getElementById('tag-Green');
@@ -5037,6 +5185,10 @@
             dailyBonusDetach = window.LudoOnline.listenLastDailyBonusAt(lastAt => {
                 myLastDailyBonusAt = lastAt;
                 renderCoinUI();
+            });
+            spinDetach = window.LudoOnline.listenLastSpinAt(lastAt => {
+                myLastSpinAt = lastAt;
+                renderSpinnerCooldownUI();
             });
         }
         startCoinListeners();
