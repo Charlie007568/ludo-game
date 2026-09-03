@@ -589,7 +589,7 @@
            square so it always fits inside a board cell without clipping;
            the SVG's own viewBox scales the pawn shape to fit within it. */
         .token {
-            width: 94%; height: 94%; max-width: 40px; max-height: 40px;
+            width: 94%; height: 94%; max-width: 46px; max-height: 46px;
             cursor: pointer; z-index: 10; position: absolute; display: flex; justify-content: center; align-items: center;
             transition: transform calc(0.16s / var(--speed-factor)) cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
             filter: drop-shadow(0 3px 2px rgba(0,0,0,0.55));
@@ -5791,7 +5791,16 @@
             try {
                 webglCanvas = document.createElement('canvas');
                 webglCanvas.id = 'webgl-token-layer';
-                webglCanvas.style.cssText = 'position:fixed; inset:0; width:100vw; height:100vh; pointer-events:none; z-index:60;';
+                // NOTE: no width/height here in vw/vh — those units drift from
+                // window.innerWidth/innerHeight on mobile (browser address-bar
+                // show/hide changes 100vh but not innerHeight), which made the
+                // canvas's CSS box a different size than the pixel buffer it
+                // actually draws into and threw every token's on-screen
+                // position/scale off (tokens floating above the board, huge).
+                // resizeWebglCanvas() below sets exact pixel width/height so
+                // the canvas box always matches the same frame getBoundingClientRect
+                // uses for the .token elements.
+                webglCanvas.style.cssText = 'position:fixed; top:0; left:0; pointer-events:none; z-index:60;';
                 document.body.appendChild(webglCanvas);
 
                 webglRenderer = new THREE.WebGLRenderer({ canvas: webglCanvas, alpha: true, antialias: true });
@@ -5800,6 +5809,9 @@
                 resizeWebglCanvas();
                 window.addEventListener('resize', resizeWebglCanvas);
                 window.addEventListener('orientationchange', resizeWebglCanvas);
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', resizeWebglCanvas);
+                }
 
                 webglReady = true;
                 requestAnimationFrame(webglTokenLoop);
@@ -5812,8 +5824,16 @@
         }
 
         function resizeWebglCanvas() {
-            if (!webglRenderer) return;
-            webglRenderer.setSize(window.innerWidth, window.innerHeight, false);
+            if (!webglRenderer || !webglCanvas) return;
+            // Prefer visualViewport when available — it tracks the actual
+            // visible layout area on mobile (matches what getBoundingClientRect
+            // reports for the .token divs) more reliably than window.innerHeight
+            // once on-screen keyboards / browser chrome are involved.
+            const w = Math.round((window.visualViewport && window.visualViewport.width) || window.innerWidth);
+            const h = Math.round((window.visualViewport && window.visualViewport.height) || window.innerHeight);
+            webglCanvas.style.width = w + 'px';
+            webglCanvas.style.height = h + 'px';
+            webglRenderer.setSize(w, h, false);
         }
 
         // Same cone-and-ball / neck-ring silhouette as the flat SVG pawn,
@@ -5867,6 +5887,11 @@
             const neck2 = new THREE.Mesh(g.neck2, white); neck2.rotation.x = Math.PI / 2; neck2.position.y = 0.55; group.add(neck2);
             const head = new THREE.Mesh(g.head, mat); head.position.y = 0.86; group.add(head);
 
+            // Comfortable safety margin: shrink the whole pawn slightly so it
+            // never visually pokes outside its cell/base-slot box, however the
+            // camera framing/aspect ends up rounding for a given rect.
+            group.scale.setScalar(0.8);
+
             return group;
         }
 
@@ -5880,7 +5905,7 @@
             }
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
-            camera.position.set(0, 1.55, 3.6);
+            camera.position.set(0, 1.5, 4.4);
             camera.lookAt(0, 0.05, 0);
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.72));
