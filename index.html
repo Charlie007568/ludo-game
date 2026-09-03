@@ -5755,85 +5755,52 @@
         // ═══════════════════════════════════════════════════════════════════
         // ── REAL WebGL 3D PAWN TOKENS ─────────────────────────────────────
         // ═══════════════════════════════════════════════════════════════════
-        // Every token on the board is now a genuine rotating WebGL 3D
-        // object (Three.js), not a flat SVG. Rather than giving each of
-        // the up to 16 on-board tokens its OWN <canvas>/renderer (browsers
-        // cap the number of live WebGL contexts a page can hold, so that
-        // would silently break once enough tokens exist), this uses ONE
-        // shared renderer + ONE full-viewport <canvas> overlay. Every
-        // animation frame it walks the real .token divs already in the
-        // DOM (unchanged — same board/slot parents, same size, same
-        // click handlers), reads each one's on-screen position with
-        // getBoundingClientRect(), and renders that token's own little
-        // 3D scene into exactly that rectangle using renderer.setScissor/
-        // setViewport. The .token div itself is left empty/transparent —
-        // it's still the real click target, the WebGL layer just paints
-        // the visible pixels on top of it (pointer-events:none on the
-        // canvas, so every click passes straight through to the div).
-        let webglReady = false;
-        let webglInitFailed = false;
-        let webglRenderer = null;
-        let webglCanvas = null;
+        // Each token gets its own small <canvas> placed INSIDE its own
+        // .token div, in normal document flow (not a page-wide overlay
+        // positioned by hand). That means the browser itself — not our
+        // own screen-coordinate math — decides exactly where and how big
+        // every pawn is: whatever size/position/board-rotation CSS gives
+        // the .token div, the canvas inside it automatically matches,
+        // including through the board's per-player rotation transform.
+        // This replaces an earlier version that used ONE shared
+        // full-viewport canvas + getBoundingClientRect()-driven scissor
+        // rectangles — that math kept drifting on real devices (mobile
+        // viewport units, visualViewport, rotated boards all shift the
+        // reference frame in ways that are easy to get wrong), which is
+        // exactly the "pawn floats way outside the board" bug this
+        // rewrite fixes.
+        //
+        // renderTokens() tears down and rebuilds every .token div on
+        // pretty much every move, so to avoid creating/destroying a fresh
+        // WebGL context 16 times a turn (browsers cap how many a page can
+        // hold), each token's {canvas, renderer, scene} is created ONCE
+        // per token id ("Red-0", "Blue-2", ...) and cached — later calls
+        // just re-parent the SAME <canvas> node into the new div, which
+        // keeps its live WebGL context intact.
+        let webglSupported = null; // null = not checked yet, true/false after first probe
         let webglGeomCache = null;
-        const webglTokenGroups = {}; // dom id ("t-Red-0") -> { scene, camera, group, colorKey, spin }
+        const webglTokenEntries = {}; // token.id ("Red-0") -> { canvas, renderer, scene, camera, group, spin }
         const webglMaterialCache = {};
         let webglWhiteMat = null;
         let webglLastFrameTime = 0;
+        let webglLoopStarted = false;
+        let webglResizeObserver = null;
 
         const WEBGL_PAWN_HEX = {
             Red: 0xdc2626, Green: 0x16a34a, Yellow: 0xca8a04, Blue: 0x2563eb
         };
 
-        function initWebglTokens() {
-            if (webglReady) return true;
-            if (webglInitFailed) return false;
-            if (typeof THREE === 'undefined') { webglInitFailed = true; return false; }
+        function webglAvailable() {
+            if (webglSupported !== null) return webglSupported;
+            if (typeof THREE === 'undefined') { webglSupported = false; return false; }
             try {
-                webglCanvas = document.createElement('canvas');
-                webglCanvas.id = 'webgl-token-layer';
-                // NOTE: no width/height here in vw/vh — those units drift from
-                // window.innerWidth/innerHeight on mobile (browser address-bar
-                // show/hide changes 100vh but not innerHeight), which made the
-                // canvas's CSS box a different size than the pixel buffer it
-                // actually draws into and threw every token's on-screen
-                // position/scale off (tokens floating above the board, huge).
-                // resizeWebglCanvas() below sets exact pixel width/height so
-                // the canvas box always matches the same frame getBoundingClientRect
-                // uses for the .token elements.
-                webglCanvas.style.cssText = 'position:fixed; top:0; left:0; pointer-events:none; z-index:60;';
-                document.body.appendChild(webglCanvas);
-
-                webglRenderer = new THREE.WebGLRenderer({ canvas: webglCanvas, alpha: true, antialias: true });
-                webglRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-                webglRenderer.setClearColor(0x000000, 0);
-                resizeWebglCanvas();
-                window.addEventListener('resize', resizeWebglCanvas);
-                window.addEventListener('orientationchange', resizeWebglCanvas);
-                if (window.visualViewport) {
-                    window.visualViewport.addEventListener('resize', resizeWebglCanvas);
-                }
-
-                webglReady = true;
-                requestAnimationFrame(webglTokenLoop);
+                const test = document.createElement('canvas');
+                const ctx = test.getContext('webgl') || test.getContext('experimental-webgl');
+                webglSupported = !!ctx;
             } catch (e) {
-                webglInitFailed = true;
-                webglReady = false;
-                if (webglCanvas && webglCanvas.parentNode) webglCanvas.parentNode.removeChild(webglCanvas);
+                webglSupported = false;
             }
-            return webglReady;
-        }
-
-        function resizeWebglCanvas() {
-            if (!webglRenderer || !webglCanvas) return;
-            // Prefer visualViewport when available — it tracks the actual
-            // visible layout area on mobile (matches what getBoundingClientRect
-            // reports for the .token divs) more reliably than window.innerHeight
-            // once on-screen keyboards / browser chrome are involved.
-            const w = Math.round((window.visualViewport && window.visualViewport.width) || window.innerWidth);
-            const h = Math.round((window.visualViewport && window.visualViewport.height) || window.innerHeight);
-            webglCanvas.style.width = w + 'px';
-            webglCanvas.style.height = h + 'px';
-            webglRenderer.setSize(w, h, false);
+            return webglSupported;
         }
 
         // Same cone-and-ball / neck-ring silhouette as the flat SVG pawn,
@@ -5887,22 +5854,29 @@
             const neck2 = new THREE.Mesh(g.neck2, white); neck2.rotation.x = Math.PI / 2; neck2.position.y = 0.55; group.add(neck2);
             const head = new THREE.Mesh(g.head, mat); head.position.y = 0.86; group.add(head);
 
-            // Comfortable safety margin: shrink the whole pawn slightly so it
-            // never visually pokes outside its cell/base-slot box, however the
-            // camera framing/aspect ends up rounding for a given rect.
-            group.scale.setScalar(0.8);
+            // A comfortable safety margin so the pawn never visually pokes
+            // outside its own little canvas, whatever aspect it ends up at.
+            group.scale.setScalar(0.82);
 
             return group;
         }
 
-        function getOrCreateWebglToken(domId, colorKey) {
-            let entry = webglTokenGroups[domId];
-            if (entry) {
-                if (entry.colorKey === colorKey) return entry;
-                // A token's colour never actually changes after creation in
-                // this game, but guard against it anyway: rebuild cleanly.
-                entry.scene.remove(entry.group);
-            }
+        // Returns the persistent {canvas, renderer, scene, camera, group}
+        // for this exact token id, creating it (and its own tiny WebGL
+        // context) the first time, and simply handing back the SAME
+        // objects — canvas included — on every later call for that token.
+        function getOrCreateTokenWebgl(tokenId, colorKey) {
+            let entry = webglTokenEntries[tokenId];
+            if (entry) return entry;
+
+            const canvas = document.createElement('canvas');
+            canvas.className = 'token-webgl3d-canvas';
+            canvas.style.cssText = 'width:100%; height:100%; display:block; pointer-events:none;';
+
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            renderer.setClearColor(0x000000, 0);
+
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
             camera.position.set(0, 1.5, 4.4);
@@ -5919,87 +5893,74 @@
             const group = buildWebglPawnGroup(colorKey);
             scene.add(group);
 
-            entry = { scene, camera, group, colorKey, spin: Math.random() * Math.PI * 2 };
-            webglTokenGroups[domId] = entry;
+            entry = { canvas, renderer, scene, camera, group, spin: Math.random() * Math.PI * 2 };
+            webglTokenEntries[tokenId] = entry;
+
+            // Keep each canvas's own pixel buffer in sync with its actual
+            // CSS box (the .token div's size — ~46px, but let it track
+            // real size rather than assume) whenever that box changes.
+            if (!webglResizeObserver) {
+                webglResizeObserver = new ResizeObserver(entries => {
+                    entries.forEach(ent => {
+                        const c = ent.target;
+                        const w = Math.max(1, Math.round(ent.contentRect.width));
+                        const h = Math.max(1, Math.round(ent.contentRect.height));
+                        const found = Object.values(webglTokenEntries).find(v => v.canvas === c);
+                        if (found) {
+                            found.renderer.setSize(w, h, false);
+                            found.camera.aspect = w / h;
+                            found.camera.updateProjectionMatrix();
+                        }
+                    });
+                });
+            }
+            webglResizeObserver.observe(canvas);
+
             return entry;
         }
 
-        function cleanupStaleWebglTokens(activeIds) {
-            Object.keys(webglTokenGroups).forEach(id => {
-                if (!activeIds.has(id)) {
-                    delete webglTokenGroups[id];
-                }
-            });
-        }
-
-        // Main per-frame loop: clear the whole canvas once, then for every
-        // live .token element currently in the DOM, render that token's
-        // own mini-scene into the scissor rectangle matching its actual
-        // on-screen box — and keep it slowly spinning on its own axis so
-        // it genuinely reads as a 3D object rather than a flat sticker.
+        // One shared render loop drives every token's own tiny scene into
+        // its own canvas/context — cheap since each canvas is only ~46px
+        // square — and keeps each pawn slowly spinning on its own axis so
+        // it genuinely reads as a rotating 3D object.
         function webglTokenLoop(time) {
             requestAnimationFrame(webglTokenLoop);
-            if (!webglRenderer || !webglCanvas) return;
-
             const dt = webglLastFrameTime ? Math.min((time - webglLastFrameTime) / 1000, 0.1) : 0;
             webglLastFrameTime = time;
 
-            webglRenderer.setScissorTest(false);
-            webglRenderer.setViewport(0, 0, webglCanvas.width, webglCanvas.height);
-            webglRenderer.clear();
-
             const gameScreen = document.getElementById('game-screen');
-            if (!gameScreen || gameScreen.style.display === 'none') return;
+            const visible = gameScreen && gameScreen.style.display !== 'none';
+            if (!visible) return;
 
-            const tokenEls = document.querySelectorAll('.token-webgl3d');
-            if (!tokenEls.length) return;
-
-            const pr = webglRenderer.getPixelRatio();
-            const canvasPxH = webglCanvas.height;
-            const activeIds = new Set();
-            webglRenderer.setScissorTest(true);
-
-            tokenEls.forEach(el => {
-                const rect = el.getBoundingClientRect();
-                if (rect.width < 2 || rect.height < 2) return;
-                if (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) return;
-
-                const m = el.className.match(/token-(red|green|yellow|blue)/);
-                const colorKey = m ? (m[1].charAt(0).toUpperCase() + m[1].slice(1)) : 'Red';
-                const entry = getOrCreateWebglToken(el.id, colorKey);
-                activeIds.add(el.id);
-
+            Object.values(webglTokenEntries).forEach(entry => {
+                if (!entry.canvas.isConnected) return; // token div not on screen right now
                 entry.spin += dt * 0.8;
                 entry.group.rotation.y = entry.spin;
-
-                const x = Math.round(rect.left * pr);
-                const y = Math.round(canvasPxH - rect.bottom * pr);
-                const w = Math.max(1, Math.round(rect.width * pr));
-                const h = Math.max(1, Math.round(rect.height * pr));
-
-                entry.camera.aspect = rect.width / rect.height;
-                entry.camera.updateProjectionMatrix();
-
-                webglRenderer.setViewport(x, y, w, h);
-                webglRenderer.setScissor(x, y, w, h);
-                webglRenderer.render(entry.scene, entry.camera);
+                entry.renderer.render(entry.scene, entry.camera);
             });
+        }
 
-            cleanupStaleWebglTokens(activeIds);
+        function ensureWebglLoopStarted() {
+            if (webglLoopStarted) return;
+            webglLoopStarted = true;
+            requestAnimationFrame(webglTokenLoop);
         }
 
         function createTokenElement(t) {
             const tEl = document.createElement('div');
             tEl.id = `t-${t.id}`;
             tEl.className = `token token-${t.color.toLowerCase()}` + (t.barrier ? ' token-barrier' : '');
-            // Real WebGL 3D pawn: leave the div empty/transparent (it stays
-            // the click hit-target) and let the shared webgl-token-layer
-            // canvas paint the actual rotating 3D pawn on top of it each
-            // frame — see the "REAL WebGL 3D PAWN TOKENS" block above. If
-            // WebGL genuinely isn't available on this device, fall back to
-            // the old flat SVG pawn so the game still works everywhere.
-            if (initWebglTokens()) {
+            // Real WebGL 3D pawn: reuse this token's own persistent canvas
+            // (same live WebGL context every time — see "REAL WebGL 3D PAWN
+            // TOKENS" above) and re-parent it straight into this fresh div,
+            // so it inherits the div's exact size/position/rotation from
+            // normal CSS layout. Falls back to the flat SVG pawn if WebGL
+            // genuinely isn't available on this device.
+            if (webglAvailable()) {
                 tEl.classList.add('token-webgl3d');
+                const entry = getOrCreateTokenWebgl(t.id, t.color);
+                tEl.appendChild(entry.canvas);
+                ensureWebglLoopStarted();
             } else {
                 tEl.innerHTML = pawnSVG(t.color);
             }
