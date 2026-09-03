@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
     <style>
         :root {
             --speed-factor: 1;
@@ -594,6 +595,19 @@
             filter: drop-shadow(0 3px 2px rgba(0,0,0,0.55));
         }
         .token svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+        /* WebGL 3D pawns — the actual pixels are painted by a shared
+           <canvas id="webgl-token-layer"> overlay (see the "WebGL 3D pawn
+           tokens" script block), not by this div's own content. This div
+           stays exactly where it always was (same size/position/z-index,
+           same click handler) purely as the hit-target the canvas paints
+           on top of; the radial-gradient backgrounds below recreate the
+           movable/barrier glow that used to come from the SVG's own
+           drop-shadow filter, showing through the transparent canvas
+           pixels around the round pawn silhouette. */
+        .token-webgl3d { background: transparent; }
+        .token-webgl3d.token-movable { background: radial-gradient(circle, rgba(245,215,127,0.6), transparent 68%); }
+        .token-webgl3d.token-barrier { background: radial-gradient(circle, rgba(245,215,127,0.4), transparent 68%); }
 
         .token-movable {
             animation: tokenPulse calc(0.5s / var(--speed-factor)) infinite alternate;
@@ -5738,11 +5752,232 @@
             return design.render(color);
         }
 
+        // ═══════════════════════════════════════════════════════════════════
+        // ── REAL WebGL 3D PAWN TOKENS ─────────────────────────────────────
+        // ═══════════════════════════════════════════════════════════════════
+        // Every token on the board is now a genuine rotating WebGL 3D
+        // object (Three.js), not a flat SVG. Rather than giving each of
+        // the up to 16 on-board tokens its OWN <canvas>/renderer (browsers
+        // cap the number of live WebGL contexts a page can hold, so that
+        // would silently break once enough tokens exist), this uses ONE
+        // shared renderer + ONE full-viewport <canvas> overlay. Every
+        // animation frame it walks the real .token divs already in the
+        // DOM (unchanged — same board/slot parents, same size, same
+        // click handlers), reads each one's on-screen position with
+        // getBoundingClientRect(), and renders that token's own little
+        // 3D scene into exactly that rectangle using renderer.setScissor/
+        // setViewport. The .token div itself is left empty/transparent —
+        // it's still the real click target, the WebGL layer just paints
+        // the visible pixels on top of it (pointer-events:none on the
+        // canvas, so every click passes straight through to the div).
+        let webglReady = false;
+        let webglInitFailed = false;
+        let webglRenderer = null;
+        let webglCanvas = null;
+        let webglGeomCache = null;
+        const webglTokenGroups = {}; // dom id ("t-Red-0") -> { scene, camera, group, colorKey, spin }
+        const webglMaterialCache = {};
+        let webglWhiteMat = null;
+        let webglLastFrameTime = 0;
+
+        const WEBGL_PAWN_HEX = {
+            Red: 0xdc2626, Green: 0x16a34a, Yellow: 0xca8a04, Blue: 0x2563eb
+        };
+
+        function initWebglTokens() {
+            if (webglReady) return true;
+            if (webglInitFailed) return false;
+            if (typeof THREE === 'undefined') { webglInitFailed = true; return false; }
+            try {
+                webglCanvas = document.createElement('canvas');
+                webglCanvas.id = 'webgl-token-layer';
+                webglCanvas.style.cssText = 'position:fixed; inset:0; width:100vw; height:100vh; pointer-events:none; z-index:60;';
+                document.body.appendChild(webglCanvas);
+
+                webglRenderer = new THREE.WebGLRenderer({ canvas: webglCanvas, alpha: true, antialias: true });
+                webglRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+                webglRenderer.setClearColor(0x000000, 0);
+                resizeWebglCanvas();
+                window.addEventListener('resize', resizeWebglCanvas);
+                window.addEventListener('orientationchange', resizeWebglCanvas);
+
+                webglReady = true;
+                requestAnimationFrame(webglTokenLoop);
+            } catch (e) {
+                webglInitFailed = true;
+                webglReady = false;
+                if (webglCanvas && webglCanvas.parentNode) webglCanvas.parentNode.removeChild(webglCanvas);
+            }
+            return webglReady;
+        }
+
+        function resizeWebglCanvas() {
+            if (!webglRenderer) return;
+            webglRenderer.setSize(window.innerWidth, window.innerHeight, false);
+        }
+
+        // Same cone-and-ball / neck-ring silhouette as the flat SVG pawn,
+        // rebuilt as real 3D geometry. Geometries are built ONCE and
+        // shared by every token instance (only the Group's transform and
+        // the two materials differ per pawn) so having many tokens on
+        // screen stays cheap.
+        function buildWebglPawnGeometry() {
+            return {
+                base: new THREE.CylinderGeometry(0.62, 0.7, 0.16, 28),
+                ring: new THREE.CylinderGeometry(0.46, 0.55, 0.12, 28),
+                lower: new THREE.CylinderGeometry(0.34, 0.46, 0.55, 28),
+                neck1: new THREE.TorusGeometry(0.32, 0.045, 10, 28),
+                upper: new THREE.CylinderGeometry(0.22, 0.3, 0.42, 28),
+                neck2: new THREE.TorusGeometry(0.2, 0.035, 10, 28),
+                head: new THREE.SphereGeometry(0.28, 22, 22),
+                shadow: new THREE.CircleGeometry(0.72, 24)
+            };
+        }
+
+        function getWebglPawnMaterial(colorKey) {
+            if (webglMaterialCache[colorKey]) return webglMaterialCache[colorKey];
+            const mat = new THREE.MeshStandardMaterial({
+                color: WEBGL_PAWN_HEX[colorKey] || WEBGL_PAWN_HEX.Red, roughness: 0.35, metalness: 0.08
+            });
+            webglMaterialCache[colorKey] = mat;
+            return mat;
+        }
+        function getWebglWhiteMaterial() {
+            if (!webglWhiteMat) webglWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.42 });
+            return webglWhiteMat;
+        }
+
+        function buildWebglPawnGroup(colorKey) {
+            if (!webglGeomCache) webglGeomCache = buildWebglPawnGeometry();
+            const g = webglGeomCache;
+            const mat = getWebglPawnMaterial(colorKey);
+            const white = getWebglWhiteMaterial();
+            const group = new THREE.Group();
+
+            const shadow = new THREE.Mesh(g.shadow, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32 }));
+            shadow.rotation.x = -Math.PI / 2;
+            shadow.position.y = -0.72;
+            group.add(shadow);
+
+            const base = new THREE.Mesh(g.base, mat); base.position.y = -0.64; group.add(base);
+            const ring = new THREE.Mesh(g.ring, white); ring.position.y = -0.5; group.add(ring);
+            const lower = new THREE.Mesh(g.lower, mat); lower.position.y = -0.16; group.add(lower);
+            const neck1 = new THREE.Mesh(g.neck1, white); neck1.rotation.x = Math.PI / 2; neck1.position.y = 0.12; group.add(neck1);
+            const upper = new THREE.Mesh(g.upper, mat); upper.position.y = 0.34; group.add(upper);
+            const neck2 = new THREE.Mesh(g.neck2, white); neck2.rotation.x = Math.PI / 2; neck2.position.y = 0.55; group.add(neck2);
+            const head = new THREE.Mesh(g.head, mat); head.position.y = 0.86; group.add(head);
+
+            return group;
+        }
+
+        function getOrCreateWebglToken(domId, colorKey) {
+            let entry = webglTokenGroups[domId];
+            if (entry) {
+                if (entry.colorKey === colorKey) return entry;
+                // A token's colour never actually changes after creation in
+                // this game, but guard against it anyway: rebuild cleanly.
+                entry.scene.remove(entry.group);
+            }
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
+            camera.position.set(0, 1.55, 3.6);
+            camera.lookAt(0, 0.05, 0);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.72));
+            const key = new THREE.DirectionalLight(0xffffff, 0.85);
+            key.position.set(2.2, 4, 3);
+            scene.add(key);
+            const fill = new THREE.DirectionalLight(0xffffff, 0.28);
+            fill.position.set(-2.5, 1.5, -2);
+            scene.add(fill);
+
+            const group = buildWebglPawnGroup(colorKey);
+            scene.add(group);
+
+            entry = { scene, camera, group, colorKey, spin: Math.random() * Math.PI * 2 };
+            webglTokenGroups[domId] = entry;
+            return entry;
+        }
+
+        function cleanupStaleWebglTokens(activeIds) {
+            Object.keys(webglTokenGroups).forEach(id => {
+                if (!activeIds.has(id)) {
+                    delete webglTokenGroups[id];
+                }
+            });
+        }
+
+        // Main per-frame loop: clear the whole canvas once, then for every
+        // live .token element currently in the DOM, render that token's
+        // own mini-scene into the scissor rectangle matching its actual
+        // on-screen box — and keep it slowly spinning on its own axis so
+        // it genuinely reads as a 3D object rather than a flat sticker.
+        function webglTokenLoop(time) {
+            requestAnimationFrame(webglTokenLoop);
+            if (!webglRenderer || !webglCanvas) return;
+
+            const dt = webglLastFrameTime ? Math.min((time - webglLastFrameTime) / 1000, 0.1) : 0;
+            webglLastFrameTime = time;
+
+            webglRenderer.setScissorTest(false);
+            webglRenderer.setViewport(0, 0, webglCanvas.width, webglCanvas.height);
+            webglRenderer.clear();
+
+            const gameScreen = document.getElementById('game-screen');
+            if (!gameScreen || gameScreen.style.display === 'none') return;
+
+            const tokenEls = document.querySelectorAll('.token-webgl3d');
+            if (!tokenEls.length) return;
+
+            const pr = webglRenderer.getPixelRatio();
+            const canvasPxH = webglCanvas.height;
+            const activeIds = new Set();
+            webglRenderer.setScissorTest(true);
+
+            tokenEls.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.width < 2 || rect.height < 2) return;
+                if (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) return;
+
+                const m = el.className.match(/token-(red|green|yellow|blue)/);
+                const colorKey = m ? (m[1].charAt(0).toUpperCase() + m[1].slice(1)) : 'Red';
+                const entry = getOrCreateWebglToken(el.id, colorKey);
+                activeIds.add(el.id);
+
+                entry.spin += dt * 0.8;
+                entry.group.rotation.y = entry.spin;
+
+                const x = Math.round(rect.left * pr);
+                const y = Math.round(canvasPxH - rect.bottom * pr);
+                const w = Math.max(1, Math.round(rect.width * pr));
+                const h = Math.max(1, Math.round(rect.height * pr));
+
+                entry.camera.aspect = rect.width / rect.height;
+                entry.camera.updateProjectionMatrix();
+
+                webglRenderer.setViewport(x, y, w, h);
+                webglRenderer.setScissor(x, y, w, h);
+                webglRenderer.render(entry.scene, entry.camera);
+            });
+
+            cleanupStaleWebglTokens(activeIds);
+        }
+
         function createTokenElement(t) {
             const tEl = document.createElement('div');
             tEl.id = `t-${t.id}`;
             tEl.className = `token token-${t.color.toLowerCase()}` + (t.barrier ? ' token-barrier' : '');
-            tEl.innerHTML = pawnSVG(t.color);
+            // Real WebGL 3D pawn: leave the div empty/transparent (it stays
+            // the click hit-target) and let the shared webgl-token-layer
+            // canvas paint the actual rotating 3D pawn on top of it each
+            // frame — see the "REAL WebGL 3D PAWN TOKENS" block above. If
+            // WebGL genuinely isn't available on this device, fall back to
+            // the old flat SVG pawn so the game still works everywhere.
+            if (initWebglTokens()) {
+                tEl.classList.add('token-webgl3d');
+            } else {
+                tEl.innerHTML = pawnSVG(t.color);
+            }
             tEl.onclick = (e) => {
                 e.stopPropagation();
                 handleTokenClick(t);
