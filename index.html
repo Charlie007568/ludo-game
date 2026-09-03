@@ -511,6 +511,18 @@
         .ludo-board.board-rot-180 { transform: rotate(180deg); }
         .ludo-board.board-rot-270 { transform: rotate(270deg); }
 
+        /* The 3D pawns are rendered "upright" inside their own little WebGL
+           canvas — but that canvas lives inside #board, so when the WHOLE
+           board gets rotated above for a given player's perspective, every
+           pawn's canvas rotates right along with it, and an upright pawn
+           at 90°/270° ends up lying on its side. These counter-rotate just
+           the canvas by the opposite angle so the pawn itself always stays
+           standing straight up on screen, no matter which way the board is
+           currently rotated for the viewer. */
+        .ludo-board.board-rot-90  .token-webgl3d-canvas { transform: rotate(-90deg); }
+        .ludo-board.board-rot-180 .token-webgl3d-canvas { transform: rotate(-180deg); }
+        .ludo-board.board-rot-270 .token-webgl3d-canvas { transform: rotate(-270deg); }
+
         /* 6x6 BASE QUADRANTS (NO INNER CELL LINES) */
         .base-quadrant {
             position: relative; display: flex; justify-content: center; align-items: center;
