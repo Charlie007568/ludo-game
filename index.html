@@ -5839,7 +5839,8 @@
             return {
                 pin: new THREE.LatheGeometry(profile, 32),
                 colorBadge: new THREE.SphereGeometry(0.24, 24, 24),
-                plaque: new THREE.SphereGeometry(1, 20, 16),
+                baseRing: new THREE.RingGeometry(0.3, 0.4, 40),
+                pulseRing: new THREE.RingGeometry(0.28, 0.38, 40),
                 contactShadow: new THREE.CircleGeometry(0.34, 20)
             };
         }
@@ -5868,13 +5869,18 @@
             if (!webglHighlightMat) webglHighlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 });
             return webglHighlightMat;
         }
-        let webglPlaqueMat = null;
-        function getWebglPlaqueMaterial() {
-            // The dark maroon "backing plaque" behind every pin in the
-            // reference image — always this same dark red-brown, regardless
-            // of the pin's own colour.
-            if (!webglPlaqueMat) webglPlaqueMat = new THREE.MeshStandardMaterial({ color: 0x5c1a1a, roughness: 0.55 });
-            return webglPlaqueMat;
+        let webglRingMat = null;
+        function getWebglRingMaterial() {
+            // The thin maroon "location ring" on the ground beneath every
+            // pin in the reference image — always this same dark red-brown,
+            // regardless of the pin's own colour.
+            if (!webglRingMat) webglRingMat = new THREE.MeshBasicMaterial({ color: 0x7a2020, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+            return webglRingMat;
+        }
+        let webglPulseRingMat = null;
+        function getWebglPulseRingMaterial() {
+            if (!webglPulseRingMat) webglPulseRingMat = new THREE.MeshBasicMaterial({ color: 0x9a2b2b, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+            return webglPulseRingMat;
         }
 
         function buildWebglPawnGroup(colorKey) {
@@ -5883,12 +5889,25 @@
             const white = getWebglWhiteMaterial();
             const group = new THREE.Group();
 
-            // Dark maroon backing plaque, sitting just behind/below the pin
-            // like a little mount — same layered look as the reference.
-            const plaque = new THREE.Mesh(g.plaque, getWebglPlaqueMaterial());
-            plaque.scale.set(0.58, 0.4, 0.32);
-            plaque.position.set(0, -0.55, -0.18);
-            group.add(plaque);
+            // Thin maroon "location marker" ring lying flat on the ground
+            // right under the pin's point — matches the reference image
+            // exactly (a stationary ring, always visible).
+            const ring = new THREE.Mesh(g.baseRing, getWebglRingMaterial());
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.y = -1.06;
+            group.add(ring);
+
+            // A second, animated copy of that ring that continuously
+            // expands outward and fades — a classic "live location" radar
+            // ping. This is the professional-looking motion touch: each
+            // pawn's ping runs on its own independent, randomly-offset
+            // timer (set in getOrCreateTokenWebgl below) so a whole board
+            // of pawns doesn't pulse in obvious lockstep.
+            const pulseRing = new THREE.Mesh(g.pulseRing, getWebglPulseRingMaterial().clone());
+            pulseRing.rotation.x = -Math.PI / 2;
+            pulseRing.position.y = -1.055;
+            group.add(pulseRing);
+            group.userData.pulseRing = pulseRing;
 
             // Soft contact shadow on the "ground" beneath the pin's point.
             const contactShadow = new THREE.Mesh(g.contactShadow, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
@@ -5957,7 +5976,7 @@
             const group = buildWebglPawnGroup(colorKey);
             scene.add(group);
 
-            entry = { canvas, renderer, scene, camera, group, spin: Math.random() * Math.PI * 2 };
+            entry = { canvas, renderer, scene, camera, group, spin: Math.random() * Math.PI * 2, pulsePhase: Math.random() };
             webglTokenEntries[tokenId] = entry;
 
             // Keep each canvas's own pixel buffer in sync with its actual
@@ -6000,6 +6019,19 @@
                 if (!entry.canvas.isConnected) return; // token div not on screen right now
                 entry.spin += dt * 0.8;
                 entry.group.rotation.y = entry.spin;
+
+                // Radar-ping animation on the ring beneath the pin: expands
+                // outward and fades to nothing on a smooth repeating cycle,
+                // each token running its own independently-phased cycle.
+                const pulse = entry.group.userData.pulseRing;
+                if (pulse) {
+                    const cycleSeconds = 1.8;
+                    const t = (((time / 1000) + entry.pulsePhase * cycleSeconds) % cycleSeconds) / cycleSeconds;
+                    const scale = 1 + t * 1.15;
+                    pulse.scale.set(scale, scale, scale);
+                    pulse.material.opacity = 0.5 * (1 - t);
+                }
+
                 entry.renderer.render(entry.scene, entry.camera);
             });
         }
