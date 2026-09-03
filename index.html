@@ -5875,9 +5875,11 @@
             highlight.position.set(0.15, 0.95, 0.16);
             group.add(highlight);
 
-            // A comfortable safety margin so the pawn never visually pokes
-            // outside its own little canvas, whatever aspect it ends up at.
-            group.scale.setScalar(0.82);
+            // Full, prominent size like the reference Ludo King-style pawn —
+            // now that each token has its own correctly-sized/positioned
+            // canvas (see "REAL WebGL 3D PAWN TOKENS" above), there's no
+            // more need to shrink it defensively to dodge an overflow bug.
+            group.scale.setScalar(1.0);
 
             return group;
         }
@@ -5900,8 +5902,12 @@
 
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
-            camera.position.set(0, 1.5, 4.4);
-            camera.lookAt(0, 0.05, 0);
+            camera.position.set(0, 1.3, 3.8);
+            // Look at the pawn's actual vertical midpoint (not world y=0)
+            // so the taller head and wider base are framed evenly — with
+            // the pawn at full size, centering on the true middle avoids
+            // clipping the top of the head against the canvas edge.
+            camera.lookAt(0, 0.21, 0);
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.72));
             const key = new THREE.DirectionalLight(0xffffff, 0.85);
