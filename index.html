@@ -5823,15 +5823,28 @@
 
         function getWebglPawnMaterial(colorKey) {
             if (webglMaterialCache[colorKey]) return webglMaterialCache[colorKey];
-            const mat = new THREE.MeshStandardMaterial({
-                color: WEBGL_PAWN_HEX[colorKey] || WEBGL_PAWN_HEX.Red, roughness: 0.35, metalness: 0.08
+            // MeshPhysicalMaterial (not just Standard) so the clearcoat layer
+            // gives the pawn a glossy, lacquered-plastic look — like the
+            // real cone pieces in the reference image — instead of a flat
+            // matte finish.
+            const mat = new THREE.MeshPhysicalMaterial({
+                color: WEBGL_PAWN_HEX[colorKey] || WEBGL_PAWN_HEX.Red,
+                roughness: 0.32, metalness: 0.06,
+                clearcoat: 0.6, clearcoatRoughness: 0.25
             });
             webglMaterialCache[colorKey] = mat;
             return mat;
         }
         function getWebglWhiteMaterial() {
-            if (!webglWhiteMat) webglWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.42 });
+            if (!webglWhiteMat) webglWhiteMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.3
+            });
             return webglWhiteMat;
+        }
+        let webglHighlightMat = null;
+        function getWebglHighlightMaterial() {
+            if (!webglHighlightMat) webglHighlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 });
+            return webglHighlightMat;
         }
 
         function buildWebglPawnGroup(colorKey) {
@@ -5853,6 +5866,14 @@
             const upper = new THREE.Mesh(g.upper, mat); upper.position.y = 0.34; group.add(upper);
             const neck2 = new THREE.Mesh(g.neck2, white); neck2.rotation.x = Math.PI / 2; neck2.position.y = 0.55; group.add(neck2);
             const head = new THREE.Mesh(g.head, mat); head.position.y = 0.86; group.add(head);
+
+            // Small glossy highlight dot on the head — a cheap, classic
+            // "studio light reflection" trick that makes a round glossy
+            // object read as 3D/shiny even at very small on-screen sizes.
+            if (!webglGeomCache.highlight) webglGeomCache.highlight = new THREE.SphereGeometry(0.07, 12, 12);
+            const highlight = new THREE.Mesh(webglGeomCache.highlight, getWebglHighlightMaterial());
+            highlight.position.set(0.15, 0.95, 0.16);
+            group.add(highlight);
 
             // A comfortable safety margin so the pawn never visually pokes
             // outside its own little canvas, whatever aspect it ends up at.
