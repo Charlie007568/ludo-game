@@ -495,7 +495,7 @@
             border: 1px solid rgba(245,215,127,0.35);
         }
         .ludo-board {
-            width: 100%; height: 100%; background: var(--board-bg, #f8fafc); border-radius: 6px; overflow: visible;
+            width: 100%; height: 100%; background: var(--board-bg, #f8fafc); border-radius: 6px; overflow: hidden;
             /* The 15x15 grid isn't perfectly uniform: the 6 base-quadrant
                tracks on each side are very slightly narrower/shorter, and
                the 3 middle "cross" tracks (the actual path cells tokens
@@ -503,8 +503,8 @@
                base areas read a touch smaller and the path cells a touch
                bigger, without changing the board's overall square size. */
             display: grid;
-            grid-template-columns: repeat(6, 0.82fr) repeat(3, 1.36fr) repeat(6, 0.82fr);
-            grid-template-rows: repeat(6, 0.82fr) repeat(3, 1.36fr) repeat(6, 0.82fr);
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
             border: 2px solid var(--board-border, #0f172a); position: relative;
             box-shadow: inset 0 0 24px rgba(0,0,0,0.15);
             /* Default ("Classic") theme values — every .theme-* class below
@@ -570,6 +570,12 @@
             text-shadow: 0 1px 2px rgba(0,0,0,0.55), 0 0 6px rgba(0,0,0,0.35);
             pointer-events: none; z-index: 2; text-align: center;
         }
+        /* Red & Green sit in the TOP row of the board, so their name should
+           hug the board's OUTER top edge (the same "outward-facing" side
+           that Blue/Yellow's name already sits on at the bottom) instead of
+           the inner edge toward the centre — this is the mirror flip for
+           those two quadrants only. */
+        .base-name-label.label-top { bottom: auto; top: 3%; }
         .base-quadrant-red { grid-row: 1 / 7; grid-column: 1 / 7; background: linear-gradient(135deg, var(--red-light), var(--red), var(--red-dark)); }
         .base-quadrant-green { grid-row: 1 / 7; grid-column: 10 / 16; background: linear-gradient(135deg, var(--green-light), var(--green), var(--green-dark)); }
         .base-quadrant-blue { grid-row: 10 / 16; grid-column: 1 / 7; background: linear-gradient(135deg, var(--blue-light), var(--blue), var(--blue-dark)); }
@@ -582,13 +588,12 @@
         }
         .base-coin-slot {
             border-radius: 50%; display: flex; justify-content: center; align-items: center; position: relative;
-            overflow: visible;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.22), 0 1px 2px rgba(255,255,255,0.8);
         }
-        .slot-red { background: var(--red); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--red-dark), inset 0 2px 4px rgba(0,0,0,0.25); }
-        .slot-green { background: var(--green); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--green-dark), inset 0 2px 4px rgba(0,0,0,0.25); }
-        .slot-yellow { background: var(--yellow); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--yellow-dark), inset 0 2px 4px rgba(0,0,0,0.25); }
-        .slot-blue { background: var(--blue); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--blue-dark), inset 0 2px 4px rgba(0,0,0,0.25); }
+        .slot-red { background: var(--red-bg); border: 2.5px solid var(--red); }
+        .slot-green { background: var(--green-bg); border: 2.5px solid var(--green); }
+        .slot-yellow { background: var(--yellow-bg); border: 2.5px solid var(--yellow); }
+        .slot-blue { background: var(--blue-bg); border: 2.5px solid var(--blue); }
 
         /* CENTER HOME 3x3 TRIANGLES */
         .center-home-cell {
@@ -644,29 +649,12 @@
            square so it always fits inside a board cell without clipping;
            the SVG's own viewBox scales the pawn shape to fit within it. */
         .token {
-            width: 118%; height: 150%; max-width: 58px; max-height: 74px;
-            cursor: pointer; z-index: 10; position: absolute; display: flex; justify-content: center; align-items: flex-end;
-            left: 50%; bottom: -18%; top: auto; transform: translateX(-50%);
-            transition: filter 0.15s ease;
-            filter: drop-shadow(0 4px 3px rgba(0,0,0,0.55));
-            overflow: visible; pointer-events: auto;
+            width: 98%; height: 98%; max-width: 58px; max-height: 58px;
+            cursor: pointer; z-index: 10; position: absolute; display: flex; justify-content: center; align-items: center;
+            transition: transform calc(0.16s / var(--speed-factor)) cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
+            filter: drop-shadow(0 3px 2px rgba(0,0,0,0.55));
         }
-        .token svg { width: 100%; height: 100%; display: block; overflow: visible; transform-origin: 50% 88%; }
-        .token.token-hopping svg,
-        .token.token-hopping .token-webgl3d-canvas {
-            animation: tokenHop calc(0.16s / var(--speed-factor)) cubic-bezier(0.22, 1.15, 0.36, 1) both;
-        }
-        @keyframes tokenHop {
-            0%   { transform: translateY(0) scale(1, 1); }
-            32%  { transform: translateY(-46%) scale(1.08, 1.16); filter: drop-shadow(0 10px 6px rgba(0,0,0,0.28)); }
-            62%  { transform: translateY(3%) scale(1.06, 0.88); }
-            80%  { transform: translateY(-6%) scale(1.02, 1.04); }
-            100% { transform: translateY(0) scale(1, 1); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .token.token-hopping svg,
-            .token.token-hopping .token-webgl3d-canvas { animation: none; }
-        }
+        .token svg { width: 100%; height: 100%; display: block; overflow: visible; }
 
         /* WebGL 3D pawns — the actual pixels are painted by a shared
            <canvas id="webgl-token-layer"> overlay (see the "WebGL 3D pawn
@@ -694,7 +682,7 @@
            is a transform, not a layout resize), so it doesn't push or
            shift any other cell/token around it — it just visually and
            interactively grows on top of everything nearby (z-index above). */
-        @keyframes tokenPulse { 0% { transform: translateX(-50%) scale(1.1); } 100% { transform: translateX(-50%) scale(1.34); } }
+        @keyframes tokenPulse { 0% { transform: scale(1.1); } 100% { transform: scale(1.34); } }
 
         /* BARRIER TOKENS — two same-colour tokens locked together on one cell.
            Gets a bold brass glow + a small lock badge so it reads clearly as
@@ -869,8 +857,7 @@
             <div class="name-entry-icon">🧑‍🎲</div>
             <h1 class="title-text" style="font-size:1.35rem; margin-bottom:6px;">Welcome!</h1>
             <p class="name-entry-sub" style="margin-bottom:18px;">Log in to your account, or create a new one to get started.</p>
-            <button class="btn btn-green" onclick="playAsGuestNow()">▶ Play Now</button>
-            <button class="btn" style="margin-top:10px;" onclick="showWelcomeLogin()">🔐 Login to Your Account</button>
+            <button class="btn btn-green" onclick="showWelcomeLogin()">🔐 Login to Your Account</button>
             <button class="btn" style="margin-top:10px;" onclick="showWelcomeSignup()">✨ Create New Account</button>
         </div>
 
@@ -1017,7 +1004,7 @@
             <div class="selector-tile" onclick="openTokenPicker()">
                 <span class="mode-icon-badge token-selector-preview" id="token-selector-preview"></span>
                 <span style="flex:1;">
-                    <span class="mode-name" id="token-selector-name" style="display:block;">Map Pin</span>
+                    <span class="mode-name" id="token-selector-name" style="display:block;">Classic Pawn</span>
                     <span class="mode-sub">Tap to change your pieces' shape</span>
                 </span>
                 <span style="font-size:1.1rem; opacity:0.8;">›</span>
@@ -1595,11 +1582,6 @@
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getDatabase, ref, set, update, remove, onDisconnect, serverTimestamp, onValue, get, off, push, query, limitToLast, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // This Grok preview build must be playable without Admin Panel URL
-        // approval. All original lock/publish/account code stays in place —
-        // standalone mode only skips the gates that would freeze the menu.
-        window.__LUDO_STANDALONE__ = true;
-
         const firebaseConfig = {
             apiKey:            "AIzaSyDPYuTSyVY5_I9DoAUg6NCkZ_3ERpZ705M",
             authDomain:        "root-cause-9c9fc.firebaseapp.com",
@@ -2015,7 +1997,6 @@
         // exactly as before.
         let gatePassedOnce = false; // once approved+matched, stays revealed for this session
         function isThisBuildApproved(data) {
-            if (window.__LUDO_STANDALONE__) return true;
             if (!data || data.gameUrlApproved !== true) return false;
             const norm = (u) => String(u || '').trim().replace(/[?#].*$/, '').replace(/\/+$/, '').toLowerCase();
             const approvedUrl = norm(data.gameUrl);
@@ -2097,20 +2078,6 @@
 
         function applyMasterControl(data) {
             if (!data) return;
-
-            if (window.__LUDO_STANDALONE__) {
-                injectAdsIfNeeded(data);
-                renderAnnouncement(data);
-                window._rewardAdUrl = data.rewardAdUrl || '';
-                const lockEl = document.getElementById('lock-overlay');
-                if (lockEl) lockEl.style.display = 'none';
-                const gateEl = document.getElementById('publish-gate-overlay');
-                if (gateEl) gateEl.style.display = 'none';
-                const blockedEl = document.getElementById('blocked-overlay');
-                if (blockedEl) blockedEl.style.display = 'none';
-                if (typeof revealMenu === 'function') revealMenu();
-                return;
-            }
 
             // Ads can be injected regardless of lock/approval state so they're
             // never blocked by either gate.
@@ -3029,7 +2996,6 @@
     </script>
 
     <script>
-        window.__LUDO_STANDALONE__ = true;
         // ─── Viewport lock (bug fix) ─────────────────────────────────────
         // The whole app is one fixed-height screen and is never meant to
         // scroll. Previously, opening the match chat (or just tapping an
@@ -3875,16 +3841,6 @@
         }
 
         // ─── Welcome screen: Login vs Create Account choice (first run) ────
-        function playAsGuestNow() {
-            const name = loadSavedPlayerName() || 'Player';
-            try { localStorage.setItem(PLAYER_NAME_KEY, name); } catch (e) {}
-            const redInput = document.getElementById('name-red');
-            if (redInput) redInput.value = name;
-            const menuDisplay = document.getElementById('menu-player-name-display');
-            if (menuDisplay) menuDisplay.textContent = name;
-            document.getElementById('name-entry-screen').style.display = 'none';
-            document.getElementById('menu-screen').style.display = 'block';
-        }
         function openWelcomeScreen() {
             const n = document.getElementById('name-entry-screen');
             if (n) n.style.display = 'block';
@@ -4042,18 +3998,13 @@
             // put the player right back into it instead of dropping them on
             // the menu as if nothing had happened.
             if (!tryRestoreResumeState()) {
-                const savedNameRaw = loadSavedPlayerName();
-                if (!savedNameRaw && !window.__LUDO_STANDALONE__) {
+                const savedName = loadSavedPlayerName();
+                if (!savedName) {
                     // First time ever opening the game on this device — show
                     // the Login/Guest choice before anything else. The menu
                     // (and every other screen) only appears once this is done.
                     openWelcomeScreen();
                 } else {
-                    let savedName = savedNameRaw;
-                    if (!savedName) {
-                        savedName = 'Player';
-                        try { localStorage.setItem(PLAYER_NAME_KEY, savedName); } catch (e) {}
-                    }
                     document.getElementById('name-red').value = savedName;
                     const menuDisplay = document.getElementById('menu-player-name-display');
                     if (menuDisplay) menuDisplay.textContent = savedName;
@@ -4084,13 +4035,9 @@
         window.onload = () => {
             setTimeout(() => {
                 if (window._menuRevealed) return;
-                if (window.__LUDO_STANDALONE__ && typeof revealMenu === 'function') {
-                    revealMenu();
-                    return;
-                }
                 const s = document.getElementById('loading-status-msg');
                 if (s && !s.textContent) s.textContent = 'Still connecting… please wait.';
-            }, 1200);
+            }, 6000);
         };
 
         // ─── BACK-BUTTON EXIT CONFIRMATION ──────────────────────────────────
@@ -4727,7 +4674,11 @@
                 bEl.appendChild(tray);
 
                 const nameLabel = document.createElement('div');
-                nameLabel.className = 'base-name-label';
+                // Red & Green are the TOP-row quadrants — put their name on
+                // the outer top edge (mirrors Blue/Yellow, whose name sits
+                // on the outer bottom edge) instead of the inner edge
+                // toward the board centre.
+                nameLabel.className = 'base-name-label' + ((q.color === 'Red' || q.color === 'Green') ? ' label-top' : '');
                 nameLabel.id = `base-name-${q.color}`;
                 bEl.appendChild(nameLabel);
 
@@ -5357,12 +5308,6 @@
                 }
             }
             renderTokens();
-            const hopEl = document.getElementById(`t-${token.id}`);
-            if (hopEl) {
-                hopEl.classList.remove('token-hopping');
-                void hopEl.offsetWidth;
-                hopEl.classList.add('token-hopping');
-            }
         }
 
         function afterMoveCheck(token, movers, roll, autoHeld) {
@@ -5661,10 +5606,8 @@
                 group.forEach((t, i) => {
                     const tEl = createTokenElement(t);
                     if (group.length > 1) {
-                        const offsetY = -i * 11;
-                        const offsetX = i * 3;
-                        tEl.style.transform = `translate(calc(-50% + ${offsetX}px), ${offsetY}px)`;
-                        tEl.style.zIndex = String(12 + i);
+                        const offset = (i - (group.length - 1) / 2) * 4;
+                        tEl.style.transform = `translate(${offset}px, ${offset}px) scale(${1 - group.length * 0.08})`;
                     }
                     cellEl.appendChild(tEl);
                 });
@@ -5862,10 +5805,12 @@
             </svg>`;
         }
 
-
-        // Ludo King / reference-screenshot map pin: glossy white teardrop
-        // body, player-colour enamel disc with a gold bezel, a gold
-        // "you-are-here" pad the pin stands on, and a soft ground shadow.
+        // ─── "Map Pin" token design — a flat white teardrop/map-marker
+        // pawn with a gold ring and a colour badge in the middle (copied
+        // in verbatim from the reference file, only the surrounding
+        // TOKEN_DESIGNS wiring below is new here). Uses the same
+        // PAWN_PALETTE (c.light/c.mid/c.dark) as every other design above,
+        // so no palette changes were needed for it to drop in cleanly.
         function pawnSVG_mappin(color) {
             const c = PAWN_PALETTE[color] || PAWN_PALETTE.Red;
             const uid = 'pin' + (pawnSvgUid++);
@@ -5929,22 +5874,17 @@
         }
 
         const TOKEN_DESIGNS = [
-            { id: 'mappin',     name: 'Map Pin',       render: pawnSVG_mappin },
-            { id: 'webgl3d',    name: '3D Map Pin',    render: pawnSVG_mappin },
-            { id: 'ludoking3d', name: 'Ludo King 3D',  render: pawnSVG_ludoking3d },
-            { id: 'classic',    name: 'Classic Pawn',  render: pawnSVG_classic },
-            { id: 'gem',        name: 'Crystal Gem',   render: pawnSVG_gem },
-            { id: 'cone',       name: 'Modern Cone',   render: pawnSVG_cone },
-            { id: 'crown',      name: 'Royal Crown',   render: pawnSVG_crown },
-            { id: 'marble',     name: 'Glass Marble',  render: pawnSVG_marble }
+            { id: 'mappin',  name: 'Map Pin',       render: pawnSVG_mappin },
+            { id: 'ludoking3d', name: 'Ludo King 3D', render: pawnSVG_ludoking3d },
+            { id: 'classic', name: 'Classic Pawn', render: pawnSVG_classic },
+            { id: 'gem',     name: 'Crystal Gem',  render: pawnSVG_gem },
+            { id: 'cone',    name: 'Modern Cone',  render: pawnSVG_cone },
+            { id: 'crown',   name: 'Royal Crown',  render: pawnSVG_crown },
+            { id: 'marble',  name: 'Glass Marble', render: pawnSVG_marble }
         ];
         const TOKEN_DESIGN_KEY = 'lm_token_design';
         function loadSavedTokenDesign() {
-            try {
-                const v = localStorage.getItem(TOKEN_DESIGN_KEY);
-                if (!v || v === 'ludoking3d') return 'mappin';
-                return v;
-            } catch (e) { return 'mappin'; }
+            try { return localStorage.getItem(TOKEN_DESIGN_KEY) || 'ludoking3d'; } catch (e) { return 'ludoking3d'; }
         }
         // The single entry point every token actually renders through
         // (createTokenElement calls this exact function, unchanged) — picks
@@ -5989,6 +5929,27 @@
         let webglLastFrameTime = 0;
         let webglLoopStarted = false;
         let webglResizeObserver = null;
+        // BUG FIX: a 4-player game needs 16 tokens (4 colours × 4 pawns),
+        // meaning 16 separate live WebGL contexts if every token gets its
+        // own canvas. Most mobile browsers/WebViews cap the number of
+        // simultaneous WebGL contexts a single page may hold way below
+        // that (commonly 8, sometimes lower) — once that cap is hit the
+        // browser silently kills/evicts the OLDEST contexts to make room
+        // for new ones. Since tokens are created colour-by-colour in
+        // order, whichever colours happen to be created FIRST (e.g. Red,
+        // then Green) are exactly the ones whose contexts get evicted —
+        // their tokens then have a dead canvas and render as blank/broken
+        // squares, while the LAST colours created (Blue, Yellow) still
+        // have live contexts and look perfectly fine. This is why the bug
+        // only ever showed up in 4-player games and always hit the same
+        // two colours. Capping how many WebGL tokens we ever create, and
+        // giving every colour beyond that cap the plain SVG pawn instead,
+        // means every single token always renders correctly, in any
+        // player count — it just means some tokens are the (still fully
+        // correct-looking) flat SVG pawn instead of the spinning 3D one
+        // once a game has enough tokens on the board at once.
+        const WEBGL_TOKEN_CONTEXT_CAP = 8;
+        let webglContextCount = 0;
 
         const WEBGL_PAWN_HEX = {
             Red: 0xdc2626, Green: 0x16a34a, Yellow: 0xca8a04, Blue: 0x2563eb
@@ -6008,9 +5969,12 @@
         }
 
         // Map-pin / location-marker silhouette (matches the reference
-        // screenshots: a glossy WHITE balloon-head tapering to a point,
-        // a player-colour enamel disc with a gold bezel on the front,
-        // and a gold pad the pin stands on). Revolved with LatheGeometry.
+        // image: a rounded white balloon-head tapering to a point at the
+        // bottom, with a solid colour circle badge set into the front,
+        // and a dark maroon backing plaque behind it). The pin body is
+        // built by revolving a 2D profile curve around the Y axis
+        // (THREE.LatheGeometry) rather than stacked primitives — that's
+        // the natural way to get a smooth teardrop/balloon shape.
         function buildWebglPawnGeometry() {
             const profile = [
                 new THREE.Vector2(0, -1.05),
@@ -6050,8 +6014,7 @@
         }
         function getWebglWhiteMaterial() {
             if (!webglWhiteMat) webglWhiteMat = new THREE.MeshPhysicalMaterial({
-                color: 0xf7f7f8, roughness: 0.22, metalness: 0.18,
-                clearcoat: 0.85, clearcoatRoughness: 0.12
+                color: 0xffffff, roughness: 0.3, clearcoat: 0.7, clearcoatRoughness: 0.2
             });
             return webglWhiteMat;
         }
@@ -6065,12 +6028,12 @@
             // The thin maroon "location ring" on the ground beneath every
             // pin in the reference image — always this same dark red-brown,
             // regardless of the pin's own colour.
-            if (!webglRingMat) webglRingMat = new THREE.MeshStandardMaterial({ color: 0xe0b33a, metalness: 0.65, roughness: 0.35, side: THREE.DoubleSide });
+            if (!webglRingMat) webglRingMat = new THREE.MeshBasicMaterial({ color: 0x7a2020, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
             return webglRingMat;
         }
         let webglPulseRingMat = null;
         function getWebglPulseRingMaterial() {
-            if (!webglPulseRingMat) webglPulseRingMat = new THREE.MeshBasicMaterial({ color: 0xe8b34a, side: THREE.DoubleSide, transparent: true, opacity: 0.45 });
+            if (!webglPulseRingMat) webglPulseRingMat = new THREE.MeshBasicMaterial({ color: 0x9a2b2b, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
             return webglPulseRingMat;
         }
         let webglRingSpinMat = null;
@@ -6128,21 +6091,19 @@
             contactShadow.position.y = -1.1;
             group.add(contactShadow);
 
-            // White glossy pin body with the player-colour enamel disc
-            // set into the FRONT of the head (screenshot match).
-            const pin = new THREE.Mesh(g.pin, white);
+            // The pin body is now the player's own colour (not white) — a
+            // small white circle badge sits on the front instead, so each
+            // pin still reads clearly per-player at a glance.
+            const pin = new THREE.Mesh(g.pin, getWebglPawnMaterial(colorKey));
             group.add(pin);
 
-            const bezel = new THREE.Mesh(
-                new THREE.CircleGeometry(0.30, 28),
-                new THREE.MeshStandardMaterial({ color: 0xe0b33a, metalness: 0.7, roughness: 0.3 })
-            );
-            bezel.position.set(0, 0.12, 0.42);
-            group.add(bezel);
-
-            const badge = new THREE.Mesh(g.colorBadge, getWebglPawnMaterial(colorKey));
-            badge.position.set(0, 0.12, 0.46);
-            badge.scale.set(0.95, 0.95, 0.55);
+            // White circle badge sits right on TOP of the pin's head (on
+            // the Y rotation axis, not out to the front) — like a little
+            // cap. This also fixes it visually staying centred and never
+            // swinging out to one side as the pawn continuously spins,
+            // since it's positioned exactly on the axis it spins around.
+            const badge = new THREE.Mesh(g.colorBadge, white);
+            badge.position.set(0, 0.46, 0);
             group.add(badge);
 
             // Small glossy highlight dot on the pin's head — a cheap,
@@ -6168,57 +6129,77 @@
             let entry = webglTokenEntries[tokenId];
             if (entry) return entry;
 
-            const canvas = document.createElement('canvas');
-            canvas.className = 'token-webgl3d-canvas';
-            canvas.style.cssText = 'width:100%; height:100%; display:block; pointer-events:none;';
+            // BUG FIX (see WEBGL_TOKEN_CONTEXT_CAP comment above): stop
+            // handing out fresh WebGL contexts once we're already at the
+            // safe cap — return null instead, so the caller falls back to
+            // the SVG pawn for this token rather than getting a context
+            // that the browser is about to silently kill anyway.
+            if (webglContextCount >= WEBGL_TOKEN_CONTEXT_CAP) return null;
 
-            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-            renderer.setClearColor(0x000000, 0);
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.className = 'token-webgl3d-canvas';
+                canvas.style.cssText = 'width:100%; height:100%; display:block; pointer-events:none;';
 
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
-            camera.position.set(0, 0.05, 3.15);
-            // Look at the pin's actual vertical midpoint (not world y=0) so
-            // the rounded head and the pointed tail are framed evenly and
-            // nothing clips against the canvas edge.
-            camera.lookAt(0, -0.27, 0);
+                const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+                renderer.setClearColor(0x000000, 0);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.72));
-            const key = new THREE.DirectionalLight(0xffffff, 0.85);
-            key.position.set(2.2, 4, 3);
-            scene.add(key);
-            const fill = new THREE.DirectionalLight(0xffffff, 0.28);
-            fill.position.set(-2.5, 1.5, -2);
-            scene.add(fill);
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
+                camera.position.set(0, 0.05, 3.15);
+                // Look at the pin's actual vertical midpoint (not world y=0) so
+                // the rounded head and the pointed tail are framed evenly and
+                // nothing clips against the canvas edge.
+                camera.lookAt(0, -0.27, 0);
 
-            const group = buildWebglPawnGroup(colorKey);
-            scene.add(group);
+                scene.add(new THREE.AmbientLight(0xffffff, 0.72));
+                const key = new THREE.DirectionalLight(0xffffff, 0.85);
+                key.position.set(2.2, 4, 3);
+                scene.add(key);
+                const fill = new THREE.DirectionalLight(0xffffff, 0.28);
+                fill.position.set(-2.5, 1.5, -2);
+                scene.add(fill);
 
-            entry = { canvas, renderer, scene, camera, group, spin: Math.random() * Math.PI * 2, pulsePhase: Math.random(), ringSpin: Math.random() * Math.PI * 2 };
-            webglTokenEntries[tokenId] = entry;
+                const group = buildWebglPawnGroup(colorKey);
+                scene.add(group);
 
-            // Keep each canvas's own pixel buffer in sync with its actual
-            // CSS box (the .token div's size — ~46px, but let it track
-            // real size rather than assume) whenever that box changes.
-            if (!webglResizeObserver) {
-                webglResizeObserver = new ResizeObserver(entries => {
-                    entries.forEach(ent => {
-                        const c = ent.target;
-                        const w = Math.max(1, Math.round(ent.contentRect.width));
-                        const h = Math.max(1, Math.round(ent.contentRect.height));
-                        const found = Object.values(webglTokenEntries).find(v => v.canvas === c);
-                        if (found) {
-                            found.renderer.setSize(w, h, false);
-                            found.camera.aspect = w / h;
-                            found.camera.updateProjectionMatrix();
-                        }
+                entry = { canvas, renderer, scene, camera, group, spin: Math.random() * Math.PI * 2, pulsePhase: Math.random(), ringSpin: Math.random() * Math.PI * 2 };
+                webglTokenEntries[tokenId] = entry;
+                webglContextCount++;
+
+                // Keep each canvas's own pixel buffer in sync with its actual
+                // CSS box (the .token div's size — ~46px, but let it track
+                // real size rather than assume) whenever that box changes.
+                if (!webglResizeObserver) {
+                    webglResizeObserver = new ResizeObserver(entries => {
+                        entries.forEach(ent => {
+                            const c = ent.target;
+                            const w = Math.max(1, Math.round(ent.contentRect.width));
+                            const h = Math.max(1, Math.round(ent.contentRect.height));
+                            const found = Object.values(webglTokenEntries).find(v => v.canvas === c);
+                            if (found) {
+                                found.renderer.setSize(w, h, false);
+                                found.camera.aspect = w / h;
+                                found.camera.updateProjectionMatrix();
+                            }
+                        });
                     });
-                });
-            }
-            webglResizeObserver.observe(canvas);
+                }
+                webglResizeObserver.observe(canvas);
 
-            return entry;
+                return entry;
+            } catch (e) {
+                // BUG FIX: if the browser genuinely refuses to hand out any
+                // more WebGL contexts (getContext returns null / the
+                // WebGLRenderer constructor throws), don't let that
+                // exception bubble up and abort the whole render pass —
+                // that used to leave every token AFTER the failing one
+                // un-rendered too. Just report failure for this one token;
+                // the caller falls back to the SVG pawn.
+                webglSupported = false; // stop trying for the rest of this session
+                return null;
+            }
         }
 
         // One shared render loop drives every token's own tiny scene into
@@ -6236,8 +6217,8 @@
 
             Object.values(webglTokenEntries).forEach(entry => {
                 if (!entry.canvas.isConnected) return; // token div not on screen right now
-                entry.spin += dt * 0.18;
-                entry.group.rotation.y = Math.sin(entry.spin) * 0.18;
+                entry.spin += dt * 0.8;
+                entry.group.rotation.y = entry.spin;
 
                 // Radar-ping animation on the ring beneath the pin: expands
                 // outward and fades to nothing on a smooth repeating cycle,
@@ -6273,16 +6254,24 @@
             const tEl = document.createElement('div');
             tEl.id = `t-${t.id}`;
             tEl.className = `token token-${t.color.toLowerCase()}` + (t.barrier ? ' token-barrier' : '');
-            // Default Map Pin is the screenshot-accurate SVG (white teardrop,
-            // colour badge, gold pad, ground shadow). The optional "3D Map
-            // Pin" design uses the per-token WebGL canvas. Other picker
-            // silhouettes stay SVG so the chosen shape actually appears.
-            const designId = loadSavedTokenDesign();
-            if (designId === 'webgl3d' && webglAvailable()) {
-                tEl.classList.add('token-webgl3d');
+            // Real WebGL 3D pawn: reuse this token's own persistent canvas
+            // (same live WebGL context every time — see "REAL WebGL 3D PAWN
+            // TOKENS" above) and re-parent it straight into this fresh div,
+            // so it inherits the div's exact size/position/rotation from
+            // normal CSS layout. Falls back to the flat SVG pawn if WebGL
+            // genuinely isn't available on this device.
+            if (webglAvailable()) {
                 const entry = getOrCreateTokenWebgl(t.id, t.color);
-                tEl.appendChild(entry.canvas);
-                ensureWebglLoopStarted();
+                if (entry) {
+                    tEl.classList.add('token-webgl3d');
+                    tEl.appendChild(entry.canvas);
+                    ensureWebglLoopStarted();
+                } else {
+                    // BUG FIX: context cap reached or creation failed for
+                    // this token — fall back to the flat SVG pawn instead
+                    // of leaving the token div empty/broken-looking.
+                    tEl.innerHTML = pawnSVG(t.color);
+                }
             } else {
                 tEl.innerHTML = pawnSVG(t.color);
             }
