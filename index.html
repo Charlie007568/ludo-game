@@ -656,6 +656,25 @@
         }
         .token svg { width: 100%; height: 100%; display: block; overflow: visible; }
 
+        /* Map Pin design — reads as a real marker "planted" on its cell
+           rather than a piece confined inside the square: taller than the
+           cell itself, anchored to the bottom (the pin's point lands on
+           the actual tile) with the rounded head rising up and slightly
+           overlapping the cell above — matching the reference screenshots.
+           Uses left/right/margin (not transform) to stay horizontally
+           centred, so it doesn't fight with the inline transform:
+           translate(...) renderTokens() applies when 2+ tokens share a
+           cell (that inline style would otherwise silently overwrite a
+           transform-based centering trick). The board's own
+           overflow:hidden only clips at its outer edge, so this only
+           ever visually overlaps a neighbouring cell, never gets cut off
+           except right at the board's border. */
+        .token.token-pin-overflow {
+            width: 72%; height: 172%; max-width: 48px; max-height: 98px;
+            left: 0; right: 0; top: auto; bottom: 2%; margin: 0 auto;
+            z-index: 15;
+        }
+
         /* WebGL 3D pawns — the actual pixels are painted by a shared
            <canvas id="webgl-token-layer"> overlay (see the "WebGL 3D pawn
            tokens" script block), not by this div's own content. This div
@@ -5875,6 +5894,7 @@
 
         const TOKEN_DESIGNS = [
             { id: 'mappin',  name: 'Map Pin',       render: pawnSVG_mappin },
+            { id: 'webgl3d', name: '3D Map Pin',    render: pawnSVG_mappin },
             { id: 'ludoking3d', name: 'Ludo King 3D', render: pawnSVG_ludoking3d },
             { id: 'classic', name: 'Classic Pawn', render: pawnSVG_classic },
             { id: 'gem',     name: 'Crystal Gem',  render: pawnSVG_gem },
@@ -5884,7 +5904,18 @@
         ];
         const TOKEN_DESIGN_KEY = 'lm_token_design';
         function loadSavedTokenDesign() {
-            try { return localStorage.getItem(TOKEN_DESIGN_KEY) || 'ludoking3d'; } catch (e) { return 'ludoking3d'; }
+            try {
+                const v = localStorage.getItem(TOKEN_DESIGN_KEY);
+                // BUG FIX: 'ludoking3d' used to be the stored default even
+                // though createTokenElement always rendered WebGL over top
+                // of it anyway when available — so it never really meant
+                // "show the Ludo King 3D shape" for most players. Treat
+                // that old default (and no stored value at all) as "Map
+                // Pin", the new plain default, so existing saves migrate
+                // to a design that's actually consistently honoured now.
+                if (!v || v === 'ludoking3d') return 'mappin';
+                return v;
+            } catch (e) { return 'mappin'; }
         }
         // The single entry point every token actually renders through
         // (createTokenElement calls this exact function, unchanged) — picks
@@ -6254,26 +6285,39 @@
             const tEl = document.createElement('div');
             tEl.id = `t-${t.id}`;
             tEl.className = `token token-${t.color.toLowerCase()}` + (t.barrier ? ' token-barrier' : '');
-            // Real WebGL 3D pawn: reuse this token's own persistent canvas
-            // (same live WebGL context every time — see "REAL WebGL 3D PAWN
-            // TOKENS" above) and re-parent it straight into this fresh div,
-            // so it inherits the div's exact size/position/rotation from
-            // normal CSS layout. Falls back to the flat SVG pawn if WebGL
-            // genuinely isn't available on this device.
-            if (webglAvailable()) {
+            // BUG FIX (4-player "two different token styles" glitch): this
+            // used to try WebGL for EVERY token regardless of which design
+            // was actually selected in the picker, only ever falling back
+            // to the chosen SVG design (e.g. Map Pin) once the WebGL
+            // context cap was hit. With 16 tokens in a 4-player game, the
+            // first 8 got the (unrelated) WebGL 3D pin shape and the last
+            // 8 got the real selected design — two different pawns on the
+            // same board. WebGL is now ONLY used for its own dedicated
+            // '3D Map Pin' picker entry; every other design (including the
+            // plain Map Pin) always renders as its own flat SVG, on every
+            // token, consistently.
+            const designId = loadSavedTokenDesign();
+            if (designId === 'webgl3d' && webglAvailable()) {
                 const entry = getOrCreateTokenWebgl(t.id, t.color);
                 if (entry) {
                     tEl.classList.add('token-webgl3d');
                     tEl.appendChild(entry.canvas);
                     ensureWebglLoopStarted();
                 } else {
-                    // BUG FIX: context cap reached or creation failed for
-                    // this token — fall back to the flat SVG pawn instead
-                    // of leaving the token div empty/broken-looking.
+                    // Context cap reached or creation failed for this
+                    // token — fall back to the flat SVG pawn instead of
+                    // leaving the token div empty/broken-looking.
                     tEl.innerHTML = pawnSVG(t.color);
                 }
             } else {
                 tEl.innerHTML = pawnSVG(t.color);
+                // The Map Pin design reads as a real marker "planted" on
+                // the board once a token is actually out on the path —
+                // but stays a normal contained size while still sitting
+                // in its base tray slot (the tray tokens sit neatly
+                // inside their little circular slots; only the ones on
+                // the track itself are meant to overflow like a pin).
+                if (designId === 'mappin' && t.status !== 'BASE') tEl.classList.add('token-pin-overflow');
             }
             tEl.onclick = (e) => {
                 e.stopPropagation();
