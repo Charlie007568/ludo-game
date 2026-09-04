@@ -496,6 +496,21 @@
         }
         .ludo-board {
             width: 100%; height: 100%; background: var(--board-bg, #f8fafc); border-radius: 6px; overflow: hidden;
+            /* Small uniform buffer on all 4 sides — NOT for looks, it's
+               what gives an overflowing Map Pin token in the outermost
+               row/column somewhere to spill into that's still inside this
+               element's own clip box. Without it, a pin sitting in row 1
+               (nothing above it to overlap) would overflow straight into
+               this element's own top edge and get clipped by the
+               overflow:hidden above, visually squashing that one pin back
+               down into its square — exactly the "red token between red
+               and green sinks into the square" bug. Percentage padding is
+               always resolved against the WIDTH for all 4 sides, and this
+               board is always square, so equal padding here keeps the
+               15x15 grid perfectly square too (just very slightly
+               smaller) — it does not reintroduce the old rectangular-cell
+               bug from before.  */
+            padding: 3.2%;
             /* The 15x15 grid isn't perfectly uniform: the 6 base-quadrant
                tracks on each side are very slightly narrower/shorter, and
                the 3 middle "cross" tracks (the actual path cells tokens
@@ -649,7 +664,7 @@
            square so it always fits inside a board cell without clipping;
            the SVG's own viewBox scales the pawn shape to fit within it. */
         .token {
-            width: 98%; height: 98%; max-width: 58px; max-height: 58px;
+            width: 100%; height: 100%; max-width: 64px; max-height: 64px;
             cursor: pointer; z-index: 10; position: absolute; display: flex; justify-content: center; align-items: center;
             transition: transform calc(0.16s / var(--speed-factor)) cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
             filter: drop-shadow(0 3px 2px rgba(0,0,0,0.55));
@@ -675,7 +690,7 @@
                shrinking to fit a mismatched box and just sitting there
                unchanged — that mismatch was why the earlier version
                didn't visibly stick out of its cell at all. */
-            width: 97%; height: 136%; max-width: 70px; max-height: 98px;
+            width: 107%; height: 150%; max-width: 77px; max-height: 108px;
             left: 0; right: 0; top: auto; bottom: 0; margin: 0 auto;
             z-index: 15;
             /* A stronger, more "lifted off the board" cast shadow than the
