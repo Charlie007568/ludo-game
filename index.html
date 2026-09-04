@@ -670,9 +670,18 @@
            ever visually overlaps a neighbouring cell, never gets cut off
            except right at the board's border. */
         .token.token-pin-overflow {
-            width: 72%; height: 172%; max-width: 48px; max-height: 98px;
-            left: 0; right: 0; top: auto; bottom: 2%; margin: 0 auto;
+            /* Width:height kept at the SVG's own 80:112 ratio (≈0.714) so
+               the pin actually renders at the FULL box height instead of
+               shrinking to fit a mismatched box and just sitting there
+               unchanged — that mismatch was why the earlier version
+               didn't visibly stick out of its cell at all. */
+            width: 97%; height: 136%; max-width: 70px; max-height: 98px;
+            left: 0; right: 0; top: auto; bottom: 0; margin: 0 auto;
             z-index: 15;
+            /* A stronger, more "lifted off the board" cast shadow than the
+               flatter default .token shadow, since this piece now visibly
+               stands up above its cell instead of lying flat inside it. */
+            filter: drop-shadow(0 9px 7px rgba(0,0,0,0.48)) drop-shadow(0 3px 3px rgba(0,0,0,0.35));
         }
 
         /* WebGL 3D pawns — the actual pixels are painted by a shared
@@ -5892,15 +5901,12 @@
             </svg>`;
         }
 
+        // Only the Map Pin design is offered now (every other shape was
+        // removed on request) — the picker grid (openTokenPicker() below)
+        // just loops over this array, so leaving only one entry here
+        // automatically leaves only one tile there, nothing else to touch.
         const TOKEN_DESIGNS = [
-            { id: 'mappin',  name: 'Map Pin',       render: pawnSVG_mappin },
-            { id: 'webgl3d', name: '3D Map Pin',    render: pawnSVG_mappin },
-            { id: 'ludoking3d', name: 'Ludo King 3D', render: pawnSVG_ludoking3d },
-            { id: 'classic', name: 'Classic Pawn', render: pawnSVG_classic },
-            { id: 'gem',     name: 'Crystal Gem',  render: pawnSVG_gem },
-            { id: 'cone',    name: 'Modern Cone',  render: pawnSVG_cone },
-            { id: 'crown',   name: 'Royal Crown',  render: pawnSVG_crown },
-            { id: 'marble',  name: 'Glass Marble', render: pawnSVG_marble }
+            { id: 'mappin',  name: 'Map Pin',       render: pawnSVG_mappin }
         ];
         const TOKEN_DESIGN_KEY = 'lm_token_design';
         function loadSavedTokenDesign() {
