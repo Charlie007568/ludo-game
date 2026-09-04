@@ -491,9 +491,9 @@
            just a pop-in-place. `forwards` holds it resting at the final
            (centered, settled) transform once the tumble-in finishes. */
         @keyframes diceRollIn {
-            0%   { transform: translate(var(--dice-from-x, -170%), var(--dice-from-y, -170%)) scale(0.35) rotate(var(--dice-from-rot, -70deg)); opacity: 0.5; }
+            0%   { transform: translate(var(--dice-from-x, -170%), var(--dice-from-y, -170%)) scale(0.3) rotate(var(--dice-from-rot, -70deg)); opacity: 0.5; }
             55%  { opacity: 1; }
-            100% { transform: translate(0, 0) scale(2.3) rotate(0deg); opacity: 1; }
+            100% { transform: translate(0, 0) scale(1.3) rotate(0deg); opacity: 1; }
         }
         .board-dice-pop.rolling-in {
             animation: diceRollIn calc(0.6s / var(--speed-factor)) cubic-bezier(0.22, 0.72, 0.32, 1) forwards;
@@ -504,10 +504,10 @@
         }
         .board-dice-pop.spinning .dice3d { animation: diceSpinLoop 0.6s linear infinite; }
         .board-dice-result {
-            position: absolute; left: 50%; bottom: -26px; transform: translateX(-50%) translateY(-6px) scale(0.6);
-            min-width: 26px; padding: 2px 5px; border-radius: 999px; text-align: center;
+            position: absolute; left: 50%; bottom: -30px; transform: translateX(-50%) translateY(-6px) scale(0.6);
+            min-width: 34px; padding: 3px 8px; border-radius: 999px; text-align: center;
             background: linear-gradient(135deg, var(--brass-light), var(--brass) 55%, var(--brass-dark));
-            color: #1a1206; font-weight: 900; font-size: 11px; line-height: 1.4;
+            color: #1a1206; font-weight: 900; font-size: 17px; line-height: 1.4;
             box-shadow: 0 4px 14px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.5);
             opacity: 0; transition: opacity 0.2s ease, transform 0.25s cubic-bezier(.34,1.56,.64,1);
         }
@@ -724,12 +724,23 @@
             filter: drop-shadow(0 3px 2px rgba(0,0,0,0.55));
         }
         .token svg { width: 100%; height: 100%; display: block; overflow: visible; }
+        /* The Map Pin's base ring (gold rim + colored center disc, grouped
+           together in pawnSVG_mappin so they spin as one rigid unit) keeps
+           slowly turning in place the whole time the token sits on the
+           board — a small always-on "this is where the piece actually is"
+           cue. transform-origin is set in the SVG's own viewBox units
+           (40, 97.5 — the ring's exact center), so it spins in place
+           rather than orbiting off to one side. */
+        .pin-ring-spin { transform-origin: 40px 97.5px; animation: pinRingSpin 3.2s linear infinite; }
+        @keyframes pinRingSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        /* Map Pin design — reads as a real marker "planted" on its cell
-           rather than a piece confined inside the square: taller than the
-           cell itself, anchored to the bottom (the pin's point lands on
-           the actual tile) with the rounded head rising up and slightly
-           overlapping the cell above — matching the reference screenshots.
+        /* Map Pin design — taller than the cell itself, but now anchored so
+           the pin's own point/base — the actual spot that's meant to be
+           "on" a given square — lands exactly on that cell's center,
+           with the rounded head rising up above it. bottom:50% puts the
+           box's bottom edge (where the SVG's point sits, since it uses
+           preserveAspectRatio="xMidYMax") at the cell's vertical middle,
+           not its bottom edge.
            BUG FIX: this used to be left:0; right:0; margin:0 auto — but
            this box is WIDER than its own cell (107%), and per the CSS
            centering-with-auto-margins rule, equal auto margins are only
@@ -743,7 +754,7 @@
            fight with the inline transform: translate(...) renderTokens()
            applies when 2+ tokens share a cell. The board's own
            overflow:hidden only clips at its outer edge, so this only
-           ever visually overlaps a neighbouring cell, never gets cut off
+           ever visually overlaps neighbouring cells, never gets cut off
            except right at the board's border. */
         .token.token-pin-overflow {
             /* Width:height kept at the SVG's own 80:112 ratio (≈0.714) so
@@ -752,7 +763,7 @@
                unchanged — that mismatch was why the earlier version
                didn't visibly stick out of its cell at all. */
             width: 107%; height: 150%; max-width: 77px; max-height: 108px;
-            left: 50%; margin-left: -53.5%; top: auto; bottom: 0;
+            left: 50%; margin-left: -53.5%; top: auto; bottom: 50%;
             z-index: 15;
             /* A stronger, more "lifted off the board" cast shadow than the
                flatter default .token shadow, since this piece now visibly
@@ -3258,6 +3269,14 @@
         // what actually moves the token, completely unchanged), this just
         // mirrors it visually.
         let boardDiceCubeState = { x: 0, y: 0 };
+        // Bumped on every showBoardDicePop() call. A hide/settle scheduled
+        // by an OLDER roll checks this before touching the DOM — if a
+        // newer roll has since started (e.g. rolling a 6 and going again
+        // right away), the token won't match and the stale call becomes a
+        // no-op instead of yanking the overlay out from under the new
+        // roll. This is what was causing the pop to sometimes glitch or
+        // not visibly appear at all on quick back-to-back rolls.
+        let boardDiceRollToken = 0;
 
         // Which corner each color's dice tag sits in (see the corner-row-top
         // / corner-row-bottom markup: Red+Green on top, Blue+Yellow on the
@@ -3284,6 +3303,7 @@
         // starts its own indefinite tumble the instant a roll begins —
         // mirrors startDiceSpin().
         function showBoardDicePop(color) {
+            boardDiceRollToken++;
             const overlay = document.getElementById('board-dice-overlay');
             const pop = ensureBoardDicePop();
             if (!overlay || !pop) return;
@@ -3298,14 +3318,23 @@
             pop.style.setProperty('--dice-from-x', from.x);
             pop.style.setProperty('--dice-from-y', from.y);
             pop.style.setProperty('--dice-from-rot', from.rot);
-            // Restart the roll-in keyframe animation every time (removing
-            // the class, forcing a reflow, then re-adding it) — simply
+            // Restart the roll-in keyframe animation every time. Simply
             // re-adding the same class name on an already-finished
-            // animation does nothing, since the browser sees no class
-            // change to react to.
+            // animation does nothing (no class change for the browser to
+            // react to), so the class needs to come off first. A double
+            // requestAnimationFrame (rather than a synchronous
+            // `void pop.offsetWidth` reflow) is the more reliable way to
+            // guarantee the "class removed" state actually gets painted
+            // before the class goes back on — some mobile WebViews don't
+            // consistently restart a CSS animation off a same-tick reflow.
             pop.classList.remove('rolling-in');
-            void pop.offsetWidth;
-            pop.classList.add('rolling-in');
+            const myToken = boardDiceRollToken;
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (myToken !== boardDiceRollToken) return; // an even newer roll started first
+                    pop.classList.add('rolling-in');
+                });
+            });
 
             pop.classList.add('spinning');
             overlay.classList.add('show');
@@ -3333,7 +3362,11 @@
             const resultBadge = document.getElementById('board-dice-result');
             if (resultBadge) {
                 resultBadge.textContent = value;
-                setTimeout(() => resultBadge.classList.add('show'), durationMs * 0.55);
+                const myToken = boardDiceRollToken;
+                setTimeout(() => {
+                    if (myToken !== boardDiceRollToken) return; // a newer roll started; leave its own badge alone
+                    resultBadge.classList.add('show');
+                }, durationMs * 0.55);
             }
         }
 
@@ -3344,10 +3377,13 @@
             const overlay = document.getElementById('board-dice-overlay');
             const pop = document.getElementById('board-dice-pop');
             if (!overlay) return;
+            const myToken = boardDiceRollToken;
             setTimeout(() => {
+                if (myToken !== boardDiceRollToken) return; // a newer roll has started; don't touch it
                 if (pop) pop.classList.remove('rolling-in');
                 overlay.classList.add('leaving');
                 setTimeout(() => {
+                    if (myToken !== boardDiceRollToken) return;
                     overlay.classList.remove('show');
                     overlay.classList.remove('leaving');
                 }, 300);
@@ -6070,10 +6106,12 @@
                         <feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000000" flood-opacity="0.42"/>
                     </filter>
                 </defs>
-                <ellipse cx="40" cy="104" rx="20" ry="7" fill="url(#${uid}sh)"/>
-                <ellipse cx="40" cy="97.5" rx="17.5" ry="8" fill="url(#${uid}gold)" stroke="#6b4420" stroke-width="1.15"/>
-                <ellipse cx="40" cy="96.2" rx="11.5" ry="4.6" fill="${c.mid}"/>
-                <ellipse cx="40" cy="95.4" rx="11.5" ry="4.2" fill="${c.dark}" opacity="0.28"/>
+                <ellipse cx="40" cy="104" rx="24" ry="8" fill="url(#${uid}sh)"/>
+                <g class="pin-ring-spin">
+                    <ellipse cx="40" cy="97.5" rx="22" ry="10" fill="url(#${uid}gold)" stroke="#6b4420" stroke-width="2.4"/>
+                    <ellipse cx="40" cy="96.2" rx="13" ry="5.4" fill="${c.mid}"/>
+                    <ellipse cx="40" cy="95.4" rx="13" ry="4.9" fill="${c.dark}" opacity="0.28"/>
+                </g>
                 <g filter="url(#${uid}ds)">
                     <path d="M40 6
                              C57.5 6 71 20.5 71 38.5
