@@ -1609,15 +1609,15 @@
             }
         }
 
-        /* ── DICE ROLL ON BOARD ───────────────────────────────────────────── */
+        /* ── BOARD DICE ────────────────────────────────────────────────── */
         .board-dice-container {
             position: absolute;
             z-index: 50;
-            width: 48px;
-            height: 48px;
+            width: 54px;
+            height: 54px;
             pointer-events: none;
             transform: translate(-50%, -50%);
-            perspective: 360px;
+            perspective: 400px;
             will-change: transform, left, top;
         }
         .board-dice-container .dice3d {
@@ -1627,8 +1627,8 @@
             transition: none;
         }
         .board-dice-container .dice-face {
-            width: 48px;
-            height: 48px;
+            width: 54px;
+            height: 54px;
             border-radius: 6px;
             border-width: 1.5px;
             padding: 4px;
@@ -1637,32 +1637,31 @@
             border-radius: 3px;
         }
         .board-dice-container .dice-pip {
-            max-width: 10px;
-            max-height: 10px;
+            max-width: 11px;
+            max-height: 11px;
         }
         .board-dice-container .dice-face-front {
-            transform: rotateY(0deg) translateZ(24px);
+            transform: rotateY(0deg) translateZ(27px);
         }
         .board-dice-container .dice-face-back {
-            transform: rotateY(180deg) translateZ(24px);
+            transform: rotateY(180deg) translateZ(27px);
         }
         .board-dice-container .dice-face-right {
-            transform: rotateY(90deg) translateZ(24px);
+            transform: rotateY(90deg) translateZ(27px);
         }
         .board-dice-container .dice-face-left {
-            transform: rotateY(-90deg) translateZ(24px);
+            transform: rotateY(-90deg) translateZ(27px);
         }
         .board-dice-container .dice-face-top {
-            transform: rotateX(90deg) translateZ(24px);
+            transform: rotateX(90deg) translateZ(27px);
         }
         .board-dice-container .dice-face-bottom {
-            transform: rotateX(-90deg) translateZ(24px);
+            transform: rotateX(-90deg) translateZ(27px);
         }
 
-        /* Fade-out after landing */
         .board-dice-container.fade-out {
             opacity: 1;
-            animation: diceFadeOut 0.6s ease forwards;
+            animation: diceFadeOut 0.5s ease forwards;
         }
         @keyframes diceFadeOut {
             0% {
@@ -1671,656 +1670,15 @@
             }
             100% {
                 opacity: 0;
-                transform: translate(-50%, -50%) scale(0.6);
+                transform: translate(-50%, -50%) scale(0.5);
             }
         }
 
-        /* Tumbling path — moved via JS, but we keep a subtle shadow */
         .board-dice-container .dice3d {
-            filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5));
+            filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.55));
         }
 
-        /* ====== GAME SCREEN ====== */
-        #game-screen {
-            display: none;
-            position: fixed;
-            inset: 0;
-            flex-direction: column;
-            align-items: center;
-            width: 100vw;
-            height: 100vh;
-            padding: calc(34px + env(safe-area-inset-top) + var(--banner-space)) 5px calc(12px + var(--ad-space) + env(safe-area-inset-bottom));
-            background: linear-gradient(160deg, var(--walnut-800), var(--walnut-900) 55%, #050302 100%);
-            transition: padding-top 0.2s ease;
-        }
-        .shell-inner {
-            width: 100%;
-            max-width: 520px;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-        }
-        .game-header {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .mini-brand {
-            width: 100%;
-            text-align: center;
-            font-family: 'Playfair Display', serif;
-            font-size: 1rem;
-            font-weight: 800;
-            color: var(--brass-light);
-            letter-spacing: 0.8px;
-            text-shadow: 0 2px 10px rgba(201, 162, 75, 0.25);
-        }
-        .header-actions {
-            width: 100%;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 8px;
-            padding-right: 2px;
-        }
-
-        .board-stage {
-            flex: 1;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 0;
-        }
-        .board-column {
-            width: min(100%, 520px, calc(100vh - 118px - var(--ad-space)));
-            display: flex;
-            flex-direction: column;
-            gap: 9px;
-        }
-        .corner-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 5px;
-        }
-
-        .player-tag {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex: 0 0 auto;
-            width: 76px;
-            height: 76px;
-            padding: 6px;
-            border-radius: 14px;
-            background: linear-gradient(155deg, rgba(28, 19, 12, 0.95), rgba(12, 8, 5, 0.95));
-            border: 1.5px solid rgba(201, 162, 75, 0.28);
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-            transition: all 0.25s ease;
-            min-width: 0;
-        }
-        .player-tag::before {
-            content: '';
-            position: absolute;
-            top: 3px;
-            bottom: 3px;
-            left: 0;
-            width: 4px;
-            background: var(--tag-accent, var(--brass));
-            border-radius: 4px 0 0 4px;
-            box-shadow: 0 0 8px var(--tag-accent, var(--brass));
-        }
-        .player-tag.active {
-            border-color: var(--brass-light);
-            box-shadow: 0 0 18px rgba(245, 215, 127, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-            background: linear-gradient(155deg, rgba(46, 30, 15, 0.97), rgba(20, 13, 7, 0.97));
-            transform: scale(1.02);
-        }
-        .tag-avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            margin-left: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.62rem;
-            font-weight: 900;
-            color: rgba(0, 0, 0, 0.55);
-            background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.85), var(--tag-accent) 60%, rgba(0, 0, 0, 0.35) 100%);
-            border: 2px solid rgba(255, 255, 255, 0.75);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-        }
-        .tag-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            justify-content: center;
-            min-width: 0;
-            flex: 1;
-            margin-left: 6px;
-            gap: 2px;
-        }
-        .tag-name {
-            font-size: 0.66rem;
-            font-weight: 800;
-            color: var(--ivory);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            width: 100%;
-            letter-spacing: 0.1px;
-        }
-        .tag-edit-btn {
-            flex-shrink: 0;
-            border: none;
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--brass-light);
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            font-size: 0.5rem;
-            line-height: 16px;
-            text-align: center;
-            cursor: pointer;
-            padding: 0;
-            margin-left: 4px;
-        }
-        .tag-status {
-            font-size: 0.48rem;
-            color: var(--ivory-dim);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        /* DICE 3D */
-        .dice-box-tag {
-            width: 100%;
-            height: 100%;
-            flex-shrink: 0;
-            border-radius: 12px;
-            margin: 0;
-            background: transparent;
-            color: #0f172a;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.15s;
-            perspective: 420px;
-            padding: 0;
-        }
-        .dice-box-tag:active {
-            transform: scale(0.92);
-        }
-        .dice-box-tag.active-roll {
-            display: flex;
-            animation: bounce 1s infinite alternate, diceGlowPulse 1.8s ease-in-out infinite;
-        }
-        @keyframes bounce {
-            0% {
-                transform: translateY(0);
-            }
-            100% {
-                transform: translateY(-3px);
-            }
-        }
-        @keyframes diceGlowPulse {
-            0%,
-            100% {
-                filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.12));
-            }
-            50% {
-                filter: drop-shadow(0 0 9px rgba(255, 255, 255, 0.55));
-            }
-        }
-
-        .dice3d {
-            position: relative;
-            width: 60px;
-            height: 60px;
-            transform-style: preserve-3d;
-            transform: rotateX(0deg) rotateY(0deg);
-        }
-        .dice-box-tag.spinning .dice3d {
-            animation: diceSpinLoop 0.7s linear infinite;
-        }
-        @keyframes diceSpinLoop {
-            from {
-                transform: rotateX(0deg) rotateY(0deg);
-            }
-            to {
-                transform: rotateX(360deg) rotateY(720deg);
-            }
-        }
-        .dice-face {
-            position: absolute;
-            inset: 0;
-            width: 60px;
-            height: 60px;
-            border-radius: 8px;
-            background: linear-gradient(145deg, var(--dice-face-a, #ffffff) 0%, var(--dice-face-b, #f4f7fb) 45%, var(--dice-face-c, #dbe3ec) 100%);
-            border: 2px solid var(--dice-face-border, #cbd5e1);
-            box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.7), inset 0 -3px 5px rgba(0, 0, 0, 0.15);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 5px;
-            backface-visibility: hidden;
-        }
-        .dice-face::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 4px;
-            pointer-events: none;
-            background: linear-gradient(120deg, transparent 32%, rgba(255, 255, 255, 0.4) 48%, rgba(255, 255, 255, 0.58) 52%, transparent 68%);
-            background-size: 260% 260%;
-            background-position: 100% 0%;
-            animation: diceSheen 3.4s ease-in-out infinite;
-        }
-        @keyframes diceSheen {
-            0%,
-            100% {
-                background-position: 120% -10%;
-            }
-            50% {
-                background-position: -20% 110%;
-            }
-        }
-        .dice-face-front {
-            transform: rotateY(0deg) translateZ(30px);
-        }
-        .dice-face-back {
-            transform: rotateY(180deg) translateZ(30px);
-        }
-        .dice-face-right {
-            transform: rotateY(90deg) translateZ(30px);
-        }
-        .dice-face-left {
-            transform: rotateY(-90deg) translateZ(30px);
-        }
-        .dice-face-top {
-            transform: rotateX(90deg) translateZ(30px);
-        }
-        .dice-face-bottom {
-            transform: rotateX(-90deg) translateZ(30px);
-        }
-
-        .dice-pip-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            width: 100%;
-            height: 100%;
-            gap: 2px;
-        }
-        .dice-pip {
-            display: block;
-            border-radius: 50%;
-            width: 100%;
-            height: 100%;
-            max-width: 13px;
-            max-height: 13px;
-            margin: auto;
-            background: radial-gradient(circle at 30% 25%, var(--dice-pip-a, #334155), var(--dice-pip-b, #0f172a));
-            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 0.5px 1px rgba(0, 0, 0, 0.35);
-            opacity: 0;
-            transform: scale(0.4);
-            transition: opacity 0.1s, transform 0.1s;
-        }
-        .dice-pip.on {
-            opacity: 1;
-            transform: scale(1);
-        }
-        .dice-pip.on.red-pip {
-            background: radial-gradient(circle at 30% 25%, var(--dice-pip-accent-a, #ef4444), var(--dice-pip-accent-b, #7f1d1d));
-            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 0.5px 1px rgba(0, 0, 0, 0.4), 0 0 4px var(--dice-pip-accent-glow, rgba(239, 68, 68, 0.55));
-        }
-
-        /* Dice skins */
-        #game-screen.dice-skin-classic {
-            --dice-face-a: #ffffff;
-            --dice-face-b: #f4f7fb;
-            --dice-face-c: #dbe3ec;
-            --dice-face-border: #cbd5e1;
-            --dice-pip-a: #334155;
-            --dice-pip-b: #0f172a;
-        }
-        #game-screen.dice-skin-onyx {
-            --dice-face-a: #3f4654;
-            --dice-face-b: #262b35;
-            --dice-face-c: #14171d;
-            --dice-face-border: #0b0d11;
-            --dice-pip-a: #ffffff;
-            --dice-pip-b: #e2e8f0;
-        }
-        #game-screen.dice-skin-crimson {
-            --dice-face-a: #ef5350;
-            --dice-face-b: #dc2626;
-            --dice-face-c: #7f1d1d;
-            --dice-face-border: #5c1414;
-            --dice-pip-a: #ffffff;
-            --dice-pip-b: #fef2f2;
-            --dice-pip-accent-a: #fde047;
-            --dice-pip-accent-b: #ca8a04;
-            --dice-pip-accent-glow: rgba(253, 224, 71, 0.6);
-        }
-        #game-screen.dice-skin-royal {
-            --dice-face-a: #5b3fa0;
-            --dice-face-b: #402b7a;
-            --dice-face-c: #241852;
-            --dice-face-border: #1a0f3d;
-            --dice-pip-a: #f5d77f;
-            --dice-pip-b: #c9a24b;
-        }
-        #game-screen.dice-skin-gold {
-            --dice-face-a: #f5d77f;
-            --dice-face-b: #c9a24b;
-            --dice-face-c: #8a6a2c;
-            --dice-face-border: #5c4820;
-            --dice-pip-a: #3a2a08;
-            --dice-pip-b: #1a1206;
-        }
-        #game-screen.dice-skin-emerald {
-            --dice-face-a: #34d399;
-            --dice-face-b: #059669;
-            --dice-face-c: #065f46;
-            --dice-face-border: #043d2e;
-            --dice-pip-a: #ffffff;
-            --dice-pip-b: #ecfdf5;
-        }
-        #game-screen.dice-skin-sapphire {
-            --dice-face-a: #60a5fa;
-            --dice-face-b: #2563eb;
-            --dice-face-c: #1e3a8a;
-            --dice-face-border: #17275e;
-            --dice-pip-a: #ffffff;
-            --dice-pip-b: #eff6ff;
-        }
-
-        /* BOARD */
-        .board-wrapper {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 1/1;
-            padding: 6px;
-            background: linear-gradient(145deg, #3a2414, #1a0f08 55%, #0c0704);
-            border-radius: 14px;
-            border: 2.5px solid var(--brass);
-            box-shadow: 0 0 0 1px rgba(245, 215, 127, 0.2), 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 30px rgba(201, 162, 75, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.25), inset 0 -3px 8px rgba(0, 0, 0, 0.5);
-            margin: auto;
-        }
-        .board-wrapper::before {
-            content: '';
-            position: absolute;
-            inset: 3px;
-            border-radius: 13px;
-            pointer-events: none;
-            border: 1px solid rgba(245, 215, 127, 0.35);
-        }
-        .ludo-board {
-            width: 100%;
-            height: 100%;
-            background: var(--board-bg, #f8fafc);
-            border-radius: 6px;
-            overflow: hidden;
-            padding: 3.2%;
-            display: grid;
-            grid-template-columns: repeat(15, 1fr);
-            grid-template-rows: repeat(15, 1fr);
-            border: 2px solid var(--board-border, #0f172a);
-            position: relative;
-            box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.15);
-            --board-bg: #f8fafc;
-            --board-border: #0f172a;
-            --cell-bg: #ffffff;
-            --cell-border: rgba(15, 23, 42, 0.55);
-            --board-ink-strong: rgba(15, 23, 42, 0.65);
-            --board-ink-soft: rgba(15, 23, 42, 0.55);
-        }
-        .ludo-board.theme-royal {
-            --board-bg: #1a1033;
-            --board-border: #c9a24b;
-            --cell-bg: #2a1b4d;
-            --cell-border: rgba(201, 162, 75, 0.45);
-            --board-ink-strong: rgba(245, 222, 179, 0.9);
-            --board-ink-soft: rgba(245, 222, 179, 0.65);
-        }
-        .ludo-board.theme-ocean {
-            --board-bg: #eaf6fb;
-            --board-border: #0c4a6e;
-            --cell-bg: #ffffff;
-            --cell-border: rgba(12, 74, 110, 0.4);
-            --board-ink-strong: rgba(12, 74, 110, 0.75);
-            --board-ink-soft: rgba(12, 74, 110, 0.55);
-        }
-        .ludo-board.theme-candy {
-            --board-bg: #fff0f6;
-            --board-border: #d6336c;
-            --cell-bg: #fff8fa;
-            --cell-border: rgba(214, 51, 108, 0.35);
-            --board-ink-strong: rgba(157, 23, 77, 0.75);
-            --board-ink-soft: rgba(157, 23, 77, 0.55);
-        }
-        .ludo-board.theme-wood {
-            --board-bg: #dcb583;
-            --board-border: #4a2e15;
-            --cell-bg: #f0d9b0;
-            --cell-border: rgba(74, 46, 21, 0.5);
-            --board-ink-strong: rgba(58, 34, 12, 0.8);
-            --board-ink-soft: rgba(58, 34, 12, 0.6);
-        }
-        .ludo-board.theme-midnight {
-            --board-bg: #0b0f1a;
-            --board-border: #38bdf8;
-            --cell-bg: #111827;
-            --cell-border: rgba(56, 189, 248, 0.35);
-            --board-ink-strong: rgba(224, 242, 254, 0.9);
-            --board-ink-soft: rgba(224, 242, 254, 0.6);
-        }
-        .ludo-board.theme-emerald {
-            --board-bg: #e8f9f0;
-            --board-border: #065f46;
-            --cell-bg: #ffffff;
-            --cell-border: rgba(6, 95, 70, 0.35);
-            --board-ink-strong: rgba(6, 95, 70, 0.75);
-            --board-ink-soft: rgba(6, 95, 70, 0.55);
-        }
-
-        .ludo-board.board-rot-90 {
-            transform: rotate(90deg);
-        }
-        .ludo-board.board-rot-180 {
-            transform: rotate(180deg);
-        }
-        .ludo-board.board-rot-270 {
-            transform: rotate(270deg);
-        }
-        .ludo-board.board-rot-90 .token-webgl3d-canvas {
-            transform: rotate(-90deg);
-        }
-        .ludo-board.board-rot-180 .token-webgl3d-canvas {
-            transform: rotate(-180deg);
-        }
-        .ludo-board.board-rot-270 .token-webgl3d-canvas {
-            transform: rotate(-270deg);
-        }
-
-        .base-quadrant {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border: 2px solid var(--board-border, #0f172a);
-            z-index: 1;
-            padding: 6%;
-        }
-        .base-name-label {
-            position: absolute;
-            left: 50%;
-            bottom: 3%;
-            transform: translateX(-50%);
-            max-width: 92%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-weight: 800;
-            font-size: 0.72rem;
-            letter-spacing: 0.2px;
-            color: #ffffff;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 6px rgba(0, 0, 0, 0.35);
-            pointer-events: none;
-            z-index: 2;
-            text-align: center;
-        }
-        .base-name-label.label-top {
-            bottom: auto;
-            top: 3%;
-        }
-        .base-quadrant-red {
-            grid-row: 1 / 7;
-            grid-column: 1 / 7;
-            background: linear-gradient(135deg, var(--red-light), var(--red), var(--red-dark));
-        }
-        .base-quadrant-green {
-            grid-row: 1 / 7;
-            grid-column: 10 / 16;
-            background: linear-gradient(135deg, var(--green-light), var(--green), var(--green-dark));
-        }
-        .base-quadrant-blue {
-            grid-row: 10 / 16;
-            grid-column: 1 / 7;
-            background: linear-gradient(135deg, var(--blue-light), var(--blue), var(--blue-dark));
-        }
-        .base-quadrant-yellow {
-            grid-row: 10 / 16;
-            grid-column: 10 / 16;
-            background: linear-gradient(135deg, var(--yellow-light), var(--yellow), var(--yellow-dark));
-        }
-
-        .base-white-tray {
-            width: 74%;
-            height: 74%;
-            background: linear-gradient(160deg, #ffffff, #f1f5f9);
-            border-radius: 18px;
-            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.22), 0 4px 10px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 8%;
-            padding: 8%;
-        }
-        .base-coin-slot {
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.22), 0 1px 2px rgba(255, 255, 255, 0.8);
-        }
-        .slot-red {
-            background: var(--red-bg);
-            border: 2.5px solid var(--red);
-        }
-        .slot-green {
-            background: var(--green-bg);
-            border: 2.5px solid var(--green);
-        }
-        .slot-yellow {
-            background: var(--yellow-bg);
-            border: 2.5px solid var(--yellow);
-        }
-        .slot-blue {
-            background: var(--blue-bg);
-            border: 2.5px solid var(--blue);
-        }
-
-        .center-home-cell {
-            grid-row: 7 / 10;
-            grid-column: 7 / 10;
-            position: relative;
-            border: 2px solid var(--board-border, #0f172a);
-            background: conic-gradient(from 45deg, var(--green) 0 90deg, var(--yellow) 90deg 180deg, var(--blue) 180deg 270deg, var(--red) 270deg 360deg);
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.35);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .center-home-cell::after {
-            content: '★';
-            position: absolute;
-            inset: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #fbbf24;
-            font-size: 1.15rem;
-            text-shadow: 0 0 8px rgba(0, 0, 0, 0.7), 0 0 3px #fff;
-            z-index: 5;
-        }
-
-        .cell {
-            background-color: var(--cell-bg, #ffffff);
-            border: 1px solid var(--cell-border, rgba(15, 23, 42, 0.55));
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        .cell-red-path {
-            background: linear-gradient(155deg, var(--red-light), var(--red)) !important;
-        }
-        .cell-green-path {
-            background: linear-gradient(155deg, var(--green-light), var(--green)) !important;
-        }
-        .cell-yellow-path {
-            background: linear-gradient(155deg, var(--yellow-light), var(--yellow)) !important;
-        }
-        .cell-blue-path {
-            background: linear-gradient(155deg, var(--blue-light), var(--blue)) !important;
-        }
-
-        .star-icon {
-            position: absolute;
-            width: 92%;
-            height: 92%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 17px;
-            font-weight: bold;
-            color: var(--board-ink-strong, rgba(15, 23, 42, 0.65));
-            pointer-events: none;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.55), transparent 70%);
-            border-radius: 50%;
-            z-index: 2;
-        }
-        .star-white {
-            color: rgba(255, 255, 255, 0.92) !important;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-        }
-        .arrow-indicator {
-            position: absolute;
-            font-size: 13px;
-            font-weight: 900;
-            color: var(--board-ink-soft, rgba(15, 23, 42, 0.55));
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        /* TOKENS */
+        /* ── TOKEN ── */
         .token {
             width: 100%;
             height: 100%;
@@ -2342,7 +1700,7 @@
             overflow: visible;
         }
 
-        /* FIX: Map Pin point now sits at the CENTER of the cell */
+        /* ── MAP PIN – base point exactly at cell center ── */
         .token.token-pin-overflow {
             width: 107%;
             height: 150%;
@@ -2351,7 +1709,7 @@
             left: 0;
             right: 0;
             top: auto;
-            bottom: 50%;
+            bottom: 33%;
             margin: 0 auto;
             z-index: 15;
             filter: drop-shadow(0 9px 7px rgba(0, 0, 0, 0.48)) drop-shadow(0 3px 3px rgba(0, 0, 0, 0.35));
@@ -2730,6 +2088,588 @@
         }
         #blocked-overlay .lock-inner h1 {
             color: #ff4d4d;
+        }
+
+        /* ===== BOARD ===== */
+        .board-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+            padding: 6px;
+            background: linear-gradient(145deg, #3a2414, #1a0f08 55%, #0c0704);
+            border-radius: 14px;
+            border: 2.5px solid var(--brass);
+            box-shadow: 0 0 0 1px rgba(245, 215, 127, 0.2), 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 30px rgba(201, 162, 75, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.25), inset 0 -3px 8px rgba(0, 0, 0, 0.5);
+            margin: auto;
+        }
+        .board-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border-radius: 13px;
+            pointer-events: none;
+            border: 1px solid rgba(245, 215, 127, 0.35);
+        }
+        .ludo-board {
+            width: 100%;
+            height: 100%;
+            background: var(--board-bg, #f8fafc);
+            border-radius: 6px;
+            overflow: hidden;
+            padding: 3.2%;
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            border: 2px solid var(--board-border, #0f172a);
+            position: relative;
+            box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.15);
+            --board-bg: #f8fafc;
+            --board-border: #0f172a;
+            --cell-bg: #ffffff;
+            --cell-border: rgba(15, 23, 42, 0.55);
+            --board-ink-strong: rgba(15, 23, 42, 0.65);
+            --board-ink-soft: rgba(15, 23, 42, 0.55);
+        }
+        .ludo-board.theme-royal {
+            --board-bg: #1a1033;
+            --board-border: #c9a24b;
+            --cell-bg: #2a1b4d;
+            --cell-border: rgba(201, 162, 75, 0.45);
+            --board-ink-strong: rgba(245, 222, 179, 0.9);
+            --board-ink-soft: rgba(245, 222, 179, 0.65);
+        }
+        .ludo-board.theme-ocean {
+            --board-bg: #eaf6fb;
+            --board-border: #0c4a6e;
+            --cell-bg: #ffffff;
+            --cell-border: rgba(12, 74, 110, 0.4);
+            --board-ink-strong: rgba(12, 74, 110, 0.75);
+            --board-ink-soft: rgba(12, 74, 110, 0.55);
+        }
+        .ludo-board.theme-candy {
+            --board-bg: #fff0f6;
+            --board-border: #d6336c;
+            --cell-bg: #fff8fa;
+            --cell-border: rgba(214, 51, 108, 0.35);
+            --board-ink-strong: rgba(157, 23, 77, 0.75);
+            --board-ink-soft: rgba(157, 23, 77, 0.55);
+        }
+        .ludo-board.theme-wood {
+            --board-bg: #dcb583;
+            --board-border: #4a2e15;
+            --cell-bg: #f0d9b0;
+            --cell-border: rgba(74, 46, 21, 0.5);
+            --board-ink-strong: rgba(58, 34, 12, 0.8);
+            --board-ink-soft: rgba(58, 34, 12, 0.6);
+        }
+        .ludo-board.theme-midnight {
+            --board-bg: #0b0f1a;
+            --board-border: #38bdf8;
+            --cell-bg: #111827;
+            --cell-border: rgba(56, 189, 248, 0.35);
+            --board-ink-strong: rgba(224, 242, 254, 0.9);
+            --board-ink-soft: rgba(224, 242, 254, 0.6);
+        }
+        .ludo-board.theme-emerald {
+            --board-bg: #e8f9f0;
+            --board-border: #065f46;
+            --cell-bg: #ffffff;
+            --cell-border: rgba(6, 95, 70, 0.35);
+            --board-ink-strong: rgba(6, 95, 70, 0.75);
+            --board-ink-soft: rgba(6, 95, 70, 0.55);
+        }
+
+        .ludo-board.board-rot-90 {
+            transform: rotate(90deg);
+        }
+        .ludo-board.board-rot-180 {
+            transform: rotate(180deg);
+        }
+        .ludo-board.board-rot-270 {
+            transform: rotate(270deg);
+        }
+        .ludo-board.board-rot-90 .token-webgl3d-canvas {
+            transform: rotate(-90deg);
+        }
+        .ludo-board.board-rot-180 .token-webgl3d-canvas {
+            transform: rotate(-180deg);
+        }
+        .ludo-board.board-rot-270 .token-webgl3d-canvas {
+            transform: rotate(-270deg);
+        }
+
+        .base-quadrant {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid var(--board-border, #0f172a);
+            z-index: 1;
+            padding: 6%;
+        }
+        .base-name-label {
+            position: absolute;
+            left: 50%;
+            bottom: 3%;
+            transform: translateX(-50%);
+            max-width: 92%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 800;
+            font-size: 0.72rem;
+            letter-spacing: 0.2px;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 6px rgba(0, 0, 0, 0.35);
+            pointer-events: none;
+            z-index: 2;
+            text-align: center;
+        }
+        .base-name-label.label-top {
+            bottom: auto;
+            top: 3%;
+        }
+        .base-quadrant-red {
+            grid-row: 1 / 7;
+            grid-column: 1 / 7;
+            background: linear-gradient(135deg, var(--red-light), var(--red), var(--red-dark));
+        }
+        .base-quadrant-green {
+            grid-row: 1 / 7;
+            grid-column: 10 / 16;
+            background: linear-gradient(135deg, var(--green-light), var(--green), var(--green-dark));
+        }
+        .base-quadrant-blue {
+            grid-row: 10 / 16;
+            grid-column: 1 / 7;
+            background: linear-gradient(135deg, var(--blue-light), var(--blue), var(--blue-dark));
+        }
+        .base-quadrant-yellow {
+            grid-row: 10 / 16;
+            grid-column: 10 / 16;
+            background: linear-gradient(135deg, var(--yellow-light), var(--yellow), var(--yellow-dark));
+        }
+
+        .base-white-tray {
+            width: 74%;
+            height: 74%;
+            background: linear-gradient(160deg, #ffffff, #f1f5f9);
+            border-radius: 18px;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.22), 0 4px 10px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 8%;
+            padding: 8%;
+        }
+        .base-coin-slot {
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.22), 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+        .slot-red {
+            background: var(--red-bg);
+            border: 2.5px solid var(--red);
+        }
+        .slot-green {
+            background: var(--green-bg);
+            border: 2.5px solid var(--green);
+        }
+        .slot-yellow {
+            background: var(--yellow-bg);
+            border: 2.5px solid var(--yellow);
+        }
+        .slot-blue {
+            background: var(--blue-bg);
+            border: 2.5px solid var(--blue);
+        }
+
+        .center-home-cell {
+            grid-row: 7 / 10;
+            grid-column: 7 / 10;
+            position: relative;
+            border: 2px solid var(--board-border, #0f172a);
+            background: conic-gradient(from 45deg, var(--green) 0 90deg, var(--yellow) 90deg 180deg, var(--blue) 180deg 270deg, var(--red) 270deg 360deg);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.35);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .center-home-cell::after {
+            content: '★';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fbbf24;
+            font-size: 1.15rem;
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.7), 0 0 3px #fff;
+            z-index: 5;
+        }
+
+        .cell {
+            background-color: var(--cell-bg, #ffffff);
+            border: 1px solid var(--cell-border, rgba(15, 23, 42, 0.55));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        .cell-red-path {
+            background: linear-gradient(155deg, var(--red-light), var(--red)) !important;
+        }
+        .cell-green-path {
+            background: linear-gradient(155deg, var(--green-light), var(--green)) !important;
+        }
+        .cell-yellow-path {
+            background: linear-gradient(155deg, var(--yellow-light), var(--yellow)) !important;
+        }
+        .cell-blue-path {
+            background: linear-gradient(155deg, var(--blue-light), var(--blue)) !important;
+        }
+
+        .star-icon {
+            position: absolute;
+            width: 92%;
+            height: 92%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 17px;
+            font-weight: bold;
+            color: var(--board-ink-strong, rgba(15, 23, 42, 0.65));
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.55), transparent 70%);
+            border-radius: 50%;
+            z-index: 2;
+        }
+        .star-white {
+            color: rgba(255, 255, 255, 0.92) !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+        }
+        .arrow-indicator {
+            position: absolute;
+            font-size: 13px;
+            font-weight: 900;
+            color: var(--board-ink-soft, rgba(15, 23, 42, 0.55));
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* DICE 3D */
+        .dice-box-tag {
+            width: 100%;
+            height: 100%;
+            flex-shrink: 0;
+            border-radius: 12px;
+            margin: 0;
+            background: transparent;
+            color: #0f172a;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.15s;
+            perspective: 420px;
+            padding: 0;
+        }
+        .dice-box-tag:active {
+            transform: scale(0.92);
+        }
+        .dice-box-tag.active-roll {
+            display: flex;
+            animation: bounce 1s infinite alternate, diceGlowPulse 1.8s ease-in-out infinite;
+        }
+        @keyframes bounce {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(-3px);
+            }
+        }
+        @keyframes diceGlowPulse {
+            0%,
+            100% {
+                filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.12));
+            }
+            50% {
+                filter: drop-shadow(0 0 9px rgba(255, 255, 255, 0.55));
+            }
+        }
+
+        .dice3d {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            transform-style: preserve-3d;
+            transform: rotateX(0deg) rotateY(0deg);
+        }
+        .dice-box-tag.spinning .dice3d {
+            animation: diceSpinLoop 0.7s linear infinite;
+        }
+        @keyframes diceSpinLoop {
+            from {
+                transform: rotateX(0deg) rotateY(0deg);
+            }
+            to {
+                transform: rotateX(360deg) rotateY(720deg);
+            }
+        }
+        .dice-face {
+            position: absolute;
+            inset: 0;
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            background: linear-gradient(145deg, var(--dice-face-a, #ffffff) 0%, var(--dice-face-b, #f4f7fb) 45%, var(--dice-face-c, #dbe3ec) 100%);
+            border: 2px solid var(--dice-face-border, #cbd5e1);
+            box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.7), inset 0 -3px 5px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 5px;
+            backface-visibility: hidden;
+        }
+        .dice-face::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 4px;
+            pointer-events: none;
+            background: linear-gradient(120deg, transparent 32%, rgba(255, 255, 255, 0.4) 48%, rgba(255, 255, 255, 0.58) 52%, transparent 68%);
+            background-size: 260% 260%;
+            background-position: 100% 0%;
+            animation: diceSheen 3.4s ease-in-out infinite;
+        }
+        @keyframes diceSheen {
+            0%,
+            100% {
+                background-position: 120% -10%;
+            }
+            50% {
+                background-position: -20% 110%;
+            }
+        }
+        .dice-face-front {
+            transform: rotateY(0deg) translateZ(30px);
+        }
+        .dice-face-back {
+            transform: rotateY(180deg) translateZ(30px);
+        }
+        .dice-face-right {
+            transform: rotateY(90deg) translateZ(30px);
+        }
+        .dice-face-left {
+            transform: rotateY(-90deg) translateZ(30px);
+        }
+        .dice-face-top {
+            transform: rotateX(90deg) translateZ(30px);
+        }
+        .dice-face-bottom {
+            transform: rotateX(-90deg) translateZ(30px);
+        }
+
+        .dice-pip-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 100%;
+            height: 100%;
+            gap: 2px;
+        }
+        .dice-pip {
+            display: block;
+            border-radius: 50%;
+            width: 100%;
+            height: 100%;
+            max-width: 13px;
+            max-height: 13px;
+            margin: auto;
+            background: radial-gradient(circle at 30% 25%, var(--dice-pip-a, #334155), var(--dice-pip-b, #0f172a));
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 0.5px 1px rgba(0, 0, 0, 0.35);
+            opacity: 0;
+            transform: scale(0.4);
+            transition: opacity 0.1s, transform 0.1s;
+        }
+        .dice-pip.on {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .dice-pip.on.red-pip {
+            background: radial-gradient(circle at 30% 25%, var(--dice-pip-accent-a, #ef4444), var(--dice-pip-accent-b, #7f1d1d));
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 0.5px 1px rgba(0, 0, 0, 0.4), 0 0 4px var(--dice-pip-accent-glow, rgba(239, 68, 68, 0.55));
+        }
+
+        /* Dice skins */
+        #game-screen.dice-skin-classic {
+            --dice-face-a: #ffffff;
+            --dice-face-b: #f4f7fb;
+            --dice-face-c: #dbe3ec;
+            --dice-face-border: #cbd5e1;
+            --dice-pip-a: #334155;
+            --dice-pip-b: #0f172a;
+        }
+        #game-screen.dice-skin-onyx {
+            --dice-face-a: #3f4654;
+            --dice-face-b: #262b35;
+            --dice-face-c: #14171d;
+            --dice-face-border: #0b0d11;
+            --dice-pip-a: #ffffff;
+            --dice-pip-b: #e2e8f0;
+        }
+        #game-screen.dice-skin-crimson {
+            --dice-face-a: #ef5350;
+            --dice-face-b: #dc2626;
+            --dice-face-c: #7f1d1d;
+            --dice-face-border: #5c1414;
+            --dice-pip-a: #ffffff;
+            --dice-pip-b: #fef2f2;
+            --dice-pip-accent-a: #fde047;
+            --dice-pip-accent-b: #ca8a04;
+            --dice-pip-accent-glow: rgba(253, 224, 71, 0.6);
+        }
+        #game-screen.dice-skin-royal {
+            --dice-face-a: #5b3fa0;
+            --dice-face-b: #402b7a;
+            --dice-face-c: #241852;
+            --dice-face-border: #1a0f3d;
+            --dice-pip-a: #f5d77f;
+            --dice-pip-b: #c9a24b;
+        }
+        #game-screen.dice-skin-gold {
+            --dice-face-a: #f5d77f;
+            --dice-face-b: #c9a24b;
+            --dice-face-c: #8a6a2c;
+            --dice-face-border: #5c4820;
+            --dice-pip-a: #3a2a08;
+            --dice-pip-b: #1a1206;
+        }
+        #game-screen.dice-skin-emerald {
+            --dice-face-a: #34d399;
+            --dice-face-b: #059669;
+            --dice-face-c: #065f46;
+            --dice-face-border: #043d2e;
+            --dice-pip-a: #ffffff;
+            --dice-pip-b: #ecfdf5;
+        }
+        #game-screen.dice-skin-sapphire {
+            --dice-face-a: #60a5fa;
+            --dice-face-b: #2563eb;
+            --dice-face-c: #1e3a8a;
+            --dice-face-border: #17275e;
+            --dice-pip-a: #ffffff;
+            --dice-pip-b: #eff6ff;
+        }
+
+        /* ── GAME SCREEN ── */
+        #game-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            flex-direction: column;
+            align-items: center;
+            width: 100vw;
+            height: 100vh;
+            padding: calc(34px + env(safe-area-inset-top) + var(--banner-space)) 5px calc(12px + var(--ad-space) + env(safe-area-inset-bottom));
+            background: linear-gradient(160deg, var(--walnut-800), var(--walnut-900) 55%, #050302 100%);
+            transition: padding-top 0.2s ease;
+        }
+        .shell-inner {
+            width: 100%;
+            max-width: 520px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+        .game-header {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .mini-brand {
+            width: 100%;
+            text-align: center;
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--brass-light);
+            letter-spacing: 0.8px;
+            text-shadow: 0 2px 10px rgba(201, 162, 75, 0.25);
+        }
+        .header-actions {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+            padding-right: 2px;
+        }
+
+        .board-stage {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+        }
+        .board-column {
+            width: min(100%, 520px, calc(100vh - 118px - var(--ad-space)));
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+        .corner-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
+        }
+
+        .player-tag {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            width: 76px;
+            height: 76px;
+            padding: 6px;
+            border-radius: 14px;
+            background: linear-gradient(155deg, rgba(28, 19, 12, 0.95), rgba(12, 8, 5, 0.95));
+            border: 1.5px solid rgba(201, 162, 75, 0.28);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            transition: all 0.25s ease;
+            min-width: 0;
+        }
+        .player-tag::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            bottom: 3px;
+            left: 0;
+            width: 4px;
+            background: var(--tag-accent, var(--brass));
+            border-radius: 4px 0 0 4px;
+            box-shadow: 0 0 8px var(--tag-accent, var(--brass));
+        }
+        .player-tag.active {
+            border-color: var(--brass-light);
+            box-shadow: 0 0 18px rgba(245, 215, 127, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            background: linear-gradient(155deg, rgba(46, 30, 15, 0.97), rgba(20, 13, 7, 0.97));
+            transform: scale(1.02);
         }
     </style>
 </head>
@@ -3348,9 +3288,7 @@
         </div>
     </div>
 
-    <!-- ============================================================
-    FIREBASE + ADMIN + ONLINE MODULE
-    ============================================================ -->
+    <!-- ─── FIREBASE + ADMIN + ONLINE ──────────────────────────────────── -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -3385,7 +3323,7 @@
                 });
                 return await res.json();
             } catch (e) {
-                console.error(`[Functions] ${name} failed:`, e);
+                console.error('[Functions] ' + name + ' failed:', e);
                 return { ok: false, reason: 'network-error' };
             }
         }
@@ -3407,7 +3345,8 @@
             try {
                 let id = localStorage.getItem(KEY);
                 if (!id) {
-                    id = (crypto.randomUUID ? crypto.randomUUID() : ('dev-' + Date.now() + '-' + Math.random().toString(16).slice(2)));
+                    id = (crypto.randomUUID ? crypto.randomUUID() : ('dev-' + Date.now() + '-' + Math.random().toString(16)
+                        .slice(2)));
                     localStorage.setItem(KEY, id);
                 }
                 return id;
@@ -3415,6 +3354,7 @@
                 return 'dev-' + Date.now() + '-' + Math.random().toString(16).slice(2);
             }
         }
+
         function getDeviceName() {
             const ua = navigator.userAgent || '';
             let os = 'Unknown device';
@@ -3787,8 +3727,8 @@
         function registerOnlineIdentity(uid) {
             if (!uid) return;
             onlineUid = uid;
-            const userRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`);
-            const idIndexRef = ref(rtdb, `${ONLINE_ROOT}/idIndex/${onlinePublicId}`);
+            const userRef = ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid);
+            const idIndexRef = ref(rtdb, ONLINE_ROOT + '/idIndex/' + onlinePublicId);
             const base = {
                 uid: onlineUid,
                 name: onlineName,
@@ -3810,25 +3750,26 @@
 
         function reaffirmOnlineIdentity() {
             if (!onlineUid) return;
-            const userRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`);
+            const userRef = ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid);
             update(userRef, { online: true, updatedAt: serverTimestamp() }).catch(() => {});
             onDisconnect(userRef).update({ online: false, status: 'offline' }).catch(() => {});
         }
 
         function _onlineReportError(where, err) {
             const msg = (err && err.message) || String(err);
-            console.error(`[LudoOnline] ${where} failed:`, msg);
+            console.error('[LudoOnline] ' + where + ' failed:', msg);
             window.dispatchEvent(new CustomEvent('lm-online-error', { detail: { where, message: msg } }));
         }
 
         window.addEventListener('pagehide', () => {
             if (!onlineUid) return;
-            try { update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { online: false, status: 'offline' }); } catch (e) {}
+            try { update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { online: false, status: 'offline' }); } catch (
+            e) {}
         });
 
         function _onlineListen(path, cb) {
             const r = ref(rtdb, path);
-            onValue(r, snap => cb(snap.val()), err => _onlineReportError(`read:${path}`, err));
+            onValue(r, snap => cb(snap.val()), err => _onlineReportError('read:' + path, err));
             _onlineListenerRefs[path] = r;
             return () => { try { off(r); } catch (e) {} delete _onlineListenerRefs[path]; };
         }
@@ -3843,13 +3784,13 @@
                 if (!emoji) return;
                 onlineAvatar = emoji;
                 _onlineSave('lm_online_avatar', onlineAvatar);
-                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { avatar: onlineAvatar }).catch(err =>
+                if (onlineUid) update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { avatar: onlineAvatar }).catch(err =>
                     _onlineReportError('write', err));
             },
 
             async recordMatchResult(won) {
                 if (!onlineUid) return;
-                const statsRef = ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}/stats`);
+                const statsRef = ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid + '/stats');
                 try {
                     await runTransaction(statsRef, cur => {
                         const s = cur || { wins: 0, losses: 0, gamesPlayed: 0 };
@@ -3863,15 +3804,15 @@
 
             listenMyStats(cb) {
                 if (!onlineUid) return () => {};
-                return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}/stats`, data => cb(data || { wins: 0, losses: 0,
-                    gamesPlayed: 0 }));
+                return _onlineListen(ONLINE_ROOT + '/users/' + onlineUid + '/stats', data => cb(data || { wins: 0,
+                    losses: 0, gamesPlayed: 0 }));
             },
 
             setName(newName) {
                 newName = String(newName || '').trim().slice(0, 18) || onlineName;
                 onlineName = newName;
                 _onlineSave('lm_online_name', onlineName);
-                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { name: onlineName }).catch(err =>
+                if (onlineUid) update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { name: onlineName }).catch(err =>
                     _onlineReportError('write', err));
             },
 
@@ -3884,11 +3825,11 @@
                 if (normalized === onlineNameKey) {
                     onlineName = newName;
                     _onlineSave('lm_online_name', onlineName);
-                    if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { name: onlineName }).catch(err =>
+                    if (onlineUid) update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { name: onlineName }).catch(err =>
                         _onlineReportError('write', err));
                     return { ok: true };
                 }
-                const nameRef = ref(rtdb, `${ONLINE_ROOT}/nameIndex/${normalized}`);
+                const nameRef = ref(rtdb, ONLINE_ROOT + '/nameIndex/' + normalized);
                 let committed = false;
                 try {
                     const result = await runTransaction(nameRef, cur => {
@@ -3903,19 +3844,19 @@
                 if (!committed) return { ok: false, reason: 'name-taken' };
                 const previousKey = onlineNameKey;
                 if (previousKey && previousKey !== normalized) {
-                    remove(ref(rtdb, `${ONLINE_ROOT}/nameIndex/${previousKey}`)).catch(() => {});
+                    remove(ref(rtdb, ONLINE_ROOT + '/nameIndex/' + previousKey)).catch(() => {});
                 }
                 onlineNameKey = normalized;
                 onlineName = newName;
                 _onlineSave('lm_online_name', onlineName);
                 _onlineSave('lm_online_name_key', onlineNameKey);
-                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { name: onlineName }).catch(err =>
+                if (onlineUid) update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { name: onlineName }).catch(err =>
                     _onlineReportError('write', err));
                 return { ok: true };
             },
 
             listenOnlineUsers(cb) {
-                return _onlineListen(`${ONLINE_ROOT}/users`, all => {
+                return _onlineListen(ONLINE_ROOT + '/users', all => {
                     const list = [];
                     if (all) {
                         Object.keys(all).forEach(uid => {
@@ -3933,10 +3874,10 @@
                 publicId = String(publicId || '').trim().toUpperCase();
                 if (!publicId) return null;
                 try {
-                    const snap = await get(ref(rtdb, `${ONLINE_ROOT}/idIndex/${publicId}`));
+                    const snap = await get(ref(rtdb, ONLINE_ROOT + '/idIndex/' + publicId));
                     const uid = snap.exists() ? snap.val() : null;
                     if (!uid) return null;
-                    const uSnap = await get(ref(rtdb, `${ONLINE_ROOT}/users/${uid}`));
+                    const uSnap = await get(ref(rtdb, ONLINE_ROOT + '/users/' + uid));
                     const u = uSnap.exists() ? uSnap.val() : null;
                     if (!u) return null;
                     return { uid, name: u.name, publicId: u.publicId, online: !!u.online, status: u.status };
@@ -3955,26 +3896,27 @@
                     roomId,
                     createdAt: serverTimestamp()
                 };
-                set(ref(rtdb, `${ONLINE_ROOT}/requests/${targetUid}/${reqId}`), payload).catch(err => _onlineReportError(
+                set(ref(rtdb, ONLINE_ROOT + '/requests/' + targetUid + '/' + reqId), payload).catch(err => _onlineReportError(
                     'write', err));
-                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'pending' }).catch(err =>
+                update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { status: 'pending' }).catch(err =>
                     _onlineReportError('write', err));
                 return { reqId, roomId, bet: payload.bet };
             },
 
             cancelRequest(targetUid, reqId) {
-                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${targetUid}/${reqId}`)).catch(err => _onlineReportError('write',
-                    err));
-                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle' }).catch(err =>
+                remove(ref(rtdb, ONLINE_ROOT + '/requests/' + targetUid + '/' + reqId)).catch(err => _onlineReportError(
+                    'write', err));
+                if (onlineUid) update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { status: 'idle' }).catch(err =>
                     _onlineReportError('write', err));
             },
 
             listenIncomingRequests(cb) {
-                return _onlineListen(`${ONLINE_ROOT}/requests/${onlineUid}`, reqs => cb(reqs || {}));
+                return _onlineListen(ONLINE_ROOT + '/requests/' + onlineUid, reqs => cb(reqs || {}));
             },
 
             listenRequestResponse(reqId, cb) {
-                return _onlineListen(`${ONLINE_ROOT}/requestResponses/${onlineUid}/${reqId}`, data => { if (data) cb(data); });
+                return _onlineListen(ONLINE_ROOT + '/requestResponses/' + onlineUid + '/' + reqId, data => { if (data) cb(
+                    data); });
             },
 
             acceptRequest(reqId, req) {
@@ -3988,67 +3930,67 @@
                     status: 'active',
                     createdAt: serverTimestamp()
                 };
-                set(ref(rtdb, `${ONLINE_ROOT}/rooms/${req.roomId}`), room).catch(err => _onlineReportError('write', err));
-                set(ref(rtdb, `${ONLINE_ROOT}/requestResponses/${req.fromUid}/${reqId}`), { status: 'accepted', roomId: req
-                        .roomId, bet: room.bet }).catch(err => _onlineReportError('write', err));
-                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(err => _onlineReportError('write',
-                    err));
-                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'in_game', roomId: req.roomId }).catch(
+                set(ref(rtdb, ONLINE_ROOT + '/rooms/' + req.roomId), room).catch(err => _onlineReportError('write', err));
+                set(ref(rtdb, ONLINE_ROOT + '/requestResponses/' + req.fromUid + '/' + reqId), { status: 'accepted',
+                    roomId: req.roomId, bet: room.bet }).catch(err => _onlineReportError('write', err));
+                remove(ref(rtdb, ONLINE_ROOT + '/requests/' + onlineUid + '/' + reqId)).catch(err => _onlineReportError(
+                    'write', err));
+                update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { status: 'in_game', roomId: req.roomId }).catch(
                     err => _onlineReportError('write', err));
-                update(ref(rtdb, `${ONLINE_ROOT}/users/${req.fromUid}`), { status: 'in_game', roomId: req.roomId }).catch(
+                update(ref(rtdb, ONLINE_ROOT + '/users/' + req.fromUid), { status: 'in_game', roomId: req.roomId }).catch(
                     err => _onlineReportError('write', err));
             },
 
             declineRequest(reqId, req, reason) {
-                set(ref(rtdb, `${ONLINE_ROOT}/requestResponses/${req.fromUid}/${reqId}`), { status: 'declined', reason:
-                        reason || 'declined' }).catch(err => _onlineReportError('write', err));
-                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(err => _onlineReportError('write',
-                    err));
+                set(ref(rtdb, ONLINE_ROOT + '/requestResponses/' + req.fromUid + '/' + reqId), { status: 'declined',
+                    reason: reason || 'declined' }).catch(err => _onlineReportError('write', err));
+                remove(ref(rtdb, ONLINE_ROOT + '/requests/' + onlineUid + '/' + reqId)).catch(err => _onlineReportError(
+                    'write', err));
             },
 
             listenRoomState(roomId, cb) {
-                return _onlineListen(`${ONLINE_ROOT}/rooms/${roomId}/state`, data => { if (data) cb(data); });
+                return _onlineListen(ONLINE_ROOT + '/rooms/' + roomId + '/state', data => { if (data) cb(data); });
             },
 
             pushRoomState(roomId, stateObj) {
                 if (!roomId) return;
-                set(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/state`), Object.assign({}, stateObj, {
+                set(ref(rtdb, ONLINE_ROOT + '/rooms/' + roomId + '/state'), Object.assign({}, stateObj, {
                     writer: onlineUid,
                     ts: serverTimestamp()
                 })).catch(err => _onlineReportError('write', err));
             },
 
             listenDiceEvent(roomId, cb) {
-                return _onlineListen(`${ONLINE_ROOT}/rooms/${roomId}/diceEvent`, data => { if (data) cb(data); });
+                return _onlineListen(ONLINE_ROOT + '/rooms/' + roomId + '/diceEvent', data => { if (data) cb(data); });
             },
 
             pushDiceEvent(roomId, evt) {
                 if (!roomId) return;
-                set(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/diceEvent`), Object.assign({}, evt, {
+                set(ref(rtdb, ONLINE_ROOT + '/rooms/' + roomId + '/diceEvent'), Object.assign({}, evt, {
                     writer: onlineUid,
                     ts: serverTimestamp()
                 })).catch(err => _onlineReportError('write', err));
             },
 
             listenRoomStatus(roomId, cb) {
-                return _onlineListen(`${ONLINE_ROOT}/rooms/${roomId}/endEvent`, data => { if (data) cb(data); });
+                return _onlineListen(ONLINE_ROOT + '/rooms/' + roomId + '/endEvent', data => { if (data) cb(data); });
             },
 
             leaveRoom(roomId, reason) {
                 if (!roomId) return;
-                const endRef = ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/endEvent`);
+                const endRef = ref(rtdb, ONLINE_ROOT + '/rooms/' + roomId + '/endEvent');
                 set(endRef, { reason: reason || 'left', by: onlineUid, ts: serverTimestamp() }).catch(err =>
                     _onlineReportError('write', err));
-                update(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`), { status: 'ended' }).catch(err => _onlineReportError(
+                update(ref(rtdb, ONLINE_ROOT + '/rooms/' + roomId), { status: 'ended' }).catch(err => _onlineReportError(
                     'write', err));
                 onDisconnect(endRef).cancel().catch(err => _onlineReportError('write', err));
-                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle', roomId: null })
+                if (onlineUid) update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { status: 'idle', roomId: null })
                     .catch(err => _onlineReportError('write', err));
             },
 
             armRoomDisconnectGuard(roomId) {
                 if (!roomId) return;
-                const endRef = ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/endEvent`);
+                const endRef = ref(rtdb, ONLINE_ROOT + '/rooms/' + roomId + '/endEvent');
                 onDisconnect(endRef).set({ reason: 'disconnected', by: onlineUid, ts: serverTimestamp() }).catch(err =>
                     _onlineReportError('write', err));
             },
@@ -4056,42 +3998,42 @@
             sendChatMessage(roomId, text) {
                 if (!roomId || !text) return;
                 text = String(text).slice(0, 200);
-                const msgRef = push(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/chat`));
+                const msgRef = push(ref(rtdb, ONLINE_ROOT + '/rooms/' + roomId + '/chat'));
                 set(msgRef, { from: onlineUid, name: onlineName, text, ts: serverTimestamp() })
                     .catch(err => _onlineReportError('write', err));
             },
 
             listenChat(roomId, cb) {
                 if (!roomId) return () => {};
-                const q = query(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}/chat`), limitToLast(50));
+                const q = query(ref(rtdb, ONLINE_ROOT + '/rooms/' + roomId + '/chat'), limitToLast(50));
                 const handler = onValue(q, snap => {
                     const val = snap.val() || {};
                     const list = Object.keys(val).map(id => Object.assign({ id }, val[id]));
                     list.sort((a, b) => (a.ts || 0) - (b.ts || 0));
                     cb(list);
-                }, err => _onlineReportError(`read:chat/${roomId}`, err));
-                _onlineListenerRefs[`chat/${roomId}`] = q;
-                return () => { try { off(q); } catch (e) {} delete _onlineListenerRefs[`chat/${roomId}`]; };
+                }, err => _onlineReportError('read:chat/' + roomId, err));
+                _onlineListenerRefs['chat/' + roomId] = q;
+                return () => { try { off(q); } catch (e) {} delete _onlineListenerRefs['chat/' + roomId]; };
             },
 
             getUid() { return onlineUid; },
 
             listenCoins(cb) {
-                return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}/coins`, val => cb(typeof val === 'number' ? val :
-                    5000));
+                return _onlineListen(ONLINE_ROOT + '/users/' + onlineUid + '/coins', val => cb(typeof val === 'number' ?
+                    val : 5000));
             },
 
             listenCoinsZeroAt(cb) {
-                return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}/coinsZeroAt`, val => cb(val || null));
+                return _onlineListen(ONLINE_ROOT + '/users/' + onlineUid + '/coinsZeroAt', val => cb(val || null));
             },
 
             listenLastDailyBonusAt(cb) {
-                return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}/lastDailyBonusAt`, val => cb(val || null));
+                return _onlineListen(ONLINE_ROOT + '/users/' + onlineUid + '/lastDailyBonusAt', val => cb(val || null));
             },
 
             async getCoinsFor(uid) {
                 try {
-                    const snap = await get(ref(rtdb, `${ONLINE_ROOT}/users/${uid}/coins`));
+                    const snap = await get(ref(rtdb, ONLINE_ROOT + '/users/' + uid + '/coins'));
                     return snap.exists() && typeof snap.val() === 'number' ? snap.val() : 5000;
                 } catch (e) { return 5000; }
             },
@@ -4103,15 +4045,15 @@
                 playerCount = Math.min(4, Math.max(2, Math.floor(playerCount) || 2));
                 mode = mode === 'barrier' ? 'barrier' : 'normal';
                 bet = Math.max(0, Math.floor(Number(bet) || 0));
-                const key = `${playerCount}_${mode}_${bet}`;
+                const key = playerCount + '_' + mode + '_' + bet;
                 this._qmKey = key;
-                const myEntryRef = ref(rtdb, `${ONLINE_ROOT}/queue/${key}/members/${onlineUid}`);
+                const myEntryRef = ref(rtdb, ONLINE_ROOT + '/queue/' + key + '/members/' + onlineUid);
                 set(myEntryRef, { uid: onlineUid, name: onlineName, publicId: onlinePublicId, joinedAt: Date.now() })
                     .catch(err => _onlineReportError('write:queue', err));
-                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'searching' }).catch(() => {});
+                update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { status: 'searching' }).catch(() => {});
                 onDisconnect(myEntryRef).remove().catch(() => {});
                 if (this._qmDetach) { try { this._qmDetach(); } catch (e) {} }
-                this._qmDetach = _onlineListen(`${ONLINE_ROOT}/queue/${key}/members`, members => {
+                this._qmDetach = _onlineListen(ONLINE_ROOT + '/queue/' + key + '/members', members => {
                     members = members || {};
                     const list = Object.keys(members).map(uid => Object.assign({ uid }, members[uid]))
                         .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
@@ -4120,7 +4062,7 @@
                     const group = list.slice(0, playerCount);
                     if (!group.some(m => m.uid === onlineUid)) return;
                     if (group[0].uid !== onlineUid) return;
-                    const lockRef = ref(rtdb, `${ONLINE_ROOT}/queue/${key}/lock`);
+                    const lockRef = ref(rtdb, ONLINE_ROOT + '/queue/' + key + '/lock');
                     runTransaction(lockRef, cur => (cur ? undefined : onlineUid)).then(result => {
                         if (!result.committed || result.snapshot.val() !== onlineUid) return;
                         window.LudoOnline._formRoomFromGroup(group, playerCount, mode, bet, key);
@@ -4131,10 +4073,10 @@
             leaveQuickMatch() {
                 if (this._qmDetach) { try { this._qmDetach(); } catch (e) {} this._qmDetach = null; }
                 if (this._qmKey && onlineUid) {
-                    remove(ref(rtdb, `${ONLINE_ROOT}/queue/${this._qmKey}/members/${onlineUid}`)).catch(() => {});
+                    remove(ref(rtdb, ONLINE_ROOT + '/queue/' + this._qmKey + '/members/' + onlineUid)).catch(() => {});
                 }
                 this._qmKey = null;
-                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle' }).catch(() => {});
+                if (onlineUid) update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { status: 'idle' }).catch(() => {});
             },
 
             async _formRoomFromGroup(group, playerCount, mode, bet, key) {
@@ -4145,23 +4087,23 @@
                 const room = { mode, bet, playerCount, players: playersMap, status: 'active', hostUid: onlineUid,
                     createdAt: serverTimestamp() };
                 try {
-                    await set(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`), room);
+                    await set(ref(rtdb, ONLINE_ROOT + '/rooms/' + roomId), room);
                     const updates = {};
                     group.forEach(m => {
-                        updates[`${ONLINE_ROOT}/users/${m.uid}/status`] = 'in_game';
-                        updates[`${ONLINE_ROOT}/users/${m.uid}/roomId`] = roomId;
+                        updates[ONLINE_ROOT + '/users/' + m.uid + '/status'] = 'in_game';
+                        updates[ONLINE_ROOT + '/users/' + m.uid + '/roomId'] = roomId;
                     });
                     await update(ref(rtdb), updates);
                     const removals = {};
-                    group.forEach(m => { removals[`${ONLINE_ROOT}/queue/${key}/members/${m.uid}`] = null; });
-                    removals[`${ONLINE_ROOT}/queue/${key}/lock`] = null;
+                    group.forEach(m => { removals[ONLINE_ROOT + '/queue/' + key + '/members/' + m.uid] = null; });
+                    removals[ONLINE_ROOT + '/queue/' + key + '/lock'] = null;
                     await update(ref(rtdb), removals);
                 } catch (err) { _onlineReportError('queue:form', err); }
             },
 
             watchForMatchStart(cb) {
                 let lastSeen = null;
-                return _onlineListen(`${ONLINE_ROOT}/users/${onlineUid}`, u => {
+                return _onlineListen(ONLINE_ROOT + '/users/' + onlineUid, u => {
                     if (!u || u.status !== 'in_game' || !u.roomId) return;
                     if (u.roomId === lastSeen) return;
                     lastSeen = u.roomId;
@@ -4171,7 +4113,7 @@
 
             async getRoom(roomId) {
                 try {
-                    const snap = await get(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`));
+                    const snap = await get(ref(rtdb, ONLINE_ROOT + '/rooms/' + roomId));
                     return snap.exists() ? snap.val() : null;
                 } catch (e) { return null; }
             },
@@ -4190,25 +4132,25 @@
                     status: 'waiting',
                     createdAt: serverTimestamp()
                 };
-                set(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`), room).catch(err => _onlineReportError('write:room', err));
-                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'lobby_host', roomId }).catch(() => {});
+                set(ref(rtdb, ONLINE_ROOT + '/rooms/' + roomId), room).catch(err => _onlineReportError('write:room', err));
+                update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { status: 'lobby_host', roomId }).catch(() => {});
                 return roomId;
             },
 
             listenLobbyRoom(roomId, cb) {
-                return _onlineListen(`${ONLINE_ROOT}/rooms/${roomId}`, data => { if (data) cb(data); });
+                return _onlineListen(ONLINE_ROOT + '/rooms/' + roomId, data => { if (data) cb(data); });
             },
 
             cancelLobbyRoom(roomId) {
                 if (!roomId) return;
-                remove(ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`)).catch(() => {});
-                if (onlineUid) update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle', roomId: null })
+                remove(ref(rtdb, ONLINE_ROOT + '/rooms/' + roomId)).catch(() => {});
+                if (onlineUid) update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { status: 'idle', roomId: null })
                     .catch(() => {});
             },
 
             leaveLobbyAsMember(roomId) {
                 if (!roomId || !onlineUid) return;
-                const roomRef = ref(rtdb, `${ONLINE_ROOT}/rooms/${roomId}`);
+                const roomRef = ref(rtdb, ONLINE_ROOT + '/rooms/' + roomId);
                 runTransaction(roomRef, room => {
                     if (!room || room.status !== 'waiting') return room;
                     const players = Object.assign({}, room.players || {});
@@ -4216,7 +4158,7 @@
                         c]; });
                     return Object.assign({}, room, { players });
                 }).catch(err => _onlineReportError('room:leave', err));
-                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'idle', roomId: null }).catch(() => {});
+                update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { status: 'idle', roomId: null }).catch(() => {});
             },
 
             sendRoomInvite(targetUid, roomId, room) {
@@ -4232,18 +4174,18 @@
                     playerCount: room.playerCount,
                     createdAt: serverTimestamp()
                 };
-                set(ref(rtdb, `${ONLINE_ROOT}/requests/${targetUid}/${reqId}`), payload).catch(err => _onlineReportError(
-                    'write', err));
+                set(ref(rtdb, ONLINE_ROOT + '/requests/' + targetUid + '/' + reqId), payload).catch(err =>
+                    _onlineReportError('write', err));
                 return reqId;
             },
 
             declineRoomInvite(reqId, req) {
-                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(err => _onlineReportError('write',
-                    err));
+                remove(ref(rtdb, ONLINE_ROOT + '/requests/' + onlineUid + '/' + reqId)).catch(err => _onlineReportError(
+                    'write', err));
             },
 
             async acceptRoomInvite(reqId, req) {
-                const roomRef = ref(rtdb, `${ONLINE_ROOT}/rooms/${req.roomId}`);
+                const roomRef = ref(rtdb, ONLINE_ROOT + '/rooms/' + req.roomId);
                 const order = ['Red', 'Green', 'Yellow', 'Blue'];
                 let finalRoom = null;
                 try {
@@ -4262,16 +4204,16 @@
                     });
                     if (result.committed) finalRoom = result.snapshot.val();
                 } catch (err) { _onlineReportError('room:accept', err); }
-                remove(ref(rtdb, `${ONLINE_ROOT}/requests/${onlineUid}/${reqId}`)).catch(() => {});
+                remove(ref(rtdb, ONLINE_ROOT + '/requests/' + onlineUid + '/' + reqId)).catch(() => {});
                 if (!finalRoom) return null;
-                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { status: 'in_game', roomId: req.roomId }).catch(
+                update(ref(rtdb, ONLINE_ROOT + '/users/' + onlineUid), { status: 'in_game', roomId: req.roomId }).catch(
                     () => {});
                 if (finalRoom.status === 'active') {
                     const updates = {};
                     Object.values(finalRoom.players).forEach(p => {
                         if (p.uid === onlineUid) return;
-                        updates[`${ONLINE_ROOT}/users/${p.uid}/status`] = 'in_game';
-                        updates[`${ONLINE_ROOT}/users/${p.uid}/roomId`] = req.roomId;
+                        updates[ONLINE_ROOT + '/users/' + p.uid + '/status'] = 'in_game';
+                        updates[ONLINE_ROOT + '/users/' + p.uid + '/roomId'] = req.roomId;
                     });
                     if (Object.keys(updates).length) update(ref(rtdb), updates).catch(() => {});
                 }
@@ -4354,7 +4296,7 @@
                 if (document.documentElement.scrollTop !== 0) document.documentElement.scrollTop = 0;
                 if (document.body.scrollTop !== 0) document.body.scrollTop = 0;
                 if (window.visualViewport && window.visualViewport.offsetTop) {
-                    document.body.style.transform = `translateY(${-window.visualViewport.offsetTop}px)`;
+                    document.body.style.transform = 'translateY(' + (-window.visualViewport.offsetTop) + 'px)';
                 } else if (document.body.style.transform) {
                     document.body.style.transform = '';
                 }
@@ -4415,18 +4357,17 @@
         }
 
         function startDiceSpin(color) {
-            const box = document.getElementById(`dice-${color}`);
+            const box = document.getElementById('dice-' + color);
             if (!box) return;
             const cube = box.querySelector('.dice3d');
             if (cube) { cube.style.transition = 'none';
                 cube.style.transform = ''; }
             box.classList.add('spinning');
-            // Also trigger the board dice roll animation
             animateDiceRollOnBoard(color);
         }
 
         function spinDiceTo(color, value, durationMs) {
-            const box = document.getElementById(`dice-${color}`);
+            const box = document.getElementById('dice-' + color);
             if (!box) return;
             const cube = box.querySelector('.dice3d');
             if (!cube) return;
@@ -4437,13 +4378,12 @@
             const extraSpinsY = 2 + Math.floor(Math.random() * 2);
             state.x = nextAngleTo(state.x, target.x, extraSpinsX);
             state.y = nextAngleTo(state.y, target.y, extraSpinsY);
-            cube.style.transition = `transform ${durationMs}ms cubic-bezier(0.22, 0.61, 0.36, 1)`;
-            cube.style.transform = `rotateX(${state.x}deg) rotateY(${state.y}deg)`;
-            // Also update the board dice if it exists
+            cube.style.transition = 'transform ' + durationMs + 'ms cubic-bezier(0.22, 0.61, 0.36, 1)';
+            cube.style.transform = 'rotateX(' + state.x + 'deg) rotateY(' + state.y + 'deg)';
             const boardDice = document.querySelector('.board-dice-container .dice3d');
             if (boardDice) {
-                boardDice.style.transition = `transform ${durationMs}ms cubic-bezier(0.22, 0.61, 0.36, 1)`;
-                boardDice.style.transform = `rotateX(${state.x}deg) rotateY(${state.y}deg)`;
+                boardDice.style.transition = 'transform ' + durationMs + 'ms cubic-bezier(0.22, 0.61, 0.36, 1)';
+                boardDice.style.transform = 'rotateX(' + state.x + 'deg) rotateY(' + state.y + 'deg)';
             }
         }
 
@@ -4759,13 +4699,10 @@
         }
 
         // ─── BOARD DICE ROLL ANIMATION ─────────────────────────────────────
-        // Creates a floating dice on the board that tumbles from the player's
-        // base to the centre of the board, then fades out.
         let boardDiceContainer = null;
         let boardDiceAnimId = null;
 
         function animateDiceRollOnBoard(color) {
-            // Remove any existing board dice
             if (boardDiceContainer) {
                 boardDiceContainer.remove();
                 boardDiceContainer = null;
@@ -4776,77 +4713,63 @@
             const board = document.getElementById('board');
             if (!board) return;
 
-            // Find the player's base position on the board (centre of their base quadrant)
             const basePos = getBaseCenterPosition(color);
             if (!basePos) return;
 
-            // Create the dice container
             const container = document.createElement('div');
             container.className = 'board-dice-container';
-            // Start at the base position
             const boardRect = board.getBoundingClientRect();
             const cellSize = boardRect.width / 15;
             const startX = basePos[0] * cellSize;
             const startY = basePos[1] * cellSize;
             container.style.left = startX + 'px';
             container.style.top = startY + 'px';
-            container.style.width = (cellSize * 0.75) + 'px';
-            container.style.height = (cellSize * 0.75) + 'px';
+            container.style.width = (cellSize * 0.8) + 'px';
+            container.style.height = (cellSize * 0.8) + 'px';
 
-            // Build the 3D dice inside it
             const diceHTML = dice3dHTML();
             container.innerHTML = diceHTML;
             board.appendChild(container);
             boardDiceContainer = container;
 
-            // Target: centre of the board
             const targetX = boardRect.width / 2;
             const targetY = boardRect.height / 2;
 
-            // Duration for the animation (match the dice spin duration)
             const duration = 650 / gameSpeed;
             const startTime = performance.now();
 
-            // Random path arc: move with a slight curve
             const midX = (startX + targetX) / 2 + (Math.random() - 0.5) * cellSize * 2;
             const midY = (startY + targetY) / 2 + (Math.random() - 0.5) * cellSize * 2;
 
-            // Random starting rotation offset
             let rotX = Math.random() * 720;
             let rotY = Math.random() * 720;
 
             function animateDiceMove(time) {
                 const elapsed = time - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                // Ease in-out cubic
                 const t = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
-                // Position: quadratic bezier
                 const cx = (1 - t) * (1 - t) * startX + 2 * (1 - t) * t * midX + t * t * targetX;
                 const cy = (1 - t) * (1 - t) * startY + 2 * (1 - t) * t * midY + t * t * targetY;
                 container.style.left = cx + 'px';
                 container.style.top = cy + 'px';
 
-                // Rotation: keep tumbling
                 const rotSpeed = 4 + Math.random() * 2;
                 rotX += t * rotSpeed * 6;
                 rotY += t * rotSpeed * 8;
                 const cube = container.querySelector('.dice3d');
                 if (cube) {
                     cube.style.transition = 'none';
-                    cube.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+                    cube.style.transform = 'rotateX(' + rotX + 'deg) rotateY(' + rotY + 'deg)';
                 }
 
-                // Scale: slight squash and stretch
                 const scale = 1 + 0.15 * Math.sin(t * Math.PI * 3);
-                container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+                container.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
 
                 if (progress < 1) {
                     boardDiceAnimId = requestAnimationFrame(animateDiceMove);
                 } else {
-                    // Finished moving — now we show the final number and fade out
                     const finalValue = currentRoll || 1;
-                    // Rotate to the final face using the same logic as spinDiceTo
                     const target = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
                     const state = { x: rotX, y: rotY };
                     const extraSpinsX = 1 + Math.floor(Math.random() * 2);
@@ -4854,11 +4777,10 @@
                     const finalX = nextAngleTo(state.x, target.x, extraSpinsX);
                     const finalY = nextAngleTo(state.y, target.y, extraSpinsY);
                     if (cube) {
-                        cube.style.transition = `transform 400ms cubic-bezier(0.22, 0.61, 0.36, 1)`;
-                        cube.style.transform = `rotateX(${finalX}deg) rotateY(${finalY}deg)`;
+                        cube.style.transition = 'transform 400ms cubic-bezier(0.22, 0.61, 0.36, 1)';
+                        cube.style.transform = 'rotateX(' + finalX + 'deg) rotateY(' + finalY + 'deg)';
                     }
 
-                    // After showing the number, fade out
                     setTimeout(() => {
                         if (container) container.classList.add('fade-out');
                         setTimeout(() => {
@@ -4866,7 +4788,7 @@
                                 container.remove();
                                 boardDiceContainer = null;
                             }
-                        }, 600);
+                        }, 500);
                     }, 350);
                     boardDiceAnimId = null;
                 }
@@ -4875,8 +4797,6 @@
         }
 
         function getBaseCenterPosition(color) {
-            // Returns the grid cell coordinate (col, row) of the center of the base quadrant for a given color
-            // Board is 15x15, bases are 6x6 in corners
             const baseMap = {
                 Red: { row: 3.5, col: 3.5 },
                 Green: { row: 3.5, col: 12.5 },
@@ -4885,11 +4805,10 @@
             };
             const pos = baseMap[color];
             if (!pos) return null;
-            // Return as [col, row] for positioning
             return [pos.col, pos.row];
         }
 
-        // ─── DICE 3D HTML HELPER ──────────────────────────────────────────
+        // ─── DICE 3D HTML ──────────────────────────────────────────────────
         function pipGrid(value) {
             const layouts = {
                 1: [5],
@@ -4905,20 +4824,20 @@
             for (let i = 1; i <= 9; i++) {
                 const on = active.includes(i);
                 const cls = 'dice-pip' + (on ? ' on' : '') + (on && isRedFace ? ' red-pip' : '');
-                html += `<span class="${cls}"></span>`;
+                html += '<span class="' + cls + '"></span>';
             }
-            return `<div class="dice-pip-grid">${html}</div>`;
+            return '<div class="dice-pip-grid">' + html + '</div>';
         }
 
         function dice3dHTML() {
-            return `<div class="dice3d">
-                <div class="dice-face dice-face-front">${pipGrid(1)}</div>
-                <div class="dice-face dice-face-back">${pipGrid(6)}</div>
-                <div class="dice-face dice-face-right">${pipGrid(3)}</div>
-                <div class="dice-face dice-face-left">${pipGrid(4)}</div>
-                <div class="dice-face dice-face-top">${pipGrid(2)}</div>
-                <div class="dice-face dice-face-bottom">${pipGrid(5)}</div>
-            </div>`;
+            return '<div class="dice3d">' +
+                '<div class="dice-face dice-face-front">' + pipGrid(1) + '</div>' +
+                '<div class="dice-face dice-face-back">' + pipGrid(6) + '</div>' +
+                '<div class="dice-face dice-face-right">' + pipGrid(3) + '</div>' +
+                '<div class="dice-face dice-face-left">' + pipGrid(4) + '</div>' +
+                '<div class="dice-face dice-face-top">' + pipGrid(2) + '</div>' +
+                '<div class="dice-face dice-face-bottom">' + pipGrid(5) + '</div>' +
+                '</div>';
         }
 
         // ─── MENU / ACCOUNT HELPERS ──────────────────────────────────────
@@ -5350,7 +5269,8 @@
         function updateMatchSettingsSummary() {
             const labels = { off: 'Off', assist: 'Assist', full: 'Full Control', on: 'On', partner: 'Partner' };
             const el = document.getElementById('settings-selector-current');
-            if (el) el.textContent = `Partner: ${labels[partnerModeSetting] || 'Off'} · Barrier: ${labels[barrierModeSetting] || 'Off'}`;
+            if (el) el.textContent = 'Partner: ' + (labels[partnerModeSetting] || 'Off') + ' · Barrier: ' + (labels[
+                barrierModeSetting] || 'Off');
             const icon = document.getElementById('settings-selector-icon');
             if (icon) icon.textContent = (partnerModeSetting !== 'off' || barrierModeSetting !== 'off') ? '⚙️' : '🤝';
         }
@@ -5608,13 +5528,13 @@
             tokens = {};
             players.forEach(p => {
                 tokens[p.color] = [
-                    { id: `${p.color}-0`, color: p.color, index: 0, status: 'BASE', step: -1, pos: [0, 0],
+                    { id: p.color + '-0', color: p.color, index: 0, status: 'BASE', step: -1, pos: [0, 0],
                         barrier: false },
-                    { id: `${p.color}-1`, color: p.color, index: 1, status: 'BASE', step: -1, pos: [0, 0],
+                    { id: p.color + '-1', color: p.color, index: 1, status: 'BASE', step: -1, pos: [0, 0],
                         barrier: false },
-                    { id: `${p.color}-2`, color: p.color, index: 2, status: 'BASE', step: -1, pos: [0, 0],
+                    { id: p.color + '-2', color: p.color, index: 2, status: 'BASE', step: -1, pos: [0, 0],
                         barrier: false },
-                    { id: `${p.color}-3`, color: p.color, index: 3, status: 'BASE', step: -1, pos: [0, 0],
+                    { id: p.color + '-3', color: p.color, index: 3, status: 'BASE', step: -1, pos: [0, 0],
                         barrier: false }
                 ];
             });
@@ -5707,13 +5627,14 @@
                 for (let i = 0; i < 4; i++) {
                     const slot = document.createElement('div');
                     slot.className = 'base-coin-slot ' + q.slotClass;
-                    slot.id = `slot-${q.color}-${i}`;
+                    slot.id = 'slot-' + q.color + '-' + i;
                     tray.appendChild(slot);
                 }
                 bEl.appendChild(tray);
                 const nameLabel = document.createElement('div');
-                nameLabel.className = 'base-name-label' + ((q.color === 'Red' || q.color === 'Green') ? ' label-top' : '');
-                nameLabel.id = `base-name-${q.color}`;
+                nameLabel.className = 'base-name-label' + ((q.color === 'Red' || q.color === 'Green') ? ' label-top' :
+                '');
+                nameLabel.id = 'base-name-' + q.color;
                 bEl.appendChild(nameLabel);
                 board.appendChild(bEl);
             });
@@ -5739,7 +5660,7 @@
                     else if (r === 2 && c === 9) cell.classList.add('cell-green-path');
                     else if (r === 9 && c === 14) cell.classList.add('cell-yellow-path');
                     else if (r === 14 && c === 7) cell.classList.add('cell-blue-path');
-                    const key = `${r}-${c}`;
+                    const key = r + '-' + c;
                     if (safeSpots.includes(key)) {
                         const star = document.createElement('span');
                         star.className = 'star-icon' + ((r === 7 && c === 2) || (r === 2 && c === 9) || (r === 9 && c ===
@@ -5764,23 +5685,25 @@
         // ─── RENDER SCOREBOARD ──────────────────────────────────────────
         function renderScoreboard() {
             colors.forEach(c => {
-                const tag = document.getElementById(`tag-${c.name}`);
-                const baseLabel = document.getElementById(`base-name-${c.name}`);
+                const tag = document.getElementById('tag-' + c.name);
+                const baseLabel = document.getElementById('base-name-' + c.name);
                 if (!tag) return;
                 const p = players.find(pl => pl.color === c.name);
                 if (p) {
                     tag.style.display = 'flex';
                     const partnerColor = partnerPairs[c.name];
-                    const partnerBadge = (activePartnerMode !== 'off' && players.some(pl => pl.color === partnerColor)) ?
-                        `<span style="margin-left:5px; opacity:0.85;" title="Partnered with ${partnerColor}">🤝</span>` :
+                    const partnerBadge = (activePartnerMode !== 'off' && players.some(pl => pl.color ===
+                        partnerColor)) ?
+                        '<span style="margin-left:5px; opacity:0.85;" title="Partnered with ' + partnerColor +
+                        '">🤝</span>' :
                         '';
                     const youBadge = (isOnlineMode && onlineMyColor === c.name) ?
-                        `<span style="margin-left:5px; opacity:0.85; font-size:0.62em; font-weight:800; color:var(--brass-light);">(You)</span>` :
+                        '<span style="margin-left:5px; opacity:0.85; font-size:0.62em; font-weight:800; color:var(--brass-light);">(You)</span>' :
                         '';
-                    tag.innerHTML = `
-                        <div class="dice-box-tag" id="dice-${c.name}" onclick="onDiceClick('${c.name}')">${dice3dHTML()}</div>
-                    `;
-                    if (baseLabel) baseLabel.innerHTML = `${p.name}${partnerBadge}${youBadge}`;
+                    tag.innerHTML =
+                        '<div class="dice-box-tag" id="dice-' + c.name + '" onclick="onDiceClick(\'' + c.name +
+                        '\')">' + dice3dHTML() + '</div>';
+                    if (baseLabel) baseLabel.innerHTML = p.name + partnerBadge + youBadge;
                     diceCubeState[c.name] = { x: 0, y: 0 };
                 } else {
                     tag.style.display = 'none';
@@ -5794,21 +5717,21 @@
         }
 
         function refreshStatus(color) {
-            const statusEl = document.getElementById(`status-${color}`);
+            const statusEl = document.getElementById('status-' + color);
             if (!statusEl) return;
             const cp = players[currentPlayerIndex];
             if (cp && cp.color === color) {
                 statusEl.innerText = 'Rolling…';
             } else {
-                statusEl.innerText = `${homeCount(color)}/4 Home`;
+                statusEl.innerText = homeCount(color) + '/4 Home';
             }
         }
 
         function updateTurnUI() {
             const cp = players[currentPlayerIndex];
             colors.forEach(c => {
-                const tag = document.getElementById(`tag-${c.name}`);
-                const dice = document.getElementById(`dice-${c.name}`);
+                const tag = document.getElementById('tag-' + c.name);
+                const dice = document.getElementById('dice-' + c.name);
                 if (tag && dice) {
                     if (c.name === cp.color) {
                         tag.classList.add('active');
@@ -5822,8 +5745,8 @@
             });
             const playingForPartner = activePartnerMode !== 'off' && players.length === 4 && !hasActiveTokens(cp.color);
             document.getElementById('msg-log').innerText = playingForPartner ?
-                `${cp.name}'s turn — rolling for partner ${partnerPairs[cp.color]}!` :
-                `${cp.name}'s turn to roll!`;
+                cp.name + "'s turn — rolling for partner " + partnerPairs[cp.color] + "!" :
+                cp.name + "'s turn to roll!";
             gameState = 'IDLE';
             if (cp.isBot) {
                 botMoveTimeoutId = setTimeout(botPlay, 600 / gameSpeed);
@@ -5852,7 +5775,7 @@
                 if (isOnlineMode) syncOnlineStateIfNeeded({ lastRoll: { color, value: currentRoll } });
                 if (consecutiveSixes === 3) {
                     consecutiveSixes = 0;
-                    document.getElementById('msg-log').innerText = `3 Sixes in a row! Turn skipped.`;
+                    document.getElementById('msg-log').innerText = '3 Sixes in a row! Turn skipped.';
                     setTimeout(nextTurn, 900 / gameSpeed);
                     return;
                 }
@@ -5908,7 +5831,7 @@
                 if (!pos) continue;
                 const blockColor = barrierOwnerAt(pos[0], pos[1]);
                 if (blockColor && blockColor !== token.color && !isPartnerColor(token.color, blockColor)) {
-                    if (safeSpots.includes(`${pos[0]}-${pos[1]}`)) continue;
+                    if (safeSpots.includes(pos[0] + '-' + pos[1])) continue;
                     return true;
                 }
             }
@@ -5990,7 +5913,7 @@
             const cp = players[currentPlayerIndex];
             const movable = getEffectiveMovable(cp.color, currentRoll);
             if (movable.length === 0) {
-                document.getElementById('msg-log').innerText = `Rolled ${currentRoll}! No valid moves.`;
+                document.getElementById('msg-log').innerText = 'Rolled ' + currentRoll + '! No valid moves.';
                 setTimeout(nextTurn, 800 / gameSpeed);
                 return;
             }
@@ -6012,14 +5935,14 @@
                     initiateMove(choice, currentRoll);
                 }, 400 / gameSpeed);
             } else {
-                document.getElementById('msg-log').innerText = `Rolled ${currentRoll}! Tap token to move.`;
+                document.getElementById('msg-log').innerText = 'Rolled ' + currentRoll + '! Tap token to move.';
                 highlightTokens(movable);
             }
         }
 
         function highlightTokens(movableList) {
             movableList.forEach(t => {
-                const el = document.getElementById(`t-${t.id}`);
+                const el = document.getElementById('t-' + t.id);
                 if (el) el.classList.add('token-movable');
             });
         }
@@ -6039,7 +5962,7 @@
 
         function initiateMove(token, roll) {
             if (activeBarrierMode === 'on' && token.status === 'PATH' && token.barrier) {
-                const key = `${token.pos[0]}-${token.pos[1]}`;
+                const key = token.pos[0] + '-' + token.pos[1];
                 if (safeSpots.includes(key) && barrierMoveSteps(roll) !== null) {
                     const cp = players[currentPlayerIndex];
                     const doKeep = () => performMove(token, roll);
@@ -6050,7 +5973,8 @@
                     };
                     if (cp.isBot) { doKeep(); return; }
                     showBarrierChoice(
-                        `${token.color}'s Barrier is resting on a star. Move together as a Barrier, or break it apart here?`,
+                        token.color +
+                        "'s Barrier is resting on a star. Move together as a Barrier, or break it apart here?",
                         'Keep Barrier', 'Break Barrier', doKeep, doBreak
                     );
                     return;
@@ -6065,13 +5989,15 @@
                         token.barrier = true;
                         candidates.forEach(c => { c.barrier = true; });
                         renderTokens();
-                        document.getElementById('msg-log').innerText = `🚧 ${token.color} formed a ${groupSize}-token Barrier!`;
+                        document.getElementById('msg-log').innerText = '🚧 ' + token.color +
+                            ' formed a ' + groupSize + '-token Barrier!';
                         performMove(token, roll);
                     };
                     const skipBarrier = () => performMove(token, roll);
                     if (cp.isBot) { formBarrier(); return; }
                     showBarrierChoice(
-                        `${token.color} has ${groupSize} tokens together here. Lock them into a Barrier?`,
+                        token.color + ' has ' + groupSize +
+                        ' tokens together here. Lock them into a Barrier?',
                         'Yes, Form Barrier', 'No, Keep Separate', formBarrier, skipBarrier
                     );
                     return;
@@ -6106,7 +6032,7 @@
                     stepsLeft--;
                     if (isBarrierMove && stepsLeft > 0 && movers.every(m => m.status === 'PATH')) {
                         const p = movers[0].pos;
-                        if (p && safeSpots.includes(`${p[0]}-${p[1]}`)) {
+                        if (p && safeSpots.includes(p[0] + '-' + p[1])) {
                             stepsLeft = 0;
                             autoHeld = true;
                         }
@@ -6117,7 +6043,7 @@
                             playSound('home');
                         } else {
                             const p = movers[0].pos;
-                            if (p && safeSpots.includes(`${p[0]}-${p[1]}`)) playSound('star');
+                            if (p && safeSpots.includes(p[0] + '-' + p[1])) playSound('star');
                         }
                         afterMoveCheck(token, movers, stepCount, autoHeld);
                     }
@@ -6167,14 +6093,14 @@
 
         function resolveStarBreakDecision(mover, done) {
             if (!mover.barrier) return done();
-            const key = `${mover.pos[0]}-${mover.pos[1]}`;
+            const key = mover.pos[0] + '-' + mover.pos[1];
             if (!safeSpots.includes(key)) return done();
             const cp = players[currentPlayerIndex];
             const group = getBarrierGroupTokens(mover);
             const breakIt = () => {
                 group.forEach(m => { m.barrier = false; });
                 renderTokens();
-                document.getElementById('msg-log').innerText = `${mover.color}'s Barrier broke apart on the star!`;
+                document.getElementById('msg-log').innerText = mover.color + "'s Barrier broke apart on the star!";
                 setTimeout(done, 450 / gameSpeed);
             };
             const keepIt = () => { renderTokens();
@@ -6183,7 +6109,7 @@
                 keepIt();
             } else {
                 showBarrierChoice(
-                    `${mover.color}'s Barrier is on a star. Break it apart or keep it locked here?`,
+                    mover.color + "'s Barrier is on a star. Break it apart or keep it locked here?",
                     'Break Barrier', 'Keep Barrier', breakIt, keepIt
                 );
             }
@@ -6229,7 +6155,7 @@
                 return;
             }
             if (hasBonusTurn) {
-                document.getElementById('msg-log').innerText = `${token.color} gets a Bonus Roll!`;
+                document.getElementById('msg-log').innerText = token.color + ' gets a Bonus Roll!';
                 gameState = 'IDLE';
                 if (players[currentPlayerIndex].isBot) {
                     botMoveTimeoutId = setTimeout(botPlay, 600 / gameSpeed);
@@ -6241,7 +6167,7 @@
 
         function checkCapture(token) {
             if (token.status !== 'PATH' || token.step >= 51) return false;
-            const key = `${token.pos[0]}-${token.pos[1]}`;
+            const key = token.pos[0] + '-' + token.pos[1];
             if (safeSpots.includes(key)) return false;
             let captured = false;
             players.forEach(p => {
@@ -6278,7 +6204,8 @@
                     if (hit.length) {
                         playSound('cut');
                         spawnSwordSlash(token.pos[0], token.pos[1]);
-                        document.getElementById('msg-log').innerText = `💥 ${token.color}'s Barrier cut ${p.color}'s Barrier!`;
+                        document.getElementById('msg-log').innerText = '💥 ' + token.color +
+                            "'s Barrier cut " + p.color + "'s Barrier!";
                         cut = true;
                     }
                 }
@@ -6302,7 +6229,7 @@
         function spawnSwordSlash(r, c) {
             const board = document.getElementById('board');
             if (!board) return;
-            let cellEl = board.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+            let cellEl = board.querySelector('[data-r="' + r + '"][data-c="' + c + '"]');
             if (r === 7 && c === 7) cellEl = board.querySelector('.center-home-cell');
             if (!cellEl) return;
             const fx = document.createElement('span');
@@ -6322,10 +6249,10 @@
                 fx.className = 'home-cheer-fx';
                 fx.textContent = emojis[i % emojis.length];
                 const angle = (i / 5) * Math.PI * 2;
-                fx.style.setProperty('--cx', `${Math.cos(angle) * 34}px`);
-                fx.style.setProperty('--cy', `${Math.sin(angle) * 34 - 20}px`);
-                fx.style.setProperty('--cr', `${(Math.random() * 60 - 30)}deg`);
-                fx.style.animationDelay = `${i * 0.03}s`;
+                fx.style.setProperty('--cx', Math.cos(angle) * 34 + 'px');
+                fx.style.setProperty('--cy', Math.sin(angle) * 34 - 20 + 'px');
+                fx.style.setProperty('--cr', (Math.random() * 60 - 30) + 'deg');
+                fx.style.animationDelay = i * 0.03 + 's';
                 cellEl.appendChild(fx);
                 setTimeout(() => fx.remove(), 950);
             }
@@ -6339,11 +6266,11 @@
                 piece.textContent = emojis[i % emojis.length];
                 const fx = (Math.random() * 160 - 80);
                 const fy = 70 + Math.random() * 60;
-                piece.style.setProperty('--fx', `${fx}px`);
-                piece.style.setProperty('--fy', `${fy}px`);
-                piece.style.setProperty('--fr', `${Math.random() * 360}deg`);
-                piece.style.left = `${50 + (Math.random() * 40 - 20)}%`;
-                piece.style.animationDelay = `${Math.random() * 0.15}s`;
+                piece.style.setProperty('--fx', fx + 'px');
+                piece.style.setProperty('--fy', fy + 'px');
+                piece.style.setProperty('--fr', Math.random() * 360 + 'deg');
+                piece.style.left = 50 + (Math.random() * 40 - 20) + '%';
+                piece.style.animationDelay = Math.random() * 0.15 + 's';
                 container.appendChild(piece);
                 setTimeout(() => piece.remove(), 1300);
             }
@@ -6358,7 +6285,8 @@
             const toast = document.getElementById('rank-celebration-toast');
             if (!toast) return;
             toast.innerHTML =
-                `<div class="rank-medal">${medals[rank]}</div><div class="rank-title">${name} finished ${ordinal[rank]}!</div>`;
+                '<div class="rank-medal">' + medals[rank] + '</div><div class="rank-title">' + name +
+                ' finished ' + ordinal[rank] + '!</div>';
             toast.classList.add('show');
             spawnConfettiBurst(toast, rank === 1 ? 16 : 9);
             playSound(rank === 1 ? 'rank1' : rank === 2 ? 'rank2' : 'rank3');
@@ -6373,7 +6301,7 @@
             players.forEach(p => {
                 (tokens[p.color] || []).forEach(t => {
                     if (t.status === 'BASE') {
-                        const slot = document.getElementById(`slot-${p.color}-${t.index}`);
+                        const slot = document.getElementById('slot-' + p.color + '-' + t.index);
                         if (slot) {
                             const tEl = createTokenElement(t);
                             slot.appendChild(tEl);
@@ -6385,7 +6313,7 @@
             players.forEach(p => {
                 (tokens[p.color] || []).forEach(t => {
                     if (t.status === 'PATH' || t.status === 'HOME') {
-                        const key = `${t.pos[0]}-${t.pos[1]}`;
+                        const key = t.pos[0] + '-' + t.pos[1];
                         if (!occupiedMap[key]) occupiedMap[key] = [];
                         occupiedMap[key].push(t);
                     }
@@ -6393,8 +6321,10 @@
             });
             Object.keys(occupiedMap).forEach(key => {
                 const group = occupiedMap[key];
-                const [r, c] = key.split('-').map(Number);
-                let cellEl = board.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+                const parts = key.split('-').map(Number);
+                const r = parts[0],
+                    c = parts[1];
+                let cellEl = board.querySelector('[data-r="' + r + '"][data-c="' + c + '"]');
                 if (r === 7 && c === 7) cellEl = board.querySelector('.center-home-cell');
                 if (!cellEl) return;
                 const cp = players[currentPlayerIndex];
@@ -6406,7 +6336,8 @@
                     const tEl = createTokenElement(t);
                     if (group.length > 1) {
                         const offset = (i - (group.length - 1) / 2) * 4;
-                        tEl.style.transform = `translate(${offset}px, ${offset}px) scale(${1 - group.length * 0.08})`;
+                        tEl.style.transform = 'translate(' + offset + 'px, ' + offset + 'px) scale(' + (1 -
+                            group.length * 0.08) + ')';
                     }
                     cellEl.appendChild(tEl);
                 });
@@ -6427,63 +6358,57 @@
         function pawnSVG_mappin(color) {
             const c = PAWN_PALETTE[color] || PAWN_PALETTE.Red;
             const uid = 'pin' + (pawnSvgUid++);
-            return `<svg viewBox="0 0 80 112" preserveAspectRatio="xMidYMax meet">
-                <defs>
-                    <radialGradient id="${uid}body" cx="32%" cy="22%" r="78%">
-                        <stop offset="0%" stop-color="#ffffff"/>
-                        <stop offset="42%" stop-color="#f4f4f5"/>
-                        <stop offset="78%" stop-color="#d4d4d8"/>
-                        <stop offset="100%" stop-color="#8b8b93"/>
-                    </radialGradient>
-                    <linearGradient id="${uid}edge" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#9ca3af"/>
-                        <stop offset="35%" stop-color="#ffffff"/>
-                        <stop offset="100%" stop-color="#6b7280"/>
-                    </linearGradient>
-                    <radialGradient id="${uid}badge" cx="34%" cy="28%" r="72%">
-                        <stop offset="0%" stop-color="${c.light}"/>
-                        <stop offset="52%" stop-color="${c.mid}"/>
-                        <stop offset="100%" stop-color="${c.dark}"/>
-                    </radialGradient>
-                    <linearGradient id="${uid}gold" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#f8e7a8"/>
-                        <stop offset="38%" stop-color="#e0b33a"/>
-                        <stop offset="100%" stop-color="#8a5a14"/>
-                    </linearGradient>
-                    <linearGradient id="${uid}goldSide" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#a16207"/>
-                        <stop offset="45%" stop-color="#f5d77f"/>
-                        <stop offset="100%" stop-color="#713f12"/>
-                    </linearGradient>
-                    <radialGradient id="${uid}sh" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stop-color="rgba(0,0,0,0.50)"/>
-                        <stop offset="55%" stop-color="rgba(0,0,0,0.22)"/>
-                        <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
-                    </radialGradient>
-                    <filter id="${uid}ds" x="-50%" y="-20%" width="200%" height="170%">
-                        <feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000000" flood-opacity="0.42"/>
-                    </filter>
-                </defs>
-                <ellipse cx="40" cy="104" rx="20" ry="7" fill="url(#${uid}sh)"/>
-                <ellipse cx="40" cy="97.5" rx="17.5" ry="8" fill="url(#${uid}gold)" stroke="#6b4420" stroke-width="1.15"/>
-                <ellipse cx="40" cy="96.2" rx="11.5" ry="4.6" fill="${c.mid}"/>
-                <ellipse cx="40" cy="95.4" rx="11.5" ry="4.2" fill="${c.dark}" opacity="0.28"/>
-                <g filter="url(#${uid}ds)">
-                    <path d="M40 6
-                             C57.5 6 71 20.5 71 38.5
-                             C71 51 62 63.5 49 82
-                             C45.5 87.5 42.4 93.2 40 99
-                             C37.6 93.2 34.5 87.5 31 82
-                             C18 63.5 9 51 9 38.5
-                             C9 20.5 22.5 6 40 6 Z"
-                          fill="url(#${uid}body)" stroke="url(#${uid}edge)" stroke-width="1.35" stroke-linejoin="round"/>
-                    <path d="M24 22 C28 14 36 10 40 10 C36 16 30 22 24 28 Z" fill="#ffffff" opacity="0.42"/>
-                    <circle cx="40" cy="38" r="18.2" fill="url(#${uid}goldSide)" stroke="#6b4420" stroke-width="0.8"/>
-                    <circle cx="40" cy="38" r="14.6" fill="url(#${uid}badge)" stroke="rgba(255,255,255,0.55)" stroke-width="1.4"/>
-                    <ellipse cx="34.5" cy="32.5" rx="5.6" ry="3.8" fill="#ffffff" opacity="0.42"/>
-                    <ellipse cx="30" cy="20" rx="7" ry="4.2" fill="#ffffff" opacity="0.38"/>
-                </g>
-            </svg>`;
+            return '<svg viewBox="0 0 80 112" preserveAspectRatio="xMidYMax meet">' +
+                '<defs>' +
+                '<radialGradient id="' + uid + 'body" cx="32%" cy="22%" r="78%">' +
+                '<stop offset="0%" stop-color="#ffffff"/>' +
+                '<stop offset="42%" stop-color="#f4f4f5"/>' +
+                '<stop offset="78%" stop-color="#d4d4d8"/>' +
+                '<stop offset="100%" stop-color="#8b8b93"/>' +
+                '</radialGradient>' +
+                '<linearGradient id="' + uid + 'edge" x1="0%" y1="0%" x2="100%" y2="0%">' +
+                '<stop offset="0%" stop-color="#9ca3af"/>' +
+                '<stop offset="35%" stop-color="#ffffff"/>' +
+                '<stop offset="100%" stop-color="#6b7280"/>' +
+                '</linearGradient>' +
+                '<radialGradient id="' + uid + 'badge" cx="34%" cy="28%" r="72%">' +
+                '<stop offset="0%" stop-color="' + c.light + '"/>' +
+                '<stop offset="52%" stop-color="' + c.mid + '"/>' +
+                '<stop offset="100%" stop-color="' + c.dark + '"/>' +
+                '</radialGradient>' +
+                '<linearGradient id="' + uid + 'gold" x1="0%" y1="0%" x2="0%" y2="100%">' +
+                '<stop offset="0%" stop-color="#f8e7a8"/>' +
+                '<stop offset="38%" stop-color="#e0b33a"/>' +
+                '<stop offset="100%" stop-color="#8a5a14"/>' +
+                '</linearGradient>' +
+                '<linearGradient id="' + uid + 'goldSide" x1="0%" y1="0%" x2="100%" y2="0%">' +
+                '<stop offset="0%" stop-color="#a16207"/>' +
+                '<stop offset="45%" stop-color="#f5d77f"/>' +
+                '<stop offset="100%" stop-color="#713f12"/>' +
+                '</linearGradient>' +
+                '<radialGradient id="' + uid + 'sh" cx="50%" cy="50%" r="50%">' +
+                '<stop offset="0%" stop-color="rgba(0,0,0,0.50)"/>' +
+                '<stop offset="55%" stop-color="rgba(0,0,0,0.22)"/>' +
+                '<stop offset="100%" stop-color="rgba(0,0,0,0)"/>' +
+                '</radialGradient>' +
+                '<filter id="' + uid + 'ds" x="-50%" y="-20%" width="200%" height="170%">' +
+                '<feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000000" flood-opacity="0.42"/>' +
+                '</filter>' +
+                '</defs>' +
+                '<ellipse cx="40" cy="104" rx="20" ry="7" fill="url(' + uid + 'sh)"/>' +
+                '<ellipse cx="40" cy="97.5" rx="17.5" ry="8" fill="url(' + uid + 'gold)" stroke="#6b4420" stroke-width="1.15"/>' +
+                '<ellipse cx="40" cy="96.2" rx="11.5" ry="4.6" fill="' + c.mid + '"/>' +
+                '<ellipse cx="40" cy="95.4" rx="11.5" ry="4.2" fill="' + c.dark + '" opacity="0.28"/>' +
+                '<g filter="url(' + uid + 'ds)">' +
+                '<path d="M40 6 C57.5 6 71 20.5 71 38.5 C71 51 62 63.5 49 82 C45.5 87.5 42.4 93.2 40 99 C37.6 93.2 34.5 87.5 31 82 C18 63.5 9 51 9 38.5 C9 20.5 22.5 6 40 6 Z" fill="url(' +
+                uid + 'body)" stroke="url(' + uid + 'edge)" stroke-width="1.35" stroke-linejoin="round"/>' +
+                '<path d="M24 22 C28 14 36 10 40 10 C36 16 30 22 24 28 Z" fill="#ffffff" opacity="0.42"/>' +
+                '<circle cx="40" cy="38" r="18.2" fill="url(' + uid + 'goldSide)" stroke="#6b4420" stroke-width="0.8"/>' +
+                '<circle cx="40" cy="38" r="14.6" fill="url(' + uid + 'badge)" stroke="rgba(255,255,255,0.55)" stroke-width="1.4"/>' +
+                '<ellipse cx="34.5" cy="32.5" rx="5.6" ry="3.8" fill="#ffffff" opacity="0.42"/>' +
+                '<ellipse cx="30" cy="20" rx="7" ry="4.2" fill="#ffffff" opacity="0.38"/>' +
+                '</g>' +
+                '</svg>';
         }
 
         const TOKEN_DESIGNS = [
@@ -6553,8 +6478,8 @@
         // ─── CREATE TOKEN ELEMENT ──────────────────────────────────────
         function createTokenElement(t) {
             const tEl = document.createElement('div');
-            tEl.id = `t-${t.id}`;
-            tEl.className = `token token-${t.color.toLowerCase()}` + (t.barrier ? ' token-barrier' : '');
+            tEl.id = 't-' + t.id;
+            tEl.className = 'token token-' + t.color.toLowerCase() + (t.barrier ? ' token-barrier' : '');
             const designId = loadSavedTokenDesign();
             tEl.innerHTML = pawnSVG(t.color);
             if (designId === 'mappin' && t.status !== 'BASE') tEl.classList.add('token-pin-overflow');
@@ -6589,7 +6514,8 @@
             if (!banner) {
                 banner = document.createElement('p');
                 banner.className = 'coin-result-banner';
-                banner.style.cssText = 'font-size:0.78rem; font-weight:800; color:var(--brass-light); margin:-6px 0 14px;';
+                banner.style.cssText =
+                'font-size:0.78rem; font-weight:800; color:var(--brass-light); margin:-6px 0 14px;';
                 document.getElementById('winner-title').insertAdjacentElement('afterend', banner);
             }
             banner.textContent = text;
@@ -6602,10 +6528,10 @@
             if (teamColors && teamColors.length === 2) {
                 const p1 = players.find(p => p.color === teamColors[0]);
                 const p2 = players.find(p => p.color === teamColors[1]);
-                title = `${p1 ? p1.name : teamColors[0]} & ${p2 ? p2.name : teamColors[1]} Win! 🎉`;
+                title = (p1 ? p1.name : teamColors[0]) + ' & ' + (p2 ? p2.name : teamColors[1]) + ' Win! 🎉';
             } else {
                 const winner = players.find(p => p.color === winnersList[0]);
-                title = `${winner ? winner.name : 'Player'} Wins! 🎉`;
+                title = (winner ? winner.name : 'Player') + ' Wins! 🎉';
             }
             document.getElementById('winner-title').innerText = title;
             if (isOnlineMode && !teamColors && onlineBetAmount > 0 && winnersList[0] === onlineMyColor && window
@@ -6614,7 +6540,7 @@
                 window.LudoOnline.settleMatchWin(settleRoomId).then(res => {
                     if (res && res.ok && res.payout) {
                         playSound('coinWin');
-                        showCoinResultBanner(`🪙 You won ${res.payout.toLocaleString()} coins!`);
+                        showCoinResultBanner('🪙 You won ' + res.payout.toLocaleString() + ' coins!');
                     }
                 });
                 onlineBetAmount = 0;
@@ -6737,9 +6663,9 @@
             const opponent = players.find(p => p.color !== onlineMyColor);
             const oppName = opponent ? opponent.name : 'The other player';
             let subtitle;
-            if (reason === 'forfeit') subtitle = `${oppName} left to play another match.`;
-            else if (reason === 'disconnected') subtitle = `${oppName} went offline / lost connection.`;
-            else subtitle = `${oppName} left the match.`;
+            if (reason === 'forfeit') subtitle = oppName + ' left to play another match.';
+            else if (reason === 'disconnected') subtitle = oppName + ' went offline / lost connection.';
+            else subtitle = oppName + ' left the match.';
             document.getElementById('winner-title').innerText = '🏆 You Win!';
             const winnerModal = document.getElementById('winner-modal');
             let sub = winnerModal.querySelector('.online-forfeit-sub');
@@ -6756,7 +6682,7 @@
                 window.LudoOnline.settleMatchWin(onlineRoomId).then(res => {
                     if (res && res.ok && res.payout) {
                         playSound('coinWin');
-                        showCoinResultBanner(`🪙 You won ${res.payout.toLocaleString()} coins!`);
+                        showCoinResultBanner('🪙 You won ' + res.payout.toLocaleString() + ' coins!');
                     }
                 });
                 onlineBetAmount = 0;
@@ -6802,7 +6728,7 @@
             onlineMatchPlayerCount = 2;
             const titleEl = document.getElementById('game-title-label');
             if (titleEl) titleEl.innerText = onlineBetAmount > 0 ?
-                `Ludo Master Pro — 🪙 ${onlineBetAmount.toLocaleString()} Coin Match` :
+                'Ludo Master Pro — 🪙 ' + onlineBetAmount.toLocaleString() + ' Coin Match' :
                 'Ludo Master Pro';
             if (onlineBetAmount > 0) playSound('bet');
             players = [
@@ -6847,7 +6773,7 @@
             onlineMatchPlayerCount = players.length || 2;
             const titleEl = document.getElementById('game-title-label');
             if (titleEl) titleEl.innerText = onlineBetAmount > 0 ?
-                `Ludo Master Pro — 🪙 ${onlineBetAmount.toLocaleString()} Coin Match` :
+                'Ludo Master Pro — 🪙 ' + onlineBetAmount.toLocaleString() + ' Coin Match' :
                 'Ludo Master Pro';
             if (onlineBetAmount > 0) playSound('bet');
             initTokens();
@@ -6934,11 +6860,12 @@
             box.innerHTML = list.map(m => {
                 const mine = m.from === myUid;
                 const emojiOnly = isLikelyEmojiOnly(m.text || '');
-                return `
-                    <div class="chat-msg-row ${mine ? 'mine' : 'theirs'}">
-                        <span class="chat-msg-name">${mine ? 'You' : escapeHtmlChat(m.name || 'Opponent')}</span>
-                        <div class="chat-msg-bubble ${emojiOnly ? 'is-emoji' : ''}">${escapeHtmlChat(m.text || '')}</div>
-                    </div>`;
+                return '<div class="chat-msg-row ' + (mine ? 'mine' : 'theirs') + '">' +
+                    '<span class="chat-msg-name">' + (mine ? 'You' : escapeHtmlChat(m.name || 'Opponent')) +
+                    '</span>' +
+                    '<div class="chat-msg-bubble ' + (emojiOnly ? 'is-emoji' : '') + '">' + escapeHtmlChat(m
+                        .text || '') + '</div>' +
+                    '</div>';
             }).join('');
             box.scrollTop = box.scrollHeight;
             list.forEach(m => {
@@ -7032,7 +6959,7 @@
                     const h = Math.floor(remaining / 3600000);
                     const m = Math.floor((remaining % 3600000) / 60000);
                     const s = Math.floor((remaining % 60000) / 1000);
-                    countdownEl.textContent = `Available in ${h}h ${m}m ${s}s`;
+                    countdownEl.textContent = 'Available in ' + h + 'h ' + m + 'm ' + s + 's';
                 }
             };
             tick();
@@ -7073,7 +7000,8 @@
                 return;
             }
             if (res.reason === 'too-soon') return;
-            showOnlineNotice('⚠️', 'Could Not Claim', 'Something went wrong claiming your bonus — please check your connection and try again.', null);
+            showOnlineNotice('⚠️', 'Could Not Claim', 'Something went wrong claiming your bonus — please check your connection and try again.',
+                null);
         }
 
         const AD_REQUIRED_SECONDS = 15;
@@ -7097,7 +7025,7 @@
                 placeholder.classList.add('show');
             }
             _adWatchRemaining = AD_REQUIRED_SECONDS;
-            statusEl.textContent = `Watch ${_adWatchRemaining}s to earn 100 coins…`;
+            statusEl.textContent = 'Watch ' + _adWatchRemaining + 's to earn 100 coins…';
             modal.classList.add('open');
             if (_adWatchInterval) clearInterval(_adWatchInterval);
             _adWatchInterval = setInterval(() => {
@@ -7105,7 +7033,7 @@
                 if (_adWatchRemaining <= 0) {
                     finishAdWatch(true);
                 } else {
-                    statusEl.textContent = `Watch ${_adWatchRemaining}s to earn 100 coins…`;
+                    statusEl.textContent = 'Watch ' + _adWatchRemaining + 's to earn 100 coins…';
                 }
             }, 1000);
         }
@@ -7124,12 +7052,15 @@
             if (!earned) return;
             const ready = await waitForOnlineReady(5000);
             if (!ready || !window.LudoOnline) {
-                showOnlineNotice('⚠️', 'Not Connected', "The ad finished, but we weren't connected to credit your coins. Please check your connection and try again.", null);
+                showOnlineNotice('⚠️', 'Not Connected',
+                    "The ad finished, but we weren't connected to credit your coins. Please check your connection and try again.",
+                    null);
                 return;
             }
             const bal = await window.LudoOnline.creditAdReward();
             if (typeof bal !== 'number') {
-                showOnlineNotice('⚠️', 'Could Not Credit Coins', 'The ad finished, but something went wrong crediting your coins — please try again.', null);
+                showOnlineNotice('⚠️', 'Could Not Credit Coins',
+                    'The ad finished, but something went wrong crediting your coins — please try again.', null);
                 return;
             }
             myCoins = bal;
@@ -7162,7 +7093,8 @@
                 p.className = 'onl-empty';
                 p.style.color = 'var(--red-light)';
                 p.textContent = '⚠️ Could not reach the online lobby (' + (e.detail && e.detail.message ? e.detail
-                    .message : 'connection error') + '). This is usually a Firebase Realtime Database rules issue — the "lm_online" path needs read/write access added.';
+                    .message : 'connection error') +
+                    '). This is usually a Firebase Realtime Database rules issue — the "lm_online" path needs read/write access added.';
                 box.appendChild(p);
             }
         });
@@ -7182,7 +7114,8 @@
             if (!result.ok) {
                 const current = window.LudoOnline.getProfile().name || '';
                 input.value = current;
-                showOnlineNotice('⚠️', 'Name Already Taken', 'Someone else is already using that name. Please choose a different one.');
+                showOnlineNotice('⚠️', 'Name Already Taken',
+                    'Someone else is already using that name. Please choose a different one.');
                 return;
             }
             try { localStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) {}
@@ -7281,16 +7214,18 @@
 
         function startQuickMatch() {
             if (onlineBetSetting > myCoins) {
-                showOnlineNotice('🪙', 'Not Enough Coins', `You don't have enough coins for a ${onlineBetSetting.toLocaleString()} coin match.`, null);
+                showOnlineNotice('🪙', 'Not Enough Coins', 'You don\'t have enough coins for a ' + onlineBetSetting
+                    .toLocaleString() + ' coin match.', null);
                 return;
             }
             document.getElementById('online-search-sub').innerText =
-                `Looking for a ${qmSelectedCount}-player match… (0/${qmSelectedCount} found)`;
+                'Looking for a ' + qmSelectedCount + '-player match… (0/' + qmSelectedCount + ' found)';
             document.getElementById('online-search-modal').style.display = 'flex';
             armOnlineMatchStartWatcher();
             window.LudoOnline.joinQuickMatch(qmSelectedCount, onlineModeSetting, onlineBetSetting, (found, needed) => {
                 const sub = document.getElementById('online-search-sub');
-                if (sub) sub.innerText = `Looking for a ${needed}-player match… (${found}/${needed} found)`;
+                if (sub) sub.innerText = 'Looking for a ' + needed + '-player match… (' + found + '/' + needed +
+                    ' found)';
             });
         }
 
@@ -7302,7 +7237,8 @@
 
         function createRoom() {
             if (onlineBetSetting > myCoins) {
-                showOnlineNotice('🪙', 'Not Enough Coins', `You don't have enough coins for a ${onlineBetSetting.toLocaleString()} coin match.`, null);
+                showOnlineNotice('🪙', 'Not Enough Coins', 'You don\'t have enough coins for a ' + onlineBetSetting
+                    .toLocaleString() + ' coin match.', null);
                 return;
             }
             const roomId = window.LudoOnline.createLobbyRoom(crSelectedCount, onlineModeSetting, onlineBetSetting);
@@ -7327,7 +7263,7 @@
             const filled = room.players ? Object.keys(room.players).length : 0;
             sub.innerText = room.status === 'active' ?
                 'Room is full — starting…' :
-                `Waiting for players… (${filled}/${room.playerCount})`;
+                'Waiting for players… (' + filled + '/' + room.playerCount + ')';
             list.innerHTML = '';
             order.slice(0, room.playerCount).forEach(c => {
                 const row = document.createElement('div');
@@ -7337,7 +7273,8 @@
                 dot.style.background = { Red: '#dc2626', Green: '#16a34a', Yellow: '#ca8a04', Blue: '#2563eb' } [c];
                 row.appendChild(dot);
                 const label = document.createElement('span');
-                label.textContent = room.players && room.players[c] ? (room.players[c].name || 'Player') : 'Empty seat';
+                label.textContent = room.players && room.players[c] ? (room.players[c].name || 'Player') :
+                    'Empty seat';
                 row.appendChild(label);
                 list.appendChild(row);
             });
@@ -7427,15 +7364,16 @@
 
         function sendOnlineInvite(targetUid, targetName) {
             if (onlineBetSetting > myCoins) {
-                showOnlineNotice('🪙', 'Not Enough Coins', `You don't have enough coins for a ${onlineBetSetting.toLocaleString()} coin match.`, null);
+                showOnlineNotice('🪙', 'Not Enough Coins', 'You don\'t have enough coins for a ' + onlineBetSetting
+                    .toLocaleString() + ' coin match.', null);
                 return;
             }
             const { reqId, roomId, bet } = window.LudoOnline.sendRequest(targetUid, onlineModeSetting, onlineBetSetting);
             onlinePendingReq = { reqId, roomId, targetUid, targetName, bet };
             document.getElementById('online-waiting-title').innerText = 'Waiting for response…';
             document.getElementById('online-waiting-sub').innerText = bet > 0 ?
-                `Request sent to ${targetName} for 🪙 ${bet.toLocaleString()} coins. Hang tight.` :
-                `Request sent to ${targetName}. Hang tight.`;
+                'Request sent to ' + targetName + ' for 🪙 ' + bet.toLocaleString() + ' coins. Hang tight.' :
+                'Request sent to ' + targetName + '. Hang tight.';
             document.getElementById('online-waiting-modal').style.display = 'flex';
             if (onlineResponseDetach) { onlineResponseDetach();
                 onlineResponseDetach = null; }
@@ -7454,8 +7392,8 @@
                         window.LudoOnline.payEntryFee(settleRoomId).then(ok => {
                             if (!ok) {
                                 showOnlineNotice('🪙', 'Not Enough Coins',
-                                    `You no longer have enough coins to cover this ${agreedBet.toLocaleString()} coin match.`,
-                                    null);
+                                    'You no longer have enough coins to cover this ' + agreedBet
+                                    .toLocaleString() + ' coin match.', null);
                                 return;
                             }
                             startMatch();
@@ -7466,9 +7404,10 @@
                 } else if (resp.status === 'declined') {
                     if (resp.reason === 'busy') {
                         showOnlineNotice('⏳', 'Player Busy',
-                            `${targetName} is currently busy playing another match and couldn't accept right now.`, null);
+                            targetName +
+                            ' is currently busy playing another match and couldn\'t accept right now.', null);
                     } else {
-                        showOnlineNotice('🙁', 'Request Declined', `${targetName} declined your request.`, null);
+                        showOnlineNotice('🙁', 'Request Declined', targetName + ' declined your request.', null);
                     }
                 }
                 onlinePendingReq = null;
@@ -7504,17 +7443,23 @@
             let msg;
             if (req.type === 'room') {
                 msg = bet > 0 ?
-                    `${req.fromName} invited you to a ${req.playerCount}-player room (${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'}) for 🪙 ${bet.toLocaleString()} coins.` :
-                    `${req.fromName} invited you to a ${req.playerCount}-player room (${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'}).`;
+                    req.fromName + ' invited you to a ' + req.playerCount +
+                    '-player room (' + (req.mode === 'barrier' ? 'Barrier Mode' : 'Normal') + ') for 🪙 ' + bet
+                    .toLocaleString() + ' coins.' :
+                    req.fromName + ' invited you to a ' + req.playerCount +
+                    '-player room (' + (req.mode === 'barrier' ? 'Barrier Mode' : 'Normal') + ').';
             } else {
                 msg = bet > 0 ?
-                    `${req.fromName} wants to play a ${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'} match with you for 🪙 ${bet.toLocaleString()} coins.` :
-                    `${req.fromName} wants to play a ${req.mode === 'barrier' ? 'Barrier Mode' : 'Normal'} match with you.`;
+                    req.fromName + ' wants to play a ' + (req.mode === 'barrier' ? 'Barrier Mode' : 'Normal') +
+                    ' match with you for 🪙 ' + bet.toLocaleString() + ' coins.' :
+                    req.fromName + ' wants to play a ' + (req.mode === 'barrier' ? 'Barrier Mode' : 'Normal') +
+                    ' match with you.';
             }
             if (busy) msg += ' You are currently in a game — accepting will end it.';
             const acceptBtn = document.getElementById('online-request-accept-btn');
             if (bet > myCoins) {
-                msg += ` You need 🪙 ${bet.toLocaleString()} coins to accept but only have ${myCoins.toLocaleString()}.`;
+                msg += ' You need 🪙 ' + bet.toLocaleString() + ' coins to accept but only have ' + myCoins
+                    .toLocaleString() + '.';
                 if (acceptBtn) { acceptBtn.disabled = true;
                     acceptBtn.style.opacity = '0.4'; }
             } else if (acceptBtn) {
@@ -7568,8 +7513,8 @@
                     window.LudoOnline.payEntryFee(req.roomId).then(ok => {
                         if (!ok) {
                             showOnlineNotice('🪙', 'Not Enough Coins',
-                                `You no longer have enough coins to cover this ${bet.toLocaleString()} coin match.`,
-                                null);
+                                'You no longer have enough coins to cover this ' + bet.toLocaleString() +
+                                ' coin match.', null);
                             return;
                         }
                         startMatch();
@@ -7624,8 +7569,8 @@
                     window.LudoOnline.payEntryFee(roomId).then(ok => {
                         if (!ok) {
                             showOnlineNotice('🪙', 'Not Enough Coins',
-                                `You no longer have enough coins to cover this ${bet.toLocaleString()} coin match.`,
-                                null);
+                                'You no longer have enough coins to cover this ' + bet.toLocaleString() +
+                                ' coin match.', null);
                             return;
                         }
                         finish();
@@ -7666,7 +7611,8 @@
             const nameEl = document.getElementById('theme-selector-name');
             if (nameEl) nameEl.textContent = theme.name;
             const swatchEl = document.getElementById('theme-selector-swatch');
-            if (swatchEl) swatchEl.style.background = `linear-gradient(135deg, ${theme.swatch[0]}, ${theme.swatch[1]})`;
+            if (swatchEl) swatchEl.style.background = 'linear-gradient(135deg, ' + theme.swatch[0] + ', ' + theme
+                .swatch[1] + ')';
         }
 
         function openThemePicker() {
@@ -7679,7 +7625,8 @@
                 tile.onclick = () => selectTheme(theme.id);
                 const preview = document.createElement('div');
                 preview.className = 'theme-swatch-preview';
-                preview.style.background = `linear-gradient(135deg, ${theme.swatch[0]}, ${theme.swatch[1]})`;
+                preview.style.background = 'linear-gradient(135deg, ' + theme.swatch[0] + ', ' + theme
+                .swatch[1] + ')';
                 const label = document.createElement('span');
                 label.className = 'theme-swatch-label';
                 label.textContent = theme.name;
@@ -7728,7 +7675,8 @@
             const nameEl = document.getElementById('dice-selector-name');
             if (nameEl) nameEl.textContent = skin.name;
             const swatchEl = document.getElementById('dice-selector-swatch');
-            if (swatchEl) swatchEl.style.background = `linear-gradient(135deg, ${skin.swatch[0]}, ${skin.swatch[1]})`;
+            if (swatchEl) swatchEl.style.background = 'linear-gradient(135deg, ' + skin.swatch[0] + ', ' + skin
+                .swatch[1] + ')';
         }
 
         function openDicePicker() {
@@ -7741,7 +7689,8 @@
                 tile.onclick = () => selectDiceSkin(skin.id);
                 const preview = document.createElement('div');
                 preview.className = 'theme-swatch-preview';
-                preview.style.background = `linear-gradient(135deg, ${skin.swatch[0]}, ${skin.swatch[1]})`;
+                preview.style.background = 'linear-gradient(135deg, ' + skin.swatch[0] + ', ' + skin
+                .swatch[1] + ')';
                 const label = document.createElement('span');
                 label.className = 'theme-swatch-label';
                 label.textContent = skin.name;
@@ -7914,7 +7863,7 @@
         window.closeBugReportModal = closeBugReportModal;
         window.submitBugReport = submitBugReport;
 
-        console.log('✅ Ludo Master Pro loaded — Map Pin point centered, dice rolls on board!');
+        console.log('✅ Ludo Master Pro — Token base point centered, dice rolls smoothly on board!');
     </script>
 
     <!-- ADMIN OVERLAYS -->
