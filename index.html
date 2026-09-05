@@ -364,7 +364,7 @@
         .header-actions { width: 100%; display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding-right: 2px; }
 
         .board-stage { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; min-height: 0; }
-        .board-column { width: min(100%, 520px, calc(100vh - 118px - var(--ad-space))); display: flex; flex-direction: column; gap: 9px; }
+        .board-column { width: min(100%, 580px, calc(100vh - 118px - var(--ad-space))); display: flex; flex-direction: column; gap: 9px; }
         .corner-row { display: flex; justify-content: space-between; gap: 5px; }
 
         .player-tag {
@@ -544,15 +544,6 @@
             transition: transform 0.26s ease-in, opacity 0.26s ease-in;
         }
         .board-dice-pop.spinning .dice3d { animation: diceSpinLoop 0.6s linear infinite; }
-        .board-dice-result {
-            position: absolute; left: 50%; bottom: -30px; transform: translateX(-50%) translateY(-6px) scale(0.6);
-            min-width: 34px; padding: 3px 8px; border-radius: 999px; text-align: center;
-            background: linear-gradient(135deg, var(--brass-light), var(--brass) 55%, var(--brass-dark));
-            color: #1a1206; font-weight: 900; font-size: 17px; line-height: 1.4;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.5);
-            opacity: 0; transition: opacity 0.2s ease, transform 0.25s cubic-bezier(.34,1.56,.64,1);
-        }
-        .board-dice-result.show { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 
 
         /* ── Dice skins — see openDicePicker()/selectDiceSkin() in the
@@ -590,21 +581,26 @@
             border: 1px solid rgba(245,215,127,0.35);
         }
         .ludo-board {
-            width: 100%; height: 100%; background: var(--board-bg, #f8fafc); border-radius: 6px; overflow: hidden;
-            /* Small uniform buffer on all 4 sides — NOT for looks, it's
-               what gives an overflowing Map Pin token in the outermost
-               row/column somewhere to spill into that's still inside this
-               element's own clip box. Without it, a pin sitting in row 1
-               (nothing above it to overlap) would overflow straight into
-               this element's own top edge and get clipped by the
-               overflow:hidden above, visually squashing that one pin back
-               down into its square — exactly the "red token between red
-               and green sinks into the square" bug. Percentage padding is
-               always resolved against the WIDTH for all 4 sides, and this
-               board is always square, so equal padding here keeps the
-               15x15 grid perfectly square too (just very slightly
-               smaller) — it does not reintroduce the old rectangular-cell
-               bug from before.  */
+            width: 100%; height: 100%; background: var(--board-bg, #f8fafc); border-radius: 6px; overflow: visible;
+            /* BUG FIX: this used to be overflow:hidden with a small padding
+               buffer around the grid, sized for a much shorter pin. Now
+               that the pin's base ring is anchored to its cell's own
+               center (see .token.token-pin-overflow below), the pin's
+               body needs close to a FULL cell's height of clearance above
+               wherever it's standing — no reasonably-sized padding buffer
+               can reliably contain that for a token sitting in the very
+               top row, where there's nothing above it to overflow into
+               but the board's own edge. That's what was cutting the
+               piece short right at the edge instead of showing it in
+               full. overflow:visible removes the clip entirely, so a
+               piece is never hidden — the only trade-off is the board's
+               4 corners are no longer clipped to the 6px border-radius
+               (barely noticeable at that radius). */
+            /* Small uniform buffer on all 4 sides purely for breathing
+               room around the grid. Percentage padding is always
+               resolved against the WIDTH for all 4 sides, and this board
+               is always square, so equal padding here keeps the 15x15
+               grid perfectly square too (just very slightly smaller). */
             padding: 3.2%;
             /* The 15x15 grid isn't perfectly uniform: the 6 base-quadrant
                tracks on each side are very slightly narrower/shorter, and
@@ -822,6 +818,23 @@
                stands up above its cell instead of lying flat inside it. */
             filter: drop-shadow(0 9px 7px rgba(0,0,0,0.48)) drop-shadow(0 3px 3px rgba(0,0,0,0.35));
         }
+        /* BUG FIX (finished tokens looked huge in the center home
+           triangle): .token-pin-overflow's width/height are percentages
+           of its own parent cell, sized for a normal 1x1 track cell. But
+           .center-home-cell spans a 3x3 area (grid-row/column: 7/10) —
+           roughly 3x the size of a normal cell — so the exact same
+           percentages rendered roughly 3x too big there, clamped up
+           against the (also now-bigger) max-width/max-height. This cuts
+           both back down to what they'd be on a normal 1x1 cell (dividing
+           by ~3), and switches from the bottom-anchored "ring on the
+           cell's center" positioning (which only makes sense for a piece
+           standing on a single track square) to simple full centering,
+           since a finished piece here is just resting in the shared
+           triangle, not planted on a specific square. */
+        .center-home-cell .token.token-pin-overflow {
+            width: 40%; height: 56%; max-width: 29px; max-height: 41px;
+            left: 50%; margin-left: -20%; top: 50%; margin-top: -28%; bottom: auto;
+        }
 
         /* WebGL 3D pawns — the actual pixels are painted by a shared
            <canvas id="webgl-token-layer"> overlay (see the "WebGL 3D pawn
@@ -849,7 +862,10 @@
            is a transform, not a layout resize), so it doesn't push or
            shift any other cell/token around it — it just visually and
            interactively grows on top of everything nearby (z-index above). */
-        @keyframes tokenPulse { 0% { transform: scale(1.1); } 100% { transform: scale(1.34); } }
+        @keyframes tokenPulse {
+            0%   { transform: translate(var(--stack-x, 0%), var(--stack-y, 0%)) scale(calc(var(--stack-scale, 1) * 1.1)); }
+            100% { transform: translate(var(--stack-x, 0%), var(--stack-y, 0%)) scale(calc(var(--stack-scale, 1) * 1.34)); }
+        }
 
         /* BARRIER TOKENS — two same-colour tokens locked together on one cell.
            Gets a bold brass glow + a small lock badge so it reads clearly as
@@ -1680,7 +1696,6 @@
                             <div class="board-dice-pop" id="board-dice-pop">
                                 <div class="board-dice-shadow"></div>
                                 <div class="board-dice-impact"></div>
-                                <div class="board-dice-result" id="board-dice-result"></div>
                             </div>
                         </div>
                     </div>
@@ -3362,9 +3377,7 @@
             const pop = ensureBoardDicePop();
             if (!overlay || !pop) return;
             const cube = pop.querySelector('.dice3d');
-            const resultBadge = document.getElementById('board-dice-result');
             if (cube) { cube.style.transition = 'none'; cube.style.transform = ''; }
-            if (resultBadge) { resultBadge.classList.remove('show'); resultBadge.textContent = ''; }
             overlay.classList.remove('leaving');
             pop.classList.remove('leaving');
 
@@ -3395,10 +3408,9 @@
         }
 
         // Settles the big dice on the real rolled value — mirrors
-        // spinDiceTo() — and reveals the number badge underneath it once
-        // it's most of the way through rotating to rest. `value` here is
-        // the exact same currentRoll the game logic uses to move the
-        // token — this only ever displays it, never decides it.
+        // spinDiceTo(). `value` here is the exact same currentRoll the
+        // game logic uses to move the token — this only ever displays it,
+        // never decides it.
         function settleBoardDicePop(value, durationMs) {
             const pop = document.getElementById('board-dice-pop');
             if (!pop) return;
@@ -3412,15 +3424,6 @@
                 boardDiceCubeState.y = nextAngleTo(boardDiceCubeState.y, target.y, extraSpinsY);
                 cube.style.transition = `transform ${durationMs}ms cubic-bezier(0.22, 0.61, 0.36, 1)`;
                 cube.style.transform = `rotateX(${boardDiceCubeState.x}deg) rotateY(${boardDiceCubeState.y}deg)`;
-            }
-            const resultBadge = document.getElementById('board-dice-result');
-            if (resultBadge) {
-                resultBadge.textContent = value;
-                const myToken = boardDiceRollToken;
-                setTimeout(() => {
-                    if (myToken !== boardDiceRollToken) return; // a newer roll started; leave its own badge alone
-                    resultBadge.classList.add('show');
-                }, durationMs * 0.55);
             }
         }
 
@@ -5915,8 +5918,32 @@
                 group.forEach((t, i) => {
                     const tEl = createTokenElement(t);
                     if (group.length > 1) {
-                        const offset = (i - (group.length - 1) / 2) * 4;
-                        tEl.style.transform = `translate(${offset}px, ${offset}px) scale(${1 - group.length * 0.08})`;
+                        // BUG FIX: stacked tokens (2+ colors sharing a
+                        // star/safe cell) used to sit only 4px apart on a
+                        // straight diagonal line — nowhere near enough
+                        // separation once tokens render as full-sized map
+                        // pins, so with 3-4 colors stacked together, taps
+                        // kept landing on the wrong piece (or seemed not
+                        // to register at all). Spreading them evenly
+                        // around a small circle — using a PERCENTAGE
+                        // offset (relative to each token's own rendered
+                        // size, not a fixed px amount) — keeps them
+                        // clearly separated and individually tappable
+                        // regardless of how big the board/tokens actually
+                        // render on a given screen.
+                        const angle = (2 * Math.PI * i) / group.length - Math.PI / 2;
+                        const spread = 34; // % of the token's own size
+                        const ox = (Math.cos(angle) * spread).toFixed(1);
+                        const oy = (Math.sin(angle) * spread).toFixed(1);
+                        const scale = Math.max(1 - group.length * 0.09, 0.55).toFixed(2);
+                        // Custom properties (not just a plain inline
+                        // transform) because tokenPulse's own keyframe
+                        // needs to read this same offset — see the BUG FIX
+                        // note on tokenPulse above.
+                        tEl.style.setProperty('--stack-x', `${ox}%`);
+                        tEl.style.setProperty('--stack-y', `${oy}%`);
+                        tEl.style.setProperty('--stack-scale', scale);
+                        tEl.style.transform = `translate(var(--stack-x), var(--stack-y)) scale(var(--stack-scale))`;
                     }
                     cellEl.appendChild(tEl);
                 });
