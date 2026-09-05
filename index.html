@@ -372,7 +372,7 @@
         .header-actions { width: 100%; display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding-right: 2px; }
 
         .board-stage { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; min-height: 0; }
-        .board-column { width: min(100%, 580px, calc(100vh - 118px - var(--ad-space))); display: flex; flex-direction: column; gap: 9px; }
+        .board-column { width: min(100%, 640px, calc(100vh - 118px - var(--ad-space))); display: flex; flex-direction: column; gap: 9px; }
         .corner-row { display: flex; justify-content: space-between; gap: 5px; }
 
         .player-tag {
@@ -583,17 +583,12 @@
 
         /* AUTHENTIC LUDO BOARD - UNIFIED 6x6 BASE QUADRANTS WITHOUT CELL LINING! */
         .board-wrapper {
-            position: relative; width: 100%; aspect-ratio: 1/1; padding: 6px;
-            background: linear-gradient(145deg, #3a2414, #1a0f08 55%, #0c0704);
-            border-radius: 14px; border: 2.5px solid var(--brass);
-            box-shadow: 0 0 0 1px rgba(245,215,127,0.2), 0 16px 36px rgba(0,0,0,0.7), 0 0 30px rgba(201,162,75,0.15), inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -3px 8px rgba(0,0,0,0.5); margin: auto;
-        }
-        .board-wrapper::before {
-            content: ''; position: absolute; inset: 3px; border-radius: 13px; pointer-events: none;
-            border: 1px solid rgba(245,215,127,0.35);
+            position: relative; width: 100%; aspect-ratio: 1/1;
+            border-radius: 14px;
+            box-shadow: 0 16px 36px rgba(0,0,0,0.7), 0 0 30px rgba(201,162,75,0.1); margin: auto;
         }
         .ludo-board {
-            width: 100%; height: 100%; background: var(--board-bg, #f8fafc); border-radius: 6px; overflow: visible;
+            width: 100%; height: 100%; background: var(--board-bg, #f8fafc); border-radius: 14px; overflow: visible;
             /* BUG FIX: this used to be overflow:hidden with a small padding
                buffer around the grid, sized for a much shorter pin. Now
                that the pin's base ring is anchored to its cell's own
@@ -606,8 +601,9 @@
                piece short right at the edge instead of showing it in
                full. overflow:visible removes the clip entirely, so a
                piece is never hidden — the only trade-off is the board's
-               4 corners are no longer clipped to the 6px border-radius
-               (barely noticeable at that radius). */
+               4 corners are no longer clipped to the border-radius —
+               moot anyway now that there's no frame around the board to
+               notice it against. */
             /* Small uniform buffer on all 4 sides purely for breathing
                room around the grid. Percentage padding is always
                resolved against the WIDTH for all 4 sides, and this board
