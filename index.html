@@ -484,16 +484,57 @@
             transform: translate(0, 0) scale(0.15) rotate(0deg); opacity: 0;
             filter: drop-shadow(0 14px 22px rgba(0,0,0,0.6));
         }
+        /* A soft contact shadow that grows in under the dice as it lands,
+           and a quick gold ring pulse right as it touches down — small
+           details that sell the idea of the dice actually landing on the
+           board, rather than just materializing. Both are scoped to
+           .rolling-in so they automatically reset with the dice itself. */
+        .board-dice-pop .dice3d { z-index: 2; }
+        .board-dice-shadow {
+            position: absolute; left: 50%; top: 66%; width: 46px; height: 14px;
+            margin-left: -23px; margin-top: -7px; border-radius: 50%;
+            background: radial-gradient(ellipse, rgba(0,0,0,0.55), rgba(0,0,0,0) 72%);
+            opacity: 0; transform: scale(0.15); pointer-events: none; z-index: 1;
+        }
+        .board-dice-impact {
+            position: absolute; left: 50%; top: 50%; width: 10px; height: 10px;
+            margin-left: -5px; margin-top: -5px; border-radius: 50%;
+            border: 2px solid rgba(245, 215, 127, 0.9);
+            opacity: 0; transform: scale(0.4); pointer-events: none; z-index: 1;
+        }
+        .board-dice-pop.rolling-in .board-dice-shadow {
+            animation: diceShadowIn calc(0.6s / var(--speed-factor)) cubic-bezier(0.22, 0.72, 0.32, 1) forwards;
+        }
+        .board-dice-pop.rolling-in .board-dice-impact {
+            /* Delay equals the roll-in's own duration, so the pulse fires
+               the instant the dice actually lands, not before. */
+            animation: diceImpactPulse 0.5s ease-out calc(0.6s / var(--speed-factor)) 1;
+        }
+        @keyframes diceShadowIn {
+            0%   { transform: scale(0.15); opacity: 0; }
+            55%  { opacity: 0.5; }
+            75%  { transform: scale(1.15); opacity: 0.55; }
+            100% { transform: scale(1); opacity: 0.55; }
+        }
+        @keyframes diceImpactPulse {
+            0%   { opacity: 0.85; transform: scale(0.4); }
+            100% { opacity: 0; transform: scale(3.4); }
+        }
         /* Tumbles in from the tapping player's own corner (set via the
            --dice-from-* custom properties, per color — see
            showBoardDicePop()) to dead-center, growing and spinning on the
            way — a genuine "rolled in and across the board" motion, not
-           just a pop-in-place. `forwards` holds it resting at the final
-           (centered, settled) transform once the tumble-in finishes. */
+           just a pop-in-place. The 72%/86% steps add a small landing
+           bounce (overshoot past resting size, settle back) instead of
+           just easing flatly to a stop, for a more polished feel.
+           `forwards` holds it resting at the final (centered, settled)
+           transform once the tumble-in finishes. */
         @keyframes diceRollIn {
             0%   { transform: translate(var(--dice-from-x, -170%), var(--dice-from-y, -170%)) scale(0.3) rotate(var(--dice-from-rot, -70deg)); opacity: 0.5; }
-            55%  { opacity: 1; }
-            100% { transform: translate(0, 0) scale(1.3) rotate(0deg); opacity: 1; }
+            50%  { opacity: 1; }
+            72%  { transform: translate(0, 0) scale(1.22) rotate(-6deg); opacity: 1; }
+            86%  { transform: translate(0, 0) scale(1.02) rotate(3deg); opacity: 1; }
+            100% { transform: translate(0, 0) scale(1.1) rotate(0deg); opacity: 1; }
         }
         .board-dice-pop.rolling-in {
             animation: diceRollIn calc(0.6s / var(--speed-factor)) cubic-bezier(0.22, 0.72, 0.32, 1) forwards;
@@ -724,46 +765,57 @@
             filter: drop-shadow(0 3px 2px rgba(0,0,0,0.55));
         }
         .token svg { width: 100%; height: 100%; display: block; overflow: visible; }
-        /* The Map Pin's base ring (gold rim + colored center disc, grouped
-           together in pawnSVG_mappin so they spin as one rigid unit) keeps
-           slowly turning in place the whole time the token sits on the
-           board — a small always-on "this is where the piece actually is"
-           cue. transform-origin is set in the SVG's own viewBox units
-           (40, 97.5 — the ring's exact center), so it spins in place
-           rather than orbiting off to one side. */
+        /* The Map Pin's base ring — a proper round ring now: a solid
+           color disc with a thick dashed gold circle around it (see
+           pawnSVG_mappin), grouped together so they spin as one rigid
+           unit — keeps slowly turning in place the whole time the token
+           sits on the board. Because the ring is dashed rather than a
+           solid band, the rotation is actually visible (a plain solid
+           ring looks identical at every angle). transform-origin is set
+           in the SVG's own viewBox units (40, 97.5 — the ring's exact
+           center), so it spins in place rather than orbiting off to one
+           side. */
         .pin-ring-spin { transform-origin: 40px 97.5px; animation: pinRingSpin 3.2s linear infinite; }
         @keyframes pinRingSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        /* Map Pin design — taller than the cell itself, but now anchored so
-           the pin's own point/base — the actual spot that's meant to be
-           "on" a given square — lands exactly on that cell's center,
-           with the rounded head rising up above it. bottom:50% puts the
-           box's bottom edge (where the SVG's point sits, since it uses
-           preserveAspectRatio="xMidYMax") at the cell's vertical middle,
-           not its bottom edge.
-           BUG FIX: this used to be left:0; right:0; margin:0 auto — but
-           this box is WIDER than its own cell (107%), and per the CSS
-           centering-with-auto-margins rule, equal auto margins are only
-           used when they'd come out non-negative; here they'd have to be
-           negative, so browsers fall back to collapsing them to zero and
-           anchoring flush to the left instead, overflowing only to the
-           right — which visually shoved the whole pin (ring/base
-           included) off-center. left:50% + a matching negative
-           margin-left centers it correctly instead. Kept off the
-           transform property (not translateX(-50%)) so it still doesn't
-           fight with the inline transform: translate(...) renderTokens()
-           applies when 2+ tokens share a cell. The board's own
-           overflow:hidden only clips at its outer edge, so this only
-           ever visually overlaps neighbouring cells, never gets cut off
-           except right at the board's border. */
+        /* Map Pin design — taller than the cell itself, anchored so the
+           pin's actual base ring — not just the box's own edge — lands
+           on that cell's center, with the rounded head rising up above
+           it. See the bottom:% comment below for the box-vs-ring math.
+           BUG FIX: horizontal centering used to be left:0; right:0;
+           margin:0 auto — but this box is WIDER than its own cell, and
+           per the CSS centering-with-auto-margins rule, equal auto
+           margins are only used when they'd come out non-negative; here
+           they'd have to be negative, so browsers fall back to
+           collapsing them to zero and anchoring flush to the left
+           instead, overflowing only to the right — which visually
+           shoved the whole pin off-center. left:50% + a matching
+           negative margin-left centers it correctly instead. Kept off
+           the transform property (not translateX(-50%)) so it still
+           doesn't fight with the inline transform: translate(...)
+           renderTokens() applies when 2+ tokens share a cell. The
+           board's own overflow:hidden only clips at its outer edge, so
+           this only ever visually overlaps neighbouring cells, never
+           gets cut off except right at the board's border. */
         .token.token-pin-overflow {
             /* Width:height kept at the SVG's own 80:112 ratio (≈0.714) so
                the pin actually renders at the FULL box height instead of
                shrinking to fit a mismatched box and just sitting there
                unchanged — that mismatch was why the earlier version
-               didn't visibly stick out of its cell at all. */
-            width: 107%; height: 150%; max-width: 77px; max-height: 108px;
-            left: 50%; margin-left: -53.5%; top: auto; bottom: 50%;
+               didn't visibly stick out of its cell at all. Sized up a
+               notch from the original 107%/150% for better visibility. */
+            width: 120%; height: 168%; max-width: 86px; max-height: 121px;
+            /* BUG FIX: the ring isn't at the very bottom of the SVG (y=112)
+               — it's drawn at y≈97.5 of a 112-tall viewBox, i.e. ~12.95%
+               of the SVG's own height above its bottom edge. bottom:50%
+               only centered the BOX's bottom edge, which left the actual
+               ring sitting visibly above the cell's center (by that same
+               12.95% of the box's rendered height). Converting that into
+               cell-relative terms (12.95% x 168% box height ≈ 21.75% of
+               the cell) and subtracting it from 50% gives the bottom
+               offset that lands the RING itself — not just the box — on
+               the cell's true center. */
+            left: 50%; margin-left: -60%; top: auto; bottom: 28.25%;
             z-index: 15;
             /* A stronger, more "lifted off the board" cast shadow than the
                flatter default .token shadow, since this piece now visibly
@@ -1626,6 +1678,8 @@
                         <div class="ludo-board" id="board"></div>
                         <div class="board-dice-overlay" id="board-dice-overlay">
                             <div class="board-dice-pop" id="board-dice-pop">
+                                <div class="board-dice-shadow"></div>
+                                <div class="board-dice-impact"></div>
                                 <div class="board-dice-result" id="board-dice-result"></div>
                             </div>
                         </div>
@@ -6108,9 +6162,8 @@
                 </defs>
                 <ellipse cx="40" cy="104" rx="24" ry="8" fill="url(#${uid}sh)"/>
                 <g class="pin-ring-spin">
-                    <ellipse cx="40" cy="97.5" rx="22" ry="10" fill="url(#${uid}gold)" stroke="#6b4420" stroke-width="2.4"/>
-                    <ellipse cx="40" cy="96.2" rx="13" ry="5.4" fill="${c.mid}"/>
-                    <ellipse cx="40" cy="95.4" rx="13" ry="4.9" fill="${c.dark}" opacity="0.28"/>
+                    <circle cx="40" cy="97.5" r="11.5" fill="url(#${uid}badge)"/>
+                    <circle cx="40" cy="97.5" r="16.5" fill="none" stroke="url(#${uid}gold)" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="13 9"/>
                 </g>
                 <g filter="url(#${uid}ds)">
                     <path d="M40 6
