@@ -7,7 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
     <style>
         :root {
             --speed-factor: 1;
@@ -60,7 +59,7 @@
         
         #menu-screen { padding: 22px 22px calc(18px + env(safe-area-inset-bottom)); max-width: 420px; width: 92%; display: none; max-height: 94vh; overflow-y: auto; margin-top: var(--banner-space); transition: margin-top 0.2s ease; }
 
-        /* ── Persistent top bar: name left, coins right ──────────────────── */
+        /* ── Persistent top bar: coins left, name right ──────────────────── */
         .menu-topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
         .topbar-pill { display: flex; align-items: center; gap: 5px; background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(0,0,0,0.25)); border: 1px solid rgba(201,162,75,0.3); border-radius: 999px; padding: 5px 12px; cursor: pointer; transition: transform 0.12s; box-shadow: 0 3px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06); }
         .topbar-pill:active { transform: scale(0.96); }
@@ -175,19 +174,16 @@
             display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 275; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
         }
         #account-modal .onl-modal-card { max-width: 340px; max-height: 88vh; overflow-y: auto; }
+        #customize-hub-modal { display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 275; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        #customize-hub-modal .onl-modal-card { max-width: 340px; max-height: 88vh; overflow-y: auto; text-align: left; }
+        .hub-row { display: flex; align-items: center; gap: 8px; padding: 10px 4px; border-bottom: 1px solid rgba(201,162,75,0.15); cursor: pointer; }
+        .hub-row:last-of-type { border-bottom: none; }
+        .hub-row:active { background: rgba(255,255,255,0.05); }
         .acct-tab-row { display: flex; gap: 6px; margin-bottom: 12px; }
         .acct-tab-btn { flex: 1; padding: 9px 4px; border-radius: 10px; border: 1px solid rgba(201,162,75,0.28); background: rgba(255,255,255,0.05); color: var(--ivory-dim); font-weight: 800; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.3px; cursor: pointer; }
         .acct-tab-btn.active { background: linear-gradient(135deg, var(--brass-light), var(--brass) 55%, var(--brass-dark)); border-color: var(--brass-light); color: #1a1206; }
         .acct-error { background: rgba(220,38,38,0.18); border: 1px solid rgba(220,38,38,0.4); color: #ffb3b3; font-size: 0.68rem; font-weight: 700; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; line-height: 1.4; }
         .acct-success { background: rgba(22,163,74,0.18); border: 1px solid rgba(22,163,74,0.4); color: #b7f5c9; font-size: 0.68rem; font-weight: 700; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; line-height: 1.4; }
-
-        /* ── Coins dialog (claim daily bonus / watch ad) ──────────────────── */
-        #coin-modal {
-            display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 275; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
-        }
-        #coin-modal .onl-modal-card { max-width: 320px; }
-        .coin-modal-balance-row { display: flex; justify-content: center; margin-bottom: 4px; }
-        .coin-modal-balance-row .coin-balance-amount { font-size: 1.6rem; }
 
         /* ── Profile card (avatar + name + win/loss stats) ───────────────── */
         #profile-modal, #avatar-picker-modal {
@@ -229,6 +225,19 @@
         .token-swatch-preview { width: 100%; height: 56px; display: flex; align-items: center; justify-content: center; }
         .token-swatch-preview svg { width: 42px; height: 56px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.4)); }
         .token-swatch-label { font-size: 0.56rem; font-weight: 700; color: var(--ivory-dim); display: block; margin-top: 4px; padding: 0 2px; }
+
+        /* ── Get More Coins: Spin & Win wheel ─────────────────────────────── */
+        #coins-modal { display: none; position: fixed; inset: 0; background: rgba(5,3,2,0.92); backdrop-filter: blur(12px); z-index: 276; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        #coins-modal .onl-modal-card { max-width: 320px; max-height: 92vh; overflow-y: auto; }
+        .spin-wheel-wrap { position: relative; width: 190px; height: 190px; margin: 8px auto 16px; }
+        .spin-wheel-pointer { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); font-size: 1.3rem; color: var(--brass-light); z-index: 3; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)); }
+        .spin-wheel { width: 100%; height: 100%; border-radius: 50%; position: relative; border: 5px solid var(--brass-light); box-shadow: 0 6px 20px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.3); transition: transform 4s cubic-bezier(.17,.67,.2,1); }
+        .spin-wheel-segment-label { position: absolute; top: 50%; left: 50%; width: 50%; height: 1px; text-align: right; padding-right: 12px; font-size: 0.66rem; font-weight: 900; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.7); transform-origin: left center; }
+        .spin-wheel-center { position: absolute; top: 50%; left: 50%; width: 28px; height: 28px; margin: -14px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--brass-light), var(--brass-dark)); border: 2px solid rgba(255,255,255,0.5); z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+        .coins-modal-divider { text-align: center; font-size: 0.62rem; color: var(--ivory-dim); text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 10px; position: relative; }
+        .coins-modal-divider::before, .coins-modal-divider::after { content: ''; position: absolute; top: 50%; width: 38%; height: 1px; background: rgba(201,162,75,0.25); }
+        .coins-modal-divider::before { left: 0; }
+        .coins-modal-divider::after { right: 0; }
 
         /* =================================================================
            ONLINE MULTIPLAYER — Lobby screen, request popups, player list.
@@ -372,53 +381,38 @@
         .header-actions { width: 100%; display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding-right: 2px; }
 
         .board-stage { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; min-height: 0; }
-        .board-column { width: min(100%, 640px, calc(100vh - 118px - var(--ad-space))); display: flex; flex-direction: column; gap: 9px; }
+        .board-column { width: min(100%, 520px, calc(100vh - 118px - var(--ad-space))); display: flex; flex-direction: column; gap: 9px; }
         .corner-row { display: flex; justify-content: space-between; gap: 5px; }
 
         .player-tag {
-            position: relative; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 76px; height: 76px; padding: 6px;
+            position: relative; display: flex; align-items: center; justify-content: center; flex: 0 1 48%; height: 64px; max-width: 172px; padding: 4px;
             border-radius: 14px; background: linear-gradient(155deg, rgba(28,19,12,0.95), rgba(12,8,5,0.95)); border: 1.5px solid rgba(201,162,75,0.28); box-shadow: 0 3px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
             transition: all 0.25s ease; min-width: 0;
         }
         .player-tag::before { content: ''; position: absolute; top: 3px; bottom: 3px; left: 0; width: 4px; background: var(--tag-accent, var(--brass)); border-radius: 4px 0 0 4px; box-shadow: 0 0 8px var(--tag-accent, var(--brass)); }
         .player-tag.active { border-color: var(--brass-light); box-shadow: 0 0 18px rgba(245,215,127,0.4), inset 0 1px 0 rgba(255,255,255,0.08); background: linear-gradient(155deg, rgba(46,30,15,0.97), rgba(20,13,7,0.97)); transform: scale(1.02); }
-        .tag-avatar {
-            width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; margin-left: 4px;
-            display: flex; align-items: center; justify-content: center; font-size: 0.62rem; font-weight: 900; color: rgba(0,0,0,0.55);
-            background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.85), var(--tag-accent) 60%, rgba(0,0,0,0.35) 100%);
-            border: 2px solid rgba(255,255,255,0.75); box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        }
-        .tag-info { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-width: 0; flex: 1; margin-left: 6px; gap: 2px; }
-        .tag-name { font-size: 0.66rem; font-weight: 800; color: var(--ivory); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; letter-spacing: 0.1px; }
-        .tag-edit-btn { flex-shrink: 0; border: none; background: rgba(255,255,255,0.1); color: var(--brass-light); width: 16px; height: 16px; border-radius: 50%; font-size: 0.5rem; line-height: 16px; text-align: center; cursor: pointer; padding: 0; margin-left: 4px; }
-        .tag-status { font-size: 0.48rem; color: var(--ivory-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
 
         /* PLAYER-CARD DICE — a real 3D cube (6 faces positioned in 3D space
            with CSS transforms), not a flat square with a fake 2D spin. While
            rolling it tumbles continuously; once the result is known it
            smoothly rotates to rest on exactly that face — see
            startDiceSpin()/spinDiceTo() in the game script for how the JS
-           drives this. */
+           drives this. The whole player-tag box is now JUST this dice —
+           no avatar/name/status text (names live at each player's own
+           board-corner base instead — see .base-name-badge — and the dice
+           is sized to fill essentially the entire tag). */
         .dice-box-tag {
-            width: 100%; height: 100%; flex-shrink: 0; border-radius: 12px; margin: 0;
+            width: 56px; height: 56px; flex-shrink: 0; border-radius: 10px;
             background: transparent; color: #0f172a; display: none; justify-content: center; align-items: center;
-            border: none; cursor: pointer; transition: transform 0.15s; perspective: 420px;
+            border: none; cursor: pointer; transition: transform 0.15s; perspective: 300px;
             padding: 0;
         }
         .dice-box-tag:active { transform: scale(0.92); }
-        .dice-box-tag.active-roll { display: flex; animation: bounce 1s infinite alternate, diceGlowPulse 1.8s ease-in-out infinite; }
+        .dice-box-tag.active-roll { display: flex; animation: bounce 1s infinite alternate; }
         @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
-        /* Soft breathing glow while it's waiting to be rolled — same
-           "professional, alive" touch as the token pins' radar-ping ring,
-           and it's on .dice-box-tag itself so it applies identically no
-           matter which of the 7 dice skins is currently selected. */
-        @keyframes diceGlowPulse {
-            0%, 100% { filter: drop-shadow(0 0 2px rgba(255,255,255,0.12)); }
-            50%      { filter: drop-shadow(0 0 9px rgba(255,255,255,0.55)); }
-        }
 
         .dice3d {
-            position: relative; width: 60px; height: 60px; transform-style: preserve-3d;
+            position: relative; width: 40px; height: 40px; transform-style: preserve-3d;
             transform: rotateX(0deg) rotateY(0deg);
         }
         /* While actively rolling, an infinite CSS keyframe loop drives the
@@ -434,129 +428,24 @@
             to   { transform: rotateX(360deg) rotateY(720deg); }
         }
         .dice-face {
-            position: absolute; inset: 0; width: 60px; height: 60px; border-radius: 8px;
+            position: absolute; inset: 0; width: 40px; height: 40px; border-radius: 8px;
             background: linear-gradient(145deg, var(--dice-face-a, #ffffff) 0%, var(--dice-face-b, #f4f7fb) 45%, var(--dice-face-c, #dbe3ec) 100%);
             border: 2px solid var(--dice-face-border, #cbd5e1); box-shadow: inset 0 2px 3px rgba(255,255,255,0.7), inset 0 -3px 5px rgba(0,0,0,0.15);
             display: flex; justify-content: center; align-items: center; padding: 5px;
             backface-visibility: hidden;
         }
-        /* Continuous diagonal glossy sheen sweeping across every face —
-           a shared ::after overlay, so it's automatically identical (and
-           automatically themed via the same CSS variables) across all 7
-           dice skins with zero per-skin work. Purely cosmetic (pointer-
-           events:none), so it never interferes with clicking the dice. */
-        .dice-face::after {
-            content: ''; position: absolute; inset: 0; border-radius: 4px; pointer-events: none;
-            background: linear-gradient(120deg, transparent 32%, rgba(255,255,255,0.4) 48%, rgba(255,255,255,0.58) 52%, transparent 68%);
-            background-size: 260% 260%; background-position: 100% 0%;
-            animation: diceSheen 3.4s ease-in-out infinite;
-        }
-        @keyframes diceSheen {
-            0%, 100% { background-position: 120% -10%; }
-            50%      { background-position: -20% 110%; }
-        }
         /* Standard die layout — opposite faces always sum to 7. */
-        .dice-face-front  { transform: rotateY(0deg)    translateZ(30px); }
-        .dice-face-back   { transform: rotateY(180deg)  translateZ(30px); }
-        .dice-face-right  { transform: rotateY(90deg)   translateZ(30px); }
-        .dice-face-left   { transform: rotateY(-90deg)  translateZ(30px); }
-        .dice-face-top    { transform: rotateX(90deg)   translateZ(30px); }
-        .dice-face-bottom { transform: rotateX(-90deg)  translateZ(30px); }
+        .dice-face-front  { transform: rotateY(0deg)    translateZ(20px); }
+        .dice-face-back   { transform: rotateY(180deg)  translateZ(20px); }
+        .dice-face-right  { transform: rotateY(90deg)   translateZ(20px); }
+        .dice-face-left   { transform: rotateY(-90deg)  translateZ(20px); }
+        .dice-face-top    { transform: rotateX(90deg)   translateZ(20px); }
+        .dice-face-bottom { transform: rotateX(-90deg)  translateZ(20px); }
 
         .dice-pip-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); width: 100%; height: 100%; gap: 2px; }
-        .dice-pip { display: block; border-radius: 50%; width: 100%; height: 100%; max-width: 13px; max-height: 13px; margin: auto; background: radial-gradient(circle at 30% 25%, var(--dice-pip-a, #334155), var(--dice-pip-b, #0f172a)); box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 0.5px 1px rgba(0,0,0,0.35); opacity: 0; transform: scale(0.4); transition: opacity 0.1s, transform 0.1s; }
+        .dice-pip { display: block; border-radius: 50%; width: 100%; height: 100%; max-width: 8.5px; max-height: 8.5px; margin: auto; background: radial-gradient(circle at 30% 25%, var(--dice-pip-a, #334155), var(--dice-pip-b, #0f172a)); box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 0.5px 1px rgba(0,0,0,0.35); opacity: 0; transform: scale(0.4); transition: opacity 0.1s, transform 0.1s; }
         .dice-pip.on { opacity: 1; transform: scale(1); }
         .dice-pip.on.red-pip { background: radial-gradient(circle at 30% 25%, var(--dice-pip-accent-a, #ef4444), var(--dice-pip-accent-b, #7f1d1d)); box-shadow: inset 0 1px 1px rgba(255,255,255,0.55), 0 0.5px 1px rgba(0,0,0,0.4), 0 0 4px var(--dice-pip-accent-glow, rgba(239,68,68,0.55)); }
-
-        /* ── Board-center dice roll: when a player taps their dice, instead
-           of only tumbling in its small corner tag, a bigger copy of the
-           same 3D cube physically rolls out from that player's own corner,
-           tumbling across the board as it goes, comes to rest in the
-           middle, settles on the real rolled face, and shows the number
-           right underneath — then fades back out. The exact same
-           currentRoll value this settles on is what the game already uses
-           to move the token (see onDiceClick) — this is purely the visual
-           on top of that, nothing about which number actually gets used
-           changes. This overlay lives inside .board-wrapper (a sibling of
-           #board), so it's a descendant of #game-screen and still picks up
-           whichever dice skin is currently selected via the same CSS
-           variables. ── */
-        .board-dice-overlay {
-            position: absolute; inset: 0; z-index: 60; pointer-events: none;
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; visibility: hidden; transition: opacity 0.15s ease;
-        }
-        .board-dice-overlay.show { opacity: 1; visibility: visible; }
-        .board-dice-pop {
-            position: relative; perspective: 600px;
-            transform: translate(0, 0) scale(0.15) rotate(0deg); opacity: 0;
-            filter: drop-shadow(0 14px 22px rgba(0,0,0,0.6));
-        }
-        /* A soft contact shadow that grows in under the dice as it lands,
-           and a quick gold ring pulse right as it touches down — small
-           details that sell the idea of the dice actually landing on the
-           board, rather than just materializing. Both are scoped to
-           .rolling-in so they automatically reset with the dice itself. */
-        .board-dice-pop .dice3d { z-index: 2; }
-        .board-dice-shadow {
-            position: absolute; left: 50%; top: 66%; width: 46px; height: 14px;
-            margin-left: -23px; margin-top: -7px; border-radius: 50%;
-            background: radial-gradient(ellipse, rgba(0,0,0,0.55), rgba(0,0,0,0) 72%);
-            opacity: 0; transform: scale(0.15); pointer-events: none; z-index: 1;
-        }
-        .board-dice-impact {
-            position: absolute; left: 50%; top: 50%; width: 10px; height: 10px;
-            margin-left: -5px; margin-top: -5px; border-radius: 50%;
-            border: 2px solid rgba(245, 215, 127, 0.9);
-            opacity: 0; transform: scale(0.4); pointer-events: none; z-index: 1;
-        }
-        .board-dice-pop.rolling-in .board-dice-shadow {
-            animation: diceShadowIn calc(0.6s / var(--speed-factor)) cubic-bezier(0.22, 0.72, 0.32, 1) forwards;
-        }
-        .board-dice-pop.rolling-in .board-dice-impact {
-            /* Delay equals the roll-in's own duration, so the pulse fires
-               the instant the dice actually lands, not before. */
-            animation: diceImpactPulse 0.5s ease-out calc(0.6s / var(--speed-factor)) 1;
-        }
-        @keyframes diceShadowIn {
-            0%   { transform: scale(0.15); opacity: 0; }
-            55%  { opacity: 0.5; }
-            75%  { transform: scale(1.15); opacity: 0.55; }
-            100% { transform: scale(1); opacity: 0.55; }
-        }
-        @keyframes diceImpactPulse {
-            0%   { opacity: 0.85; transform: scale(0.4); }
-            100% { opacity: 0; transform: scale(3.4); }
-        }
-        /* Tumbles in from the tapping player's own corner (set via the
-           --dice-from-* custom properties, per color — see
-           showBoardDicePop()) to dead-center, growing and spinning on the
-           way — a genuine "rolled in and across the board" motion, not
-           just a pop-in-place. The starting rotation is offset by an
-           extra -340deg so the wrapper itself visibly spins through
-           almost a full turn during the throw (on top of the dice3d
-           cube's own separate, indefinite 3D tumble) — a livelier, more
-           "thrown across the table" feel. The 72%/86% steps add a
-           bounce (overshoot past resting size/angle, settle back)
-           instead of just easing flatly to a stop. `forwards` holds it
-           resting at the final (centered, settled) transform once the
-           tumble-in finishes. */
-        @keyframes diceRollIn {
-            0%   { transform: translate(var(--dice-from-x, -170%), var(--dice-from-y, -170%)) scale(0.3) rotate(calc(var(--dice-from-rot, -70deg) - 340deg)); opacity: 0.5; }
-            50%  { opacity: 1; }
-            72%  { transform: translate(0, 0) scale(1.06) rotate(14deg); opacity: 1; }
-            86%  { transform: translate(0, 0) scale(0.88) rotate(-6deg); opacity: 1; }
-            100% { transform: translate(0, 0) scale(0.95) rotate(0deg); opacity: 1; }
-        }
-        .board-dice-pop.rolling-in {
-            animation: diceRollIn calc(0.6s / var(--speed-factor)) cubic-bezier(0.22, 0.72, 0.32, 1) forwards;
-        }
-        .board-dice-overlay.leaving .board-dice-pop {
-            transform: translate(0, 0) scale(0.1) rotate(35deg); opacity: 0;
-            transition: transform 0.26s ease-in, opacity 0.26s ease-in;
-        }
-        .board-dice-pop.spinning .dice3d { animation: diceSpinLoop 0.6s linear infinite; }
-
 
         /* ── Dice skins — see openDicePicker()/selectDiceSkin() in the
            regular script. Applied as a class on #game-screen (the shared
@@ -583,42 +472,18 @@
 
         /* AUTHENTIC LUDO BOARD - UNIFIED 6x6 BASE QUADRANTS WITHOUT CELL LINING! */
         .board-wrapper {
-            position: relative; width: 100%; aspect-ratio: 1/1;
-            border-radius: 14px;
-            box-shadow: 0 16px 36px rgba(0,0,0,0.7), 0 0 30px rgba(201,162,75,0.1); margin: auto;
+            position: relative; width: 100%; aspect-ratio: 1/1; padding: 6px;
+            background: linear-gradient(145deg, #3a2414, #1a0f08 55%, #0c0704);
+            border-radius: 14px; border: 2.5px solid var(--brass);
+            box-shadow: 0 0 0 1px rgba(245,215,127,0.2), 0 16px 36px rgba(0,0,0,0.7), 0 0 30px rgba(201,162,75,0.15), inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -3px 8px rgba(0,0,0,0.5); margin: auto;
+        }
+        .board-wrapper::before {
+            content: ''; position: absolute; inset: 3px; border-radius: 13px; pointer-events: none;
+            border: 1px solid rgba(245,215,127,0.35);
         }
         .ludo-board {
-            width: 100%; height: 100%; background: var(--board-bg, #f8fafc); border-radius: 14px; overflow: visible;
-            /* BUG FIX: this used to be overflow:hidden with a small padding
-               buffer around the grid, sized for a much shorter pin. Now
-               that the pin's base ring is anchored to its cell's own
-               center (see .token.token-pin-overflow below), the pin's
-               body needs close to a FULL cell's height of clearance above
-               wherever it's standing — no reasonably-sized padding buffer
-               can reliably contain that for a token sitting in the very
-               top row, where there's nothing above it to overflow into
-               but the board's own edge. That's what was cutting the
-               piece short right at the edge instead of showing it in
-               full. overflow:visible removes the clip entirely, so a
-               piece is never hidden — the only trade-off is the board's
-               4 corners are no longer clipped to the border-radius —
-               moot anyway now that there's no frame around the board to
-               notice it against. */
-            /* Small uniform buffer on all 4 sides purely for breathing
-               room around the grid. Percentage padding is always
-               resolved against the WIDTH for all 4 sides, and this board
-               is always square, so equal padding here keeps the 15x15
-               grid perfectly square too (just very slightly smaller). */
-            padding: 3.2%;
-            /* The 15x15 grid isn't perfectly uniform: the 6 base-quadrant
-               tracks on each side are very slightly narrower/shorter, and
-               the 3 middle "cross" tracks (the actual path cells tokens
-               travel through) are correspondingly a bit larger — so the
-               base areas read a touch smaller and the path cells a touch
-               bigger, without changing the board's overall square size. */
-            display: grid;
-            grid-template-columns: repeat(15, 1fr);
-            grid-template-rows: repeat(15, 1fr);
+            width: 100%; height: 100%; background: var(--board-bg, #f8fafc); border-radius: 6px; overflow: hidden;
+            display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
             border: 2px solid var(--board-border, #0f172a); position: relative;
             box-shadow: inset 0 0 24px rgba(0,0,0,0.15);
             /* Default ("Classic") theme values — every .theme-* class below
@@ -656,47 +521,27 @@
         .ludo-board.board-rot-180 { transform: rotate(180deg); }
         .ludo-board.board-rot-270 { transform: rotate(270deg); }
 
-        /* The 3D pawns are rendered "upright" inside their own little WebGL
-           canvas — but that canvas lives inside #board, so when the WHOLE
-           board gets rotated above for a given player's perspective, every
-           pawn's canvas rotates right along with it, and an upright pawn
-           at 90°/270° ends up lying on its side. These counter-rotate just
-           the canvas by the opposite angle so the pawn itself always stays
-           standing straight up on screen, no matter which way the board is
-           currently rotated for the viewer. */
-        .ludo-board.board-rot-90  .token-webgl3d-canvas { transform: rotate(-90deg); }
-        .ludo-board.board-rot-180 .token-webgl3d-canvas { transform: rotate(-180deg); }
-        .ludo-board.board-rot-270 .token-webgl3d-canvas { transform: rotate(-270deg); }
-
         /* 6x6 BASE QUADRANTS (NO INNER CELL LINES) */
         .base-quadrant {
             position: relative; display: flex; justify-content: center; align-items: center;
             border: 2px solid var(--board-border, #0f172a); z-index: 1; padding: 6%;
         }
-        /* Each player's name now lives here — bottom-centre of their own
-           base — instead of in the corner player-tag card below the
-           board (see renderScoreboard()). pointer-events:none so it never
-           blocks clicking a token sitting nearby in the base. */
-        .base-name-label {
-            position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%);
-            max-width: 92%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            font-weight: 800; font-size: 0.72rem; letter-spacing: 0.2px; color: #ffffff;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.55), 0 0 6px rgba(0,0,0,0.35);
-            pointer-events: none; z-index: 2; text-align: center;
-        }
-        /* Red & Green sit in the TOP row of the board, so their name should
-           hug the board's OUTER top edge (the same "outward-facing" side
-           that Blue/Yellow's name already sits on at the bottom) instead of
-           the inner edge toward the centre — this is the mirror flip for
-           those two quadrants only. */
-        .base-name-label.label-top { bottom: auto; top: 3%; }
+        /* Read-only name badge shown at each player's own base corner —
+           the ONLY place a name is ever edited is the single Profile card
+           in the menu (see openProfileModal/openMenuNameEdit); tapping
+           these does nothing on purpose. */
+        .base-name-badge { position: absolute; font-size: 0.62rem; font-weight: 800; color: rgba(0,0,0,0.8); background: rgba(255,255,255,0.6); padding: 2px 7px; border-radius: 7px; max-width: 72%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; z-index: 2; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+        .base-name-Red    { top: 5px; left: 5px; }
+        .base-name-Green  { top: 5px; right: 5px; }
+        .base-name-Blue   { bottom: 5px; left: 5px; }
+        .base-name-Yellow { bottom: 5px; right: 5px; }
         .base-quadrant-red { grid-row: 1 / 7; grid-column: 1 / 7; background: linear-gradient(135deg, var(--red-light), var(--red), var(--red-dark)); }
         .base-quadrant-green { grid-row: 1 / 7; grid-column: 10 / 16; background: linear-gradient(135deg, var(--green-light), var(--green), var(--green-dark)); }
         .base-quadrant-blue { grid-row: 10 / 16; grid-column: 1 / 7; background: linear-gradient(135deg, var(--blue-light), var(--blue), var(--blue-dark)); }
         .base-quadrant-yellow { grid-row: 10 / 16; grid-column: 10 / 16; background: linear-gradient(135deg, var(--yellow-light), var(--yellow), var(--yellow-dark)); }
 
         .base-white-tray {
-            width: 74%; height: 74%; background: linear-gradient(160deg, #ffffff, #f1f5f9); border-radius: 18px;
+            width: 80%; height: 80%; background: linear-gradient(160deg, #ffffff, #f1f5f9); border-radius: 18px;
             box-shadow: inset 0 2px 8px rgba(0,0,0,0.22), 0 4px 10px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(0,0,0,0.05);
             display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8%; padding: 8%;
         }
@@ -763,130 +608,19 @@
            square so it always fits inside a board cell without clipping;
            the SVG's own viewBox scales the pawn shape to fit within it. */
         .token {
-            width: 100%; height: 100%; max-width: 70px; max-height: 70px;
+            width: 94%; height: 94%; max-width: 40px; max-height: 40px;
             cursor: pointer; z-index: 10; position: absolute; display: flex; justify-content: center; align-items: center;
-            transition: transform calc(0.16s / var(--speed-factor)) ease-out, filter 0.15s ease;
+            transition: transform calc(0.16s / var(--speed-factor)) cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
             filter: drop-shadow(0 3px 2px rgba(0,0,0,0.55));
-            /* Composes two independent, JS-driven offsets purely through
-               CSS custom properties, so JS only ever needs to set/update
-               variables — never .style.transform directly — no matter
-               which combination applies to a given token:
-                 --stack-x/--stack-y/--stack-scale: the small persistent
-                   offset for 2+ tokens sharing one cell (see renderTokens).
-                 --flip-x/--flip-y: a transient, larger offset used ONLY
-                   to smoothly animate a token from its previous on-screen
-                   spot to its new one after a step (the "FIRST" half of a
-                   FLIP animation — see renderTokens' comment on this).
-               Both default to a no-op (0px/0%/1) when unset, so a token
-               that's neither stacked nor mid-FLIP is unaffected. */
-            transform: translate(var(--flip-x, 0px), var(--flip-y, 0px)) translate(var(--stack-x, 0%), var(--stack-y, 0%)) scale(var(--stack-scale, 1));
         }
         .token svg { width: 100%; height: 100%; display: block; overflow: visible; }
-        /* The Map Pin's base ring — a proper round ring now: a solid
-           color disc with a thick dashed gold circle around it (see
-           pawnSVG_mappin), grouped together so they spin as one rigid
-           unit — keeps slowly turning in place the whole time the token
-           sits on the board. Because the ring is dashed rather than a
-           solid band, the rotation is actually visible (a plain solid
-           ring looks identical at every angle). transform-origin is set
-           in the SVG's own viewBox units (40, 97.5 — the ring's exact
-           center), so it spins in place rather than orbiting off to one
-           side. */
-        .pin-ring-spin { transform-origin: 40px 97.5px; animation: pinRingSpin 3.2s linear infinite; }
-        @keyframes pinRingSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        /* Map Pin design — taller than the cell itself, anchored so the
-           pin's actual base ring — not just the box's own edge — lands
-           on that cell's center, with the rounded head rising up above
-           it. See the bottom:% comment below for the box-vs-ring math.
-           BUG FIX: horizontal centering used to be left:0; right:0;
-           margin:0 auto — but this box is WIDER than its own cell, and
-           per the CSS centering-with-auto-margins rule, equal auto
-           margins are only used when they'd come out non-negative; here
-           they'd have to be negative, so browsers fall back to
-           collapsing them to zero and anchoring flush to the left
-           instead, overflowing only to the right — which visually
-           shoved the whole pin off-center. left:50% + a matching
-           negative margin-left centers it correctly instead. Kept off
-           the transform property (not translateX(-50%)) so it still
-           doesn't fight with the inline transform: translate(...)
-           renderTokens() applies when 2+ tokens share a cell. The
-           board's own overflow:hidden only clips at its outer edge, so
-           this only ever visually overlaps neighbouring cells, never
-           gets cut off except right at the board's border. */
-        .token.token-pin-overflow {
-            /* Width:height kept at the SVG's own 80:112 ratio (≈0.714) so
-               the pin actually renders at the FULL box height instead of
-               shrinking to fit a mismatched box and just sitting there
-               unchanged — that mismatch was why the earlier version
-               didn't visibly stick out of its cell at all. Sized up a
-               couple more notches from the original 107%/150%. */
-            width: 132%; height: 184.8%; max-width: 95px; max-height: 133px;
-            /* BUG FIX: the ring isn't at the very bottom of the SVG (y=112)
-               — it's drawn at y≈97.5 of a 112-tall viewBox, i.e. ~12.95%
-               of the SVG's own height above its bottom edge. bottom:50%
-               only centered the BOX's bottom edge, which left the actual
-               ring sitting visibly above the cell's center (by that same
-               12.95% of the box's rendered height). Converting that into
-               cell-relative terms (12.95% x current box height) and
-               subtracting it from 50% gives the bottom offset that lands
-               the RING itself — not just the box — on the cell's true
-               center. */
-            left: 50%; margin-left: -66%; top: auto; bottom: 26.07%;
-            z-index: 15;
-            /* A stronger, more "lifted off the board" cast shadow than the
-               flatter default .token shadow, since this piece now visibly
-               stands up above its cell instead of lying flat inside it. */
-            filter: drop-shadow(0 9px 7px rgba(0,0,0,0.48)) drop-shadow(0 3px 3px rgba(0,0,0,0.35));
-        }
-        /* BUG FIX (finished tokens looked huge in the center home
-           triangle): .token-pin-overflow's width/height are percentages
-           of its own parent cell, sized for a normal 1x1 track cell. But
-           .center-home-cell spans a 3x3 area (grid-row/column: 7/10) —
-           roughly 3x the size of a normal cell — so the exact same
-           percentages rendered roughly 3x too big there, clamped up
-           against the (also now-bigger) max-width/max-height. This cuts
-           both back down to what they'd be on a normal 1x1 cell (dividing
-           by ~3), and switches from the bottom-anchored "ring on the
-           cell's center" positioning (which only makes sense for a piece
-           standing on a single track square) to simple full centering,
-           since a finished piece here is just resting in the shared
-           triangle, not planted on a specific square. */
-        .center-home-cell .token.token-pin-overflow {
-            width: 44%; height: 61.6%; max-width: 32px; max-height: 44px;
-            left: 50%; margin-left: -22%; top: 50%; margin-top: -30.8%; bottom: auto;
-        }
-
-        /* WebGL 3D pawns — the actual pixels are painted by a shared
-           <canvas id="webgl-token-layer"> overlay (see the "WebGL 3D pawn
-           tokens" script block), not by this div's own content. This div
-           stays exactly where it always was (same size/position/z-index,
-           same click handler) purely as the hit-target the canvas paints
-           on top of; the radial-gradient backgrounds below recreate the
-           movable/barrier glow that used to come from the SVG's own
-           drop-shadow filter, showing through the transparent canvas
-           pixels around the round pawn silhouette. */
-        .token-webgl3d { background: transparent; }
-        .token-webgl3d.token-movable { background: radial-gradient(circle, rgba(245,215,127,0.7), rgba(245,215,127,0.15) 55%, transparent 75%); }
-        .token-webgl3d.token-barrier { background: radial-gradient(circle, rgba(245,215,127,0.4), transparent 68%); }
 
         .token-movable {
-            animation: tokenPulse calc(0.6s / var(--speed-factor)) infinite alternate;
-            filter: drop-shadow(0 0 4px rgba(245,215,127,1)) drop-shadow(0 0 11px rgba(245,215,127,0.9)) drop-shadow(0 3px 3px rgba(0,0,0,0.55));
+            animation: tokenPulse calc(0.5s / var(--speed-factor)) infinite alternate;
+            filter: drop-shadow(0 0 3px rgba(245,215,127,0.95)) drop-shadow(0 0 8px rgba(245,215,127,0.8)) drop-shadow(0 3px 2px rgba(0,0,0,0.5));
             z-index: 30;
         }
-        /* Always noticeably BIGGER than a resting token (never dips back
-           to normal size or smaller) — gently breathing between the two —
-           specifically so it's an easy, unmissable tap target that clears
-           its neighbours without needing to touch them precisely. The
-           enlarged box still sits exactly where the real token is (this
-           is a transform, not a layout resize), so it doesn't push or
-           shift any other cell/token around it — it just visually and
-           interactively grows on top of everything nearby (z-index above). */
-        @keyframes tokenPulse {
-            0%   { transform: translate(var(--flip-x, 0px), var(--flip-y, 0px)) translate(var(--stack-x, 0%), var(--stack-y, 0%)) scale(calc(var(--stack-scale, 1) * 1.1)); }
-            100% { transform: translate(var(--flip-x, 0px), var(--flip-y, 0px)) translate(var(--stack-x, 0%), var(--stack-y, 0%)) scale(calc(var(--stack-scale, 1) * 1.34)); }
-        }
+        @keyframes tokenPulse { 0% { transform: scale(0.92); } 100% { transform: scale(1.15); } }
 
         /* BARRIER TOKENS — two same-colour tokens locked together on one cell.
            Gets a bold brass glow + a small lock badge so it reads clearly as
@@ -1097,19 +831,19 @@
 
     <!-- MAIN MENU -->
     <div id="menu-screen" class="glass-panel">
-        <!-- Slim persistent top bar: name on the left, coins on the right —
+        <!-- Slim persistent top bar: coins on the left, name on the right —
              both are the SAME elements the rest of the app already updates
              (menu-coin-balance / menu-player-name-display), just relocated
              here, so every existing update call site keeps working with no
              JS changes needed. Tapping either jumps straight to the
-             matching action (edit name / claim coins, in a dialog). -->
+             matching action (claim coins / edit name). -->
         <div class="menu-topbar">
+            <div class="topbar-pill topbar-coins" onclick="document.getElementById('coin-balance-card').scrollIntoView({behavior:'smooth', block:'center'})">
+                <span class="coin-balance-amount" id="menu-coin-balance">5,000</span>
+            </div>
             <div class="topbar-pill topbar-name" onclick="openProfileModal()">
                 <span class="topbar-avatar" id="topbar-avatar">🧑</span>
                 <span class="mode-name" id="menu-player-name-display">Player</span>
-            </div>
-            <div class="topbar-pill topbar-coins" onclick="openCoinModal()">
-                <span class="coin-balance-amount" id="menu-coin-balance">5,000</span>
             </div>
         </div>
 
@@ -1118,6 +852,34 @@
         <div class="title-rule"></div>
 
         <div id="announcement-banner"></div>
+
+        <div class="dash-card coin-balance-card" id="coin-balance-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🪙 Get More Coins</span>
+            </div>
+            <div class="selector-tile" onclick="openCoinsModal()">
+                <span class="mode-icon-badge" style="background:linear-gradient(150deg, var(--brass-light), rgba(0,0,0,0.3));">🎡</span>
+                <span style="flex:1;">
+                    <span class="mode-name" style="display:block;">Spin the Wheel or Watch an Ad</span>
+                    <span class="mode-sub" id="coin-claim-countdown-preview">Free coins available</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+        </div>
+
+        <div class="dash-card" id="account-menu-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">⚙️ Customize &amp; Settings</span>
+            </div>
+            <div class="selector-tile" onclick="openCustomizeHub()">
+                <span class="mode-icon-badge" id="account-status-icon" style="background:linear-gradient(150deg, var(--brass-light), rgba(0,0,0,0.3));">🎨</span>
+                <span style="flex:1;">
+                    <span class="mode-name" id="account-status-title" style="display:block;">Player</span>
+                    <span class="mode-sub" id="account-status-sub">Account, theme, dice, tokens &amp; match rules</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+        </div>
 
         <!-- Player name inputs kept in the DOM (hidden) so startGame() and
              the rest of the game logic can read them exactly as before —
@@ -1129,62 +891,6 @@
             <input type="text" id="name-green" value="Player 2">
             <input type="text" id="name-yellow" value="Player 3">
             <input type="text" id="name-blue" value="Player 4">
-        </div>
-
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <span class="dash-card-title">⚙️ Match Settings</span>
-            </div>
-            <div class="selector-tile" onclick="openMatchSettingsModal()">
-                <span class="mode-icon-badge" id="settings-selector-icon">🤝</span>
-                <span style="flex:1;">
-                    <span class="mode-name" style="display:block;">Partner &amp; Barrier Mode</span>
-                    <span class="mode-sub" id="settings-selector-current">Partner: Off · Barrier: Off</span>
-                </span>
-                <span style="font-size:1.1rem; opacity:0.8;">›</span>
-            </div>
-        </div>
-
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <span class="dash-card-title">🎨 Board Theme</span>
-            </div>
-            <div class="selector-tile" onclick="openThemePicker()">
-                <span class="mode-icon-badge theme-swatch-badge" id="theme-selector-swatch">🎨</span>
-                <span style="flex:1;">
-                    <span class="mode-name" id="theme-selector-name" style="display:block;">Classic</span>
-                    <span class="mode-sub">Tap to change how the board looks</span>
-                </span>
-                <span style="font-size:1.1rem; opacity:0.8;">›</span>
-            </div>
-        </div>
-
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <span class="dash-card-title">🎲 Dice Design</span>
-            </div>
-            <div class="selector-tile" onclick="openDicePicker()">
-                <span class="mode-icon-badge theme-swatch-badge" id="dice-selector-swatch">🎲</span>
-                <span style="flex:1;">
-                    <span class="mode-name" id="dice-selector-name" style="display:block;">Classic</span>
-                    <span class="mode-sub">Tap to change your dice's look</span>
-                </span>
-                <span style="font-size:1.1rem; opacity:0.8;">›</span>
-            </div>
-        </div>
-
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <span class="dash-card-title">♟️ Token Design</span>
-            </div>
-            <div class="selector-tile" onclick="openTokenPicker()">
-                <span class="mode-icon-badge token-selector-preview" id="token-selector-preview"></span>
-                <span style="flex:1;">
-                    <span class="mode-name" id="token-selector-name" style="display:block;">Classic Pawn</span>
-                    <span class="mode-sub">Tap to change your pieces' shape</span>
-                </span>
-                <span style="font-size:1.1rem; opacity:0.8;">›</span>
-            </div>
         </div>
 
         <div class="dash-card">
@@ -1216,17 +922,7 @@
         </div>
 
         <div class="dash-card">
-            <div class="dash-card-head">
-                <span class="dash-card-title">🐞 Found a Problem?</span>
-            </div>
-            <div class="bugrep-tile" onclick="openBugReportModal('menu')">
-                <span class="mode-icon-badge">🐞</span>
-                <span style="flex:1;">
-                    <span class="mode-name" style="display:block;">Report a Bug</span>
-                    <span class="mode-sub">Tell us what happened — we'll see it in the admin panel</span>
-                </span>
-                <span style="font-size:1.1rem; opacity:0.8;">›</span>
-            </div>
+            <button class="btn" style="width:100%;" onclick="openBugReportModal('menu')">🐞 Report a Bug</button>
         </div>
 
         <p class="dev-credit">Designed &amp; Developed by <span>Rahbar Waris</span></p>
@@ -1325,6 +1021,63 @@
     <!-- Persistent Account (Save Account / Login) — ties coins/progress to
          an email+password account instead of just this device, so Clear
          Cache/Clear Data or switching phones never resets them. -->
+    <!-- CUSTOMIZE HUB: one menu that fans out to Account, Match Settings
+         (Partner & Barrier), Board Theme, Dice Design, and Token Design —
+         each of those still opens its own existing modal below; this is
+         just the single shared entry point into all of them. -->
+    <div id="customize-hub-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-title">⚙️ Customize &amp; Settings</div>
+
+            <div class="hub-row" onclick="closeCustomizeHub(); openAccountModal();">
+                <span class="mode-icon-badge" id="hub-account-icon" style="background:linear-gradient(150deg, var(--brass-light), rgba(0,0,0,0.3));">👤</span>
+                <span style="flex:1;">
+                    <span class="mode-name" id="hub-account-title" style="display:block;">Player</span>
+                    <span class="mode-sub" id="hub-account-sub">Save your account so coins never reset</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+
+            <div class="hub-row" onclick="closeCustomizeHub(); openMatchSettingsModal();">
+                <span class="mode-icon-badge" id="hub-settings-icon">🤝</span>
+                <span style="flex:1;">
+                    <span class="mode-name" style="display:block;">Partner &amp; Barrier Mode</span>
+                    <span class="mode-sub" id="hub-settings-current">Partner: Off · Barrier: Off</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+
+            <div class="hub-row" onclick="closeCustomizeHub(); openThemePicker();">
+                <span class="mode-icon-badge theme-swatch-badge" id="hub-theme-swatch">🎨</span>
+                <span style="flex:1;">
+                    <span class="mode-name" id="hub-theme-name" style="display:block;">Board Theme: Classic</span>
+                    <span class="mode-sub">Tap to change how the board looks</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+
+            <div class="hub-row" onclick="closeCustomizeHub(); openDicePicker();">
+                <span class="mode-icon-badge theme-swatch-badge" id="hub-dice-swatch">🎲</span>
+                <span style="flex:1;">
+                    <span class="mode-name" id="hub-dice-name" style="display:block;">Dice Design: Classic</span>
+                    <span class="mode-sub">Tap to change your dice's look</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+
+            <div class="hub-row" onclick="closeCustomizeHub(); openTokenPicker();">
+                <span class="mode-icon-badge token-selector-preview" id="hub-token-preview"></span>
+                <span style="flex:1;">
+                    <span class="mode-name" id="hub-token-name" style="display:block;">Token Design: Classic Pawn</span>
+                    <span class="mode-sub">Tap to change your pieces' shape</span>
+                </span>
+                <span style="font-size:1.1rem; opacity:0.8;">›</span>
+            </div>
+
+            <button class="onl-back-btn" style="width:100%; margin-top:12px;" onclick="closeCustomizeHub()">Close</button>
+        </div>
+    </div>
+
     <div id="account-modal">
         <div class="onl-modal-card" style="text-align:left;">
             <div class="onl-modal-title" style="text-align:center;">🔐 Your Account</div>
@@ -1360,29 +1113,6 @@
         </div>
     </div>
 
-    <!-- COINS: claim daily bonus / watch ad for coins — opened from the
-         topbar's coin pill. Same coin-claim-row/coin-claim-btn/
-         coin-claim-countdown/coin-ad-row/coin-ad-btn IDs as before (just
-         relocated from an inline dashboard card into this dialog), so
-         renderCoinUI()'s existing update logic keeps working unchanged. -->
-    <div id="coin-modal">
-        <div class="onl-modal-card">
-            <div class="onl-modal-title">🪙 Get More Coins</div>
-            <div class="coin-modal-balance-row">
-                <span class="coin-balance-amount" id="coin-modal-balance">5,000</span>
-            </div>
-            <div class="coin-claim-row" id="coin-claim-row" style="margin-top:12px;">
-                <button class="coin-claim-btn" id="coin-claim-btn" onclick="handleClaimDailyBonus()">Claim Free 100 Coins</button>
-                <span class="coin-claim-countdown" id="coin-claim-countdown"></span>
-            </div>
-            <div class="coin-claim-row" id="coin-ad-row">
-                <button class="coin-claim-btn coin-ad-btn" id="coin-ad-btn" onclick="handleWatchAdForCoins()">🎬 Watch Ad for 100 Coins</button>
-                <span class="coin-claim-countdown">Watch as many times as you like</span>
-            </div>
-            <button class="onl-back-btn" style="width:100%; margin-top:10px;" onclick="closeCoinModal()">Close</button>
-        </div>
-    </div>
-
     <!-- PROFILE: avatar + name + win/loss stats -->
     <div id="profile-modal">
         <div class="onl-modal-card">
@@ -1397,14 +1127,6 @@
             </div>
             <button class="btn" onclick="openAvatarPicker()">🖼️ Change Avatar</button>
             <button class="btn" style="margin-top:8px;" onclick="closeProfileModal(); openMenuNameEdit();">✏️ Edit Name</button>
-            <div class="selector-tile" style="margin-top:8px;" onclick="closeProfileModal(); openAccountModal();">
-                <span class="mode-icon-badge" id="profile-account-status-icon" style="background:linear-gradient(150deg, var(--brass-light), rgba(0,0,0,0.3));">👤</span>
-                <span style="flex:1;">
-                    <span class="mode-name" id="profile-account-status-title" style="display:block;">Playing as Guest</span>
-                    <span class="mode-sub" id="profile-account-status-sub">Save your account so coins never reset</span>
-                </span>
-                <span style="font-size:1.1rem; opacity:0.8;">›</span>
-            </div>
             <button class="onl-back-btn" style="width:100%; margin-top:10px;" onclick="closeProfileModal()">Close</button>
         </div>
     </div>
@@ -1442,6 +1164,27 @@
             <div class="onl-modal-title">♟️ Choose a Token Design</div>
             <div class="token-grid" id="token-grid"></div>
             <button class="onl-back-btn" style="width:100%; margin-top:4px;" onclick="closeTokenPicker()">Close</button>
+        </div>
+    </div>
+
+    <!-- GET MORE COINS: Spin & Win wheel + Watch Ad, one place -->
+    <div id="coins-modal">
+        <div class="onl-modal-card">
+            <div class="onl-modal-title">🪙 Get More Coins</div>
+
+            <div class="spin-wheel-wrap">
+                <div class="spin-wheel-pointer">▼</div>
+                <div class="spin-wheel" id="spin-wheel"></div>
+            </div>
+            <button class="coin-claim-btn" id="coin-claim-btn" onclick="handleSpinWheel()">🎡 Spin & Win</button>
+            <span class="coin-claim-countdown" id="coin-claim-countdown"></span>
+
+            <div class="coins-modal-divider">or</div>
+
+            <button class="coin-claim-btn coin-ad-btn" id="coin-ad-btn" onclick="handleWatchAdForCoins()">🎬 Watch Ad for 100 Coins</button>
+            <span class="coin-claim-countdown">Watch as many times as you like</span>
+
+            <button class="onl-back-btn" style="width:100%; margin-top:14px;" onclick="closeCoinsModal()">Close</button>
         </div>
     </div>
 
@@ -1716,12 +1459,6 @@
 
                     <div class="board-wrapper">
                         <div class="ludo-board" id="board"></div>
-                        <div class="board-dice-overlay" id="board-dice-overlay">
-                            <div class="board-dice-pop" id="board-dice-pop">
-                                <div class="board-dice-shadow"></div>
-                                <div class="board-dice-impact"></div>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="corner-row" id="corner-row-bottom">
@@ -2415,6 +2152,7 @@
         const DAILY_BONUS_AMOUNT = 100;
         const AD_REWARD_AMOUNT   = 100;
         let onlineUid = null;
+        let _onlineHeartbeatTimer = null;
         let onlineName = '';
         // Normalized (lowercase, key-safe) form of onlineName — tracks which
         // slot in lm_online/nameIndex this device currently "owns", so a
@@ -2463,6 +2201,38 @@
         onlineNameKey = _onlineLoad('lm_online_name_key', '') || _normalizeNameKey(onlineName);
         onlineAvatar  = _onlineLoad('lm_online_avatar', '') || '🧑';
 
+        // Pulls this account's REAL saved name/avatar down from the server
+        // and adopts them locally — instead of ever pushing this device's
+        // own (possibly empty/default, e.g. right after Clear Data) name up
+        // and clobbering a returning/logged-in player's actual saved one.
+        // Only if the server genuinely has nothing yet (a real first-ever
+        // identity) does it fall back to writing this device's name up.
+        // Returns a promise so callers that need the REAL data before
+        // proceeding (see loginWithEmail) can await it — registerOnlineIdentity
+        // itself just fires this and moves on (fire-and-forget is fine for
+        // the common case: same device, same account, nothing to sync).
+        async function _syncIdentityFromServer(uid) {
+            const userRef = ref(rtdb, `${ONLINE_ROOT}/users/${uid}`);
+            let existing = null;
+            try {
+                const snap = await get(userRef);
+                existing = snap.exists() ? snap.val() : null;
+            } catch (e) { _onlineReportError('read:users', e); }
+
+            if (existing && typeof existing.name === 'string' && existing.name) {
+                onlineName = existing.name;
+                onlineNameKey = _normalizeNameKey(onlineName);
+                _onlineSave('lm_online_name', onlineName);
+                _onlineSave('lm_online_name_key', onlineNameKey);
+                if (typeof existing.avatar === 'string' && existing.avatar) {
+                    onlineAvatar = existing.avatar;
+                    _onlineSave('lm_online_avatar', onlineAvatar);
+                }
+            } else {
+                update(userRef, { name: onlineName, avatar: onlineAvatar }).catch(err => _onlineReportError('write:users', err));
+            }
+        }
+
         function registerOnlineIdentity(uid) {
             if (!uid) return;
             onlineUid = uid;
@@ -2471,8 +2241,7 @@
             // Use update(), not set(): set() blindly overwrites the WHOLE
             // record every time the app opens, which used to wipe out this
             // player's coin balance/coinsZeroAt back to nothing on every
-            // single reload. get() first so a returning player's coins are
-            // only initialized once, never reset.
+            // single reload.
             //
             // ── BUG FIX (coins resetting to 5000 after Clear Cache/Clear
             // Data, then reopening) ─────────────────────────────────────────
@@ -2493,14 +2262,20 @@
             // DIFFERENT (older) uid, this is a returning player whose auth
             // session rotated but whose publicId survived, so their old
             // balance is copied over onto the new uid instead of resetting.
-            // Non-coin fields (name/status/online/etc.) are still fine for
-            // the client to write directly — only the `coins` field itself
-            // is locked down (see the "coins" Security Rule).
+            //
+            // ── BUG FIX (name silently reset after Login / Clear Data) ──────
+            // `name` used to be written here on EVERY load from whatever
+            // this device's local onlineName happened to be — including a
+            // fresh device's random default — clobbering a just-logged-into
+            // account's real saved name. It's intentionally left OUT of this
+            // base update now; _syncIdentityFromServer() above is the only
+            // thing that ever touches name/avatar going forward.
             const base = {
-                uid: onlineUid, name: onlineName, publicId: onlinePublicId,
+                uid: onlineUid, publicId: onlinePublicId,
                 online: true, status: 'idle', roomId: null, updatedAt: serverTimestamp()
             };
             update(userRef, base).catch(err => _onlineReportError('write:users', err));
+            _syncIdentityFromServer(onlineUid);
 
             // SECURITY: coin initialization (first-ever launch → 5000
             // starting coins, or a device that lost its Auth session but
@@ -2519,6 +2294,26 @@
             // If the tab/app dies without a clean goodbye, the server itself
             // flips us to offline the instant the connection drops.
             onDisconnect(userRef).update({ online: false, status: 'offline' }).catch(() => {});
+
+            // BUG FIX (fake/ghost "online" players): onDisconnect() only
+            // fires once Firebase detects the actual connection dropped —
+            // on mobile that can lag minutes behind reality (app killed
+            // from recent-apps, backgrounded, poor signal), or occasionally
+            // never fire at all. Left unaddressed, every such session stays
+            // "online: true" forever, and the Players Online list slowly
+            // fills up with people who are long gone. This heartbeat keeps
+            // touching `updatedAt` every 25s while this tab is genuinely
+            // open; listenOnlineUsers() below then also requires a RECENT
+            // updatedAt before treating anyone as actually online, so a
+            // session that stops heartbeating (however that happened) ages
+            // out of the list within about a minute even if it never got a
+            // clean onDisconnect.
+            if (_onlineHeartbeatTimer) clearInterval(_onlineHeartbeatTimer);
+            _onlineHeartbeatTimer = setInterval(() => {
+                if (!onlineUid) return;
+                update(ref(rtdb, `${ONLINE_ROOT}/users/${onlineUid}`), { updatedAt: serverTimestamp() }).catch(() => {});
+            }, 25000);
+
             window.dispatchEvent(new CustomEvent('lm-online-ready', {
                 detail: { uid: onlineUid, name: onlineName, publicId: onlinePublicId }
             }));
@@ -2676,10 +2471,13 @@
             listenOnlineUsers(cb) {
                 return _onlineListen(`${ONLINE_ROOT}/users`, all => {
                     const list = [];
+                    const STALE_MS = 90000; // matches the 25s heartbeat above with headroom
+                    const now = Date.now();
                     if (all) {
                         Object.keys(all).forEach(uid => {
                             const u = all[uid];
-                            if (uid !== onlineUid && u && u.online && u.status === 'idle') {
+                            const seenRecently = typeof u.updatedAt === 'number' && (now - u.updatedAt) < STALE_MS;
+                            if (uid !== onlineUid && u && u.online && u.status === 'idle' && seenRecently) {
                                 list.push({ uid, name: u.name, publicId: u.publicId });
                             }
                         });
@@ -3176,7 +2974,21 @@
             // wherever it's used — a new phone, a reinstalled app, etc.
             async loginWithEmail(email, password) {
                 try {
-                    await signInWithEmailAndPassword(auth, email, password);
+                    const cred = await signInWithEmailAndPassword(auth, email, password);
+                    // BUG FIX: without this, submitWelcomeLogin() (regular
+                    // script) used to run its own "fill in a default name if
+                    // this device has none saved" step immediately after
+                    // login resolved — but registerOnlineIdentity() (fired
+                    // separately, from the auth-state-changed listener) had
+                    // its OWN async fetch of the account's real saved name
+                    // still in flight at that exact moment. On a device with
+                    // no local name cached (e.g. right after Clear Data),
+                    // that race meant a fresh RANDOM name/avatar routinely
+                    // "won" and got written up, silently clobbering the real
+                    // logged-into account's actual saved identity. Awaiting
+                    // the real sync HERE, before this function's promise
+                    // even resolves, closes that race for good.
+                    await _syncIdentityFromServer(cred.user.uid);
                     return { ok: true };
                 } catch (e) {
                     return { ok: false, reason: e.code || 'error', message: e.message };
@@ -3349,126 +3161,6 @@
             state.y = nextAngleTo(state.y, target.y, extraSpinsY);
             cube.style.transition = `transform ${durationMs}ms cubic-bezier(0.22, 0.61, 0.36, 1)`;
             cube.style.transform = `rotateX(${state.x}deg) rotateY(${state.y}deg)`;
-        }
-
-        // ─── Board-center dice roll ─────────────────────────────────────────
-        // A bigger copy of the same 3D cube (same faces, same rotation math
-        // as startDiceSpin()/spinDiceTo() above) that physically rolls out
-        // from the tapping player's own corner, tumbles across the board,
-        // and comes to rest in the middle — so the roll (and its result) is
-        // visible right there on the board, not just in the small corner
-        // tag. Purely cosmetic/additive: the corner dice tag still drives
-        // all the real game logic exactly as before (currentRoll is still
-        // what actually moves the token, completely unchanged), this just
-        // mirrors it visually.
-        let boardDiceCubeState = { x: 0, y: 0 };
-        // Bumped on every showBoardDicePop() call. A hide/settle scheduled
-        // by an OLDER roll checks this before touching the DOM — if a
-        // newer roll has since started (e.g. rolling a 6 and going again
-        // right away), the token won't match and the stale call becomes a
-        // no-op instead of yanking the overlay out from under the new
-        // roll. This is what was causing the pop to sometimes glitch or
-        // not visibly appear at all on quick back-to-back rolls.
-        let boardDiceRollToken = 0;
-
-        // Which corner each color's dice tag sits in (see the corner-row-top
-        // / corner-row-bottom markup: Red+Green on top, Blue+Yellow on the
-        // bottom), so the roll-in animation starts from roughly the right
-        // side of the board for whoever actually tapped.
-        const DICE_ROLL_FROM = {
-            Red:    { x: '-170%', y: '-170%', rot: '-70deg' },
-            Green:  { x: '170%',  y: '-170%', rot: '70deg' },
-            Blue:   { x: '-170%', y: '170%',  rot: '70deg' },
-            Yellow: { x: '170%',  y: '170%',  rot: '-70deg' }
-        };
-
-        // Builds the big cube's own 6-face DOM the first time it's needed
-        // (reuses dice3dHTML(), same as every corner dice tag), so it picks
-        // up the same pips/skin styling automatically.
-        function ensureBoardDicePop() {
-            const pop = document.getElementById('board-dice-pop');
-            if (!pop || pop.querySelector('.dice3d')) return pop;
-            pop.insertAdjacentHTML('afterbegin', dice3dHTML());
-            return pop;
-        }
-
-        // Rolls the big dice out from `color`'s corner onto the board and
-        // starts its own indefinite tumble the instant a roll begins —
-        // mirrors startDiceSpin().
-        function showBoardDicePop(color) {
-            boardDiceRollToken++;
-            const overlay = document.getElementById('board-dice-overlay');
-            const pop = ensureBoardDicePop();
-            if (!overlay || !pop) return;
-            const cube = pop.querySelector('.dice3d');
-            if (cube) { cube.style.transition = 'none'; cube.style.transform = ''; }
-            overlay.classList.remove('leaving');
-            pop.classList.remove('leaving');
-
-            const from = DICE_ROLL_FROM[color] || DICE_ROLL_FROM.Red;
-            pop.style.setProperty('--dice-from-x', from.x);
-            pop.style.setProperty('--dice-from-y', from.y);
-            pop.style.setProperty('--dice-from-rot', from.rot);
-            // Restart the roll-in keyframe animation every time. Simply
-            // re-adding the same class name on an already-finished
-            // animation does nothing (no class change for the browser to
-            // react to), so the class needs to come off first. A double
-            // requestAnimationFrame (rather than a synchronous
-            // `void pop.offsetWidth` reflow) is the more reliable way to
-            // guarantee the "class removed" state actually gets painted
-            // before the class goes back on — some mobile WebViews don't
-            // consistently restart a CSS animation off a same-tick reflow.
-            pop.classList.remove('rolling-in');
-            const myToken = boardDiceRollToken;
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    if (myToken !== boardDiceRollToken) return; // an even newer roll started first
-                    pop.classList.add('rolling-in');
-                });
-            });
-
-            pop.classList.add('spinning');
-            overlay.classList.add('show');
-        }
-
-        // Settles the big dice on the real rolled value — mirrors
-        // spinDiceTo(). `value` here is the exact same currentRoll the
-        // game logic uses to move the token — this only ever displays it,
-        // never decides it.
-        function settleBoardDicePop(value, durationMs) {
-            const pop = document.getElementById('board-dice-pop');
-            if (!pop) return;
-            const cube = pop.querySelector('.dice3d');
-            pop.classList.remove('spinning');
-            if (cube) {
-                const target = DICE_FACE_ROTATION[value] || DICE_FACE_ROTATION[1];
-                const extraSpinsX = 1 + Math.floor(Math.random() * 2);
-                const extraSpinsY = 2 + Math.floor(Math.random() * 2);
-                boardDiceCubeState.x = nextAngleTo(boardDiceCubeState.x, target.x, extraSpinsX);
-                boardDiceCubeState.y = nextAngleTo(boardDiceCubeState.y, target.y, extraSpinsY);
-                cube.style.transition = `transform ${durationMs}ms cubic-bezier(0.22, 0.61, 0.36, 1)`;
-                cube.style.transform = `rotateX(${boardDiceCubeState.x}deg) rotateY(${boardDiceCubeState.y}deg)`;
-            }
-        }
-
-        // Fades the big dice back out (after `delayMs`, so the result stays
-        // readable for a moment) and hides the overlay entirely once the
-        // fade finishes.
-        function hideBoardDicePop(delayMs) {
-            const overlay = document.getElementById('board-dice-overlay');
-            const pop = document.getElementById('board-dice-pop');
-            if (!overlay) return;
-            const myToken = boardDiceRollToken;
-            setTimeout(() => {
-                if (myToken !== boardDiceRollToken) return; // a newer roll has started; don't touch it
-                if (pop) pop.classList.remove('rolling-in');
-                overlay.classList.add('leaving');
-                setTimeout(() => {
-                    if (myToken !== boardDiceRollToken) return;
-                    overlay.classList.remove('show');
-                    overlay.classList.remove('leaving');
-                }, 300);
-            }, delayMs);
         }
 
         let hasBonusTurn = false;
@@ -3761,6 +3453,7 @@
             if (onlNameInput) onlNameInput.value = name;
             const menuDisplay = document.getElementById('menu-player-name-display');
             if (menuDisplay) menuDisplay.textContent = name;
+            updateAccountStatusUI(); // keeps the Customize card/hub headline (now showing your actual name) in sync
             return { ok: true };
         }
 
@@ -3774,25 +3467,38 @@
                 status = (window.LudoOnline && typeof window.LudoOnline.getAccountStatus === 'function')
                     ? window.LudoOnline.getAccountStatus() : { ready: false };
             }
-            const icon  = document.getElementById('profile-account-status-icon');
-            const title = document.getElementById('profile-account-status-title');
-            const sub   = document.getElementById('profile-account-status-sub');
+            const icon  = document.getElementById('account-status-icon');
+            const title = document.getElementById('account-status-title');
+            const sub   = document.getElementById('account-status-sub');
+            const hubIcon  = document.getElementById('hub-account-icon');
+            const hubTitle = document.getElementById('hub-account-title');
+            const hubSub   = document.getElementById('hub-account-sub');
             const loggedInView = document.getElementById('account-logged-in-view');
             const guestView     = document.getElementById('account-guest-view');
             const loggedInEmail = document.getElementById('account-logged-in-email');
             if (!status.ready) return; // not signed in yet — keep showing defaults
 
+            // The card/hub row now shows this player's actual NAME as the
+            // headline (not a generic "Guest"/"Account Saved" label) — the
+            // save-status still shows, just as the smaller subtitle line.
+            const displayName = (window.LudoOnline && window.LudoOnline.getProfile().name) || loadSavedPlayerName() || 'Player';
+            const iconEmoji = (!status.isAnonymous && status.email) ? '✅' : '👤';
+            const subText = (!status.isAnonymous && status.email)
+                ? `Account saved · ${status.email}`
+                : 'Playing as Guest · tap to save your account';
+
+            if (title) title.textContent = displayName;
+            if (sub)   sub.textContent   = subText;
+            if (icon)  icon.textContent  = iconEmoji;
+            if (hubTitle) hubTitle.textContent = displayName;
+            if (hubSub)   hubSub.textContent   = subText;
+            if (hubIcon)  hubIcon.textContent   = iconEmoji;
+
             if (!status.isAnonymous && status.email) {
-                if (title) title.textContent = 'Account Saved';
-                if (sub)   sub.textContent   = status.email;
-                if (icon)  icon.textContent  = '✅';
                 if (loggedInView) loggedInView.style.display = 'block';
                 if (guestView)    guestView.style.display    = 'none';
                 if (loggedInEmail) loggedInEmail.textContent = status.email;
             } else {
-                if (title) title.textContent = 'Playing as Guest';
-                if (sub)   sub.textContent   = 'Save your account so coins never reset';
-                if (icon)  icon.textContent  = '👤';
                 if (loggedInView) loggedInView.style.display = 'none';
                 if (guestView)    guestView.style.display    = 'block';
             }
@@ -3821,21 +3527,6 @@
         }
         function closeAccountModal() {
             document.getElementById('account-modal').style.display = 'none';
-        }
-
-        // Coins dialog — opened from the topbar's coin pill. renderCoinUI()
-        // (elsewhere) already keeps coin-claim-btn/coin-ad-btn/countdown
-        // up to date regardless of whether this dialog is open, so opening
-        // it here just needs to show it and make sure the balance line is
-        // current.
-        function openCoinModal() {
-            const bal = document.getElementById('coin-modal-balance');
-            const menuBal = document.getElementById('menu-coin-balance');
-            if (bal && menuBal) bal.textContent = menuBal.textContent;
-            document.getElementById('coin-modal').style.display = 'flex';
-        }
-        function closeCoinModal() {
-            document.getElementById('coin-modal').style.display = 'none';
         }
 
         // ─── Profile (avatar + name + win/loss stats) ───────────────────────
@@ -3945,6 +3636,10 @@
             if (nameEl) nameEl.textContent = theme.name;
             const swatchEl = document.getElementById('theme-selector-swatch');
             if (swatchEl) swatchEl.style.background = `linear-gradient(135deg, ${theme.swatch[0]}, ${theme.swatch[1]})`;
+            const hubNameEl = document.getElementById('hub-theme-name');
+            if (hubNameEl) hubNameEl.textContent = 'Board Theme: ' + theme.name;
+            const hubSwatchEl = document.getElementById('hub-theme-swatch');
+            if (hubSwatchEl) hubSwatchEl.style.background = `linear-gradient(135deg, ${theme.swatch[0]}, ${theme.swatch[1]})`;
         }
 
         function openThemePicker() {
@@ -4013,6 +3708,10 @@
             if (nameEl) nameEl.textContent = skin.name;
             const swatchEl = document.getElementById('dice-selector-swatch');
             if (swatchEl) swatchEl.style.background = `linear-gradient(135deg, ${skin.swatch[0]}, ${skin.swatch[1]})`;
+            const hubNameEl = document.getElementById('hub-dice-name');
+            if (hubNameEl) hubNameEl.textContent = 'Dice Design: ' + skin.name;
+            const hubSwatchEl = document.getElementById('hub-dice-swatch');
+            if (hubSwatchEl) hubSwatchEl.style.background = `linear-gradient(135deg, ${skin.swatch[0]}, ${skin.swatch[1]})`;
         }
 
         function openDicePicker() {
@@ -4056,6 +3755,10 @@
             if (nameEl) nameEl.textContent = design.name;
             const previewEl = document.getElementById('token-selector-preview');
             if (previewEl) previewEl.innerHTML = design.render('Red');
+            const hubNameEl = document.getElementById('hub-token-name');
+            if (hubNameEl) hubNameEl.textContent = 'Token Design: ' + design.name;
+            const hubPreviewEl = document.getElementById('hub-token-preview');
+            if (hubPreviewEl) hubPreviewEl.innerHTML = design.render('Red');
         }
 
         function openTokenPicker() {
@@ -4528,7 +4231,10 @@
                 document.getElementById('menu-screen').style.display = 'none';
                 document.getElementById('game-screen').style.display = 'flex';
                 createBoard();
-                applyBoardRotation(isOnlineMode ? onlineMyColor : (botMode ? (players.find(p => !p.isBot) || {}).color : null));
+                applyBoardRotation(
+                    isOnlineMode ? onlineMyColor : (botMode ? (players.find(p => !p.isBot) || {}).color : null),
+                    !isOnlineMode && botMode
+                );
                 applyTagLayout();
                 renderScoreboard();
                 updateTurnUI();
@@ -4554,13 +4260,25 @@
         // dialog every time.
         function updateMatchSettingsSummary() {
             const labels = { off: 'Off', assist: 'Assist', full: 'Full Control', on: 'On', partner: 'Partner' };
+            const summary = `Partner: ${labels[partnerModeSetting] || 'Off'} · Barrier: ${labels[barrierModeSetting] || 'Off'}`;
+            const iconEmoji = (partnerModeSetting !== 'off' || barrierModeSetting !== 'off') ? '⚙️' : '🤝';
             const el = document.getElementById('settings-selector-current');
-            if (el) el.textContent = `Partner: ${labels[partnerModeSetting] || 'Off'} · Barrier: ${labels[barrierModeSetting] || 'Off'}`;
+            if (el) el.textContent = summary;
             const icon = document.getElementById('settings-selector-icon');
-            if (icon) icon.textContent = (partnerModeSetting !== 'off' || barrierModeSetting !== 'off') ? '⚙️' : '🤝';
+            if (icon) icon.textContent = iconEmoji;
+            const hubEl = document.getElementById('hub-settings-current');
+            if (hubEl) hubEl.textContent = summary;
+            const hubIcon = document.getElementById('hub-settings-icon');
+            if (hubIcon) hubIcon.textContent = iconEmoji;
         }
         function openMatchSettingsModal() {
             document.getElementById('match-settings-modal').style.display = 'flex';
+        }
+        function openCustomizeHub() {
+            document.getElementById('customize-hub-modal').style.display = 'flex';
+        }
+        function closeCustomizeHub() {
+            document.getElementById('customize-hub-modal').style.display = 'none';
         }
         function closeMatchSettingsModal() {
             document.getElementById('match-settings-modal').style.display = 'none';
@@ -4861,11 +4579,11 @@
             createBoard();
             // Vs Computer: rotate the board (and, in applyTagLayout() below,
             // the tag+dice row) so the human's own base and dice always land
-            // bottom-left, whichever colour they happen to be playing.
+            // bottom-RIGHT, whichever colour they happen to be playing.
             // Local hotseat/pass-and-play (2/3/4 real players sharing one
             // screen) stays un-rotated, same as before — there's no single
             // "the human" to personalise it for.
-            applyBoardRotation(botMode ? (players.find(p => !p.isBot) || {}).color : null);
+            applyBoardRotation(botMode ? (players.find(p => !p.isBot) || {}).color : null, botMode);
             applyTagLayout();
             renderScoreboard();
             updateTurnUI();
@@ -4901,11 +4619,24 @@
                 default:       return '';               // Blue is already bottom-left
             }
         }
-        function applyBoardRotation(color) {
+        // Vs Computer only — the human's own base+dice should always land
+        // in the BOTTOM-RIGHT corner instead (a separate convention from
+        // online matches above, which keep targeting bottom-left): each
+        // colour rotates into whichever corner Yellow already physically
+        // occupies.
+        function boardRotationClassForBottomRight(color) {
+            switch (color) {
+                case 'Red':    return 'board-rot-180'; // top-left     → bottom-right
+                case 'Green':  return 'board-rot-90';   // top-right    → bottom-right
+                case 'Blue':   return 'board-rot-270';  // bottom-left  → bottom-right
+                default:       return '';               // Yellow is already bottom-right
+            }
+        }
+        function applyBoardRotation(color, targetBottomRight) {
             const boardEl = document.getElementById('board');
             if (!boardEl) return;
             boardEl.classList.remove('board-rot-90', 'board-rot-180', 'board-rot-270');
-            const cls = boardRotationClassFor(color);
+            const cls = targetBottomRight ? boardRotationClassForBottomRight(color) : boardRotationClassFor(color);
             if (cls) boardEl.classList.add(cls);
         }
 
@@ -4949,16 +4680,16 @@
                 });
             } else if (botMode) {
                 // Vs Computer: the ONE human's tag+dice always lands at the
-                // LEFT of the bottom row — closest to their own thumb — no
-                // matter which colour they were dealt this game. The board
-                // itself was already rotated to match in startGame(), so
-                // their token base visually sits in that same corner too.
-                // Every one of the 4 tag elements gets exactly one
-                // appendChild call below (active opponents first, any
-                // colour not in play this match parked in the top row,
-                // hidden the same way it always was) so the final order is
-                // fully deterministic regardless of the previous match's
-                // layout.
+                // RIGHT of the bottom row, and the primary opponent at the
+                // LEFT of the top row — no matter which colour the human
+                // was dealt this game. The board itself was already rotated
+                // to match in startGame(), so the human's token base
+                // visually sits in that same bottom-right corner too. Every
+                // one of the 4 tag elements gets exactly one appendChild
+                // call below (active opponents first, any colour not in
+                // play this match parked wherever's left over, hidden the
+                // same way it always was) so the final order is fully
+                // deterministic regardless of the previous match's layout.
                 const human = players.find(p => !p.isBot);
                 const humanColor = human ? human.color : 'Red';
                 const allColors = ['Red', 'Green', 'Blue', 'Yellow'];
@@ -4966,16 +4697,20 @@
                 const inactiveOthers = allColors.filter(c => c !== humanColor && !activeOthers.includes(c));
                 const orderedOthers = activeOthers.concat(inactiveOthers);
 
-                const humanTag = document.getElementById('tag-' + humanColor);
-                if (humanTag) bottomRow.appendChild(humanTag); // bottom-LEFT
                 if (orderedOthers[0]) {
                     const t = document.getElementById('tag-' + orderedOthers[0]);
-                    if (t) bottomRow.appendChild(t); // bottom-RIGHT
+                    if (t) topRow.appendChild(t); // top-LEFT — the primary opponent
                 }
-                orderedOthers.slice(1).forEach(c => {
-                    const t = document.getElementById('tag-' + c);
-                    if (t) topRow.appendChild(t); // top row, in order
-                });
+                if (orderedOthers[1]) {
+                    const t = document.getElementById('tag-' + orderedOthers[1]);
+                    if (t) topRow.appendChild(t); // top-RIGHT
+                }
+                if (orderedOthers[2]) {
+                    const t = document.getElementById('tag-' + orderedOthers[2]);
+                    if (t) bottomRow.appendChild(t); // bottom-LEFT
+                }
+                const humanTag = document.getElementById('tag-' + humanColor);
+                if (humanTag) bottomRow.appendChild(humanTag); // bottom-RIGHT — always the human
             } else {
                 // Local hotseat/pass-and-play (no single "the human", no
                 // bots): restore the fixed default layout (Red/Green top,
@@ -5020,16 +4755,10 @@
                     tray.appendChild(slot);
                 }
                 bEl.appendChild(tray);
-
-                const nameLabel = document.createElement('div');
-                // Red & Green are the TOP-row quadrants — put their name on
-                // the outer top edge (mirrors Blue/Yellow, whose name sits
-                // on the outer bottom edge) instead of the inner edge
-                // toward the board centre.
-                nameLabel.className = 'base-name-label' + ((q.color === 'Red' || q.color === 'Green') ? ' label-top' : '');
-                nameLabel.id = `base-name-${q.color}`;
-                bEl.appendChild(nameLabel);
-
+                const nameBadge = document.createElement('div');
+                nameBadge.className = 'base-name-badge base-name-' + q.color;
+                nameBadge.id = 'base-name-' + q.color;
+                bEl.appendChild(nameBadge);
                 board.appendChild(bEl);
             });
 
@@ -5128,37 +4857,40 @@
         function renderScoreboard() {
             colors.forEach(c => {
                 const tag = document.getElementById(`tag-${c.name}`);
-                const baseLabel = document.getElementById(`base-name-${c.name}`);
                 if (!tag) return;
                 const p = players.find(pl => pl.color === c.name);
                 if (p) {
                     tag.style.display = 'flex';
-                    const initial = (p.name || c.name).trim().charAt(0).toUpperCase() || c.name.charAt(0);
-                    const partnerColor = partnerPairs[c.name];
-                    const partnerBadge = (activePartnerMode !== 'off' && players.some(pl => pl.color === partnerColor))
-                        ? `<span style="margin-left:5px; opacity:0.85;" title="Partnered with ${partnerColor}">🤝</span>`
-                        : '';
-                    // In an online match, tag the local device's own colour
-                    // "(You)" — makes it obvious at a glance which base is
-                    // yours now that the board also rotates to put it
-                    // bottom-left on your own screen.
-                    const youBadge = (isOnlineMode && onlineMyColor === c.name)
-                        ? `<span style="margin-left:5px; opacity:0.85; font-size:0.62em; font-weight:800; color:var(--brass-light);">(You)</span>`
-                        : '';
-                    // The player's NAME itself now lives on the board, at
-                    // the bottom-centre of their own base (see
-                    // .base-name-label / createBoard()) — the corner card
-                    // below the board now holds ONLY the dice (no avatar,
-                    // name, status, or edit button).
-                    tag.innerHTML = `
-                        <div class="dice-box-tag" id="dice-${c.name}" onclick="onDiceClick('${c.name}')">${dice3dHTML()}</div>
-                    `;
-                    if (baseLabel) baseLabel.innerHTML = `${p.name}${partnerBadge}${youBadge}`;
+                    // The tag is now JUST the dice — no avatar/name/status
+                    // text (name lives at this player's own board-corner
+                    // base instead — see updateBaseNameBadges below — and
+                    // is never editable from here or there; the single
+                    // Profile card in the menu is the only place a name is
+                    // ever changed).
+                    tag.innerHTML = `<div class="dice-box-tag" id="dice-${c.name}" onclick="onDiceClick('${c.name}')">${dice3dHTML()}</div>`;
                     diceCubeState[c.name] = { x: 0, y: 0 }; // fresh cube DOM — reset the rotation tracker to match
                 } else {
                     tag.style.display = 'none';
-                    if (baseLabel) baseLabel.innerHTML = '';
                 }
+            });
+            updateBaseNameBadges();
+        }
+
+        // Read-only name badge at each player's own base corner (see
+        // .base-name-badge / createBoard()) — reflects the CURRENT match's
+        // players, including a partner emoji and "(You)" tag in online
+        // matches, same as the old in-tag name used to.
+        function updateBaseNameBadges() {
+            colors.forEach(c => {
+                const badge = document.getElementById('base-name-' + c.name);
+                if (!badge) return;
+                const p = players.find(pl => pl.color === c.name);
+                if (!p) { badge.textContent = ''; badge.style.display = 'none'; return; }
+                badge.style.display = 'block';
+                const partnerColor = partnerPairs[c.name];
+                const partnerBadge = (activePartnerMode !== 'off' && players.some(pl => pl.color === partnerColor)) ? ' 🤝' : '';
+                const youBadge = (isOnlineMode && onlineMyColor === c.name) ? ' (You)' : '';
+                badge.textContent = p.name + partnerBadge + youBadge;
             });
         }
 
@@ -5224,7 +4956,6 @@
             // face) for the duration below, then rotates to rest exactly on
             // the actual rolled value — see spinDiceTo().
             startDiceSpin(color);
-            showBoardDicePop(color);
 
             // Let the opponent's screen play the same tumbling animation live,
             // in real time, while the actual result is still being decided.
@@ -5233,8 +4964,6 @@
             setTimeout(() => {
                 currentRoll = Math.floor(Math.random() * 6) + 1;
                 spinDiceTo(color, currentRoll, 520 / gameSpeed);
-                settleBoardDicePop(currentRoll, 520 / gameSpeed);
-                hideBoardDicePop(520 / gameSpeed + 900 / gameSpeed);
 
                 if (currentRoll === 6) {
                     consecutiveSixes++;
@@ -5374,13 +5103,19 @@
 
         // Other same-colour, NOT-yet-locked tokens sitting on the exact same
         // cell as `token` right now — candidates for forming a brand-new
-        // Barrier of 2, 3, or 4 tokens together. A Barrier is ALWAYS formed
-        // from tokens of one single colour — even in Full Control partner
-        // mode, a partner's tokens are never mixed into your Barrier.
+        // Barrier. A Barrier is ALWAYS exactly 2 tokens (this token + one
+        // more), never 3 or 4 — capped here with slice(0, 1) even if more
+        // than one other same-colour token happens to be sharing this
+        // exact cell (e.g. a 3rd token freshly leaving Base onto a start
+        // square that already held 2). Any such extra token(s) stay
+        // completely uninvolved and keep moving independently. A Barrier
+        // is ALWAYS formed from tokens of one single colour — even in Full
+        // Control partner mode, a partner's tokens are never mixed into
+        // your Barrier.
         function detectBarrierGroupCandidates(token) {
             if (!token || token.status !== 'PATH' || token.barrier) return [];
             return (tokens[token.color] || []).filter(o => o.id !== token.id && o.status === 'PATH' && !o.barrier &&
-                o.pos[0] === token.pos[0] && o.pos[1] === token.pos[1]);
+                o.pos[0] === token.pos[0] && o.pos[1] === token.pos[1]).slice(0, 1);
         }
 
         function getMovableTokens(color, roll) {
@@ -5389,6 +5124,22 @@
                 if (t.status === 'HOME') return false;
                 if (t.status === 'BASE') return roll === 6;
                 if (t.status !== 'PATH') return false;
+
+                // BUG FIX: a Barrier parked on a star, given an ODD roll,
+                // can't move as a pair (see barrierMoveSteps — odd rolls
+                // don't split evenly) — but the turn shouldn't just be
+                // wasted with no options. Breaking it apart right here to
+                // send just ONE of the two tokens off at the FULL roll is
+                // offered instead (handled in initiateMove). A Barrier NOT
+                // sitting on a star still can't move at all on an odd roll
+                // — no break-option there; that's the deliberate cost of
+                // locking one together off a safe square.
+                if (activeBarrierMode === 'on' && t.barrier && roll % 2 === 1) {
+                    const key = `${t.pos[0]}-${t.pos[1]}`;
+                    if (!safeSpots.includes(key)) return false;
+                    if ((t.step + roll) > 56) return false;
+                    return true;
+                }
 
                 const eff = effectiveSteps(t, roll);
                 if (eff === null) return false; // locked Barrier can't move on an odd roll
@@ -5544,6 +5295,29 @@
         // next roll is even (2, 4, or 6), same as every other Barrier move
         // rule. Until then the two tokens simply sit together, unlocked.
         function initiateMove(token, roll) {
+            // BUG FIX: a Barrier parked on a star, given an ODD roll, can't
+            // move together (barrierMoveSteps only splits EVEN rolls) — the
+            // block below this one only ever handled even rolls, so an odd
+            // roll used to fall through with token.barrier still true,
+            // performMove() then trying to move the whole (still-locked)
+            // pair using a null step count from barrierMoveSteps — which is
+            // what was actually causing the turn to misfire/skip to the
+            // next player instead of resolving. There's no "keep together"
+            // option possible for an odd roll, so this breaks the Barrier
+            // apart immediately and moves just this one token at the full
+            // roll — no popup needed, since there's no real alternative to
+            // offer.
+            if (activeBarrierMode === 'on' && token.status === 'PATH' && token.barrier && roll % 2 === 1) {
+                const key = `${token.pos[0]}-${token.pos[1]}`;
+                if (safeSpots.includes(key)) {
+                    getBarrierGroupTokens(token).forEach(m => { m.barrier = false; });
+                    renderTokens();
+                    document.getElementById('msg-log').innerText = `🚧 ${token.color}'s Barrier broke apart — moving one token.`;
+                    performMove(token, roll);
+                    return;
+                }
+            }
+
             if (activeBarrierMode === 'on' && token.status === 'PATH' && token.barrier) {
                 const key = `${token.pos[0]}-${token.pos[1]}`;
                 if (safeSpots.includes(key) && barrierMoveSteps(roll) !== null) {
@@ -5911,18 +5685,6 @@
 
         function renderTokens() {
             const board = document.getElementById('board');
-            // FLIP animation, step 1 ("First"): every token gets a brand
-            // new DOM element on every single render (that's just how this
-            // function always worked — see the note further down), which
-            // on its own means a token instantly teleports to its new
-            // cell with no visible motion in between. Recording each
-            // token's actual on-screen rect here, keyed by its stable
-            // `t-${id}` element id, lets the code after re-render compare
-            // "where it visually was" to "where it visually ended up" and
-            // smoothly animate the difference away — even though the old
-            // and new elements are two completely different DOM nodes.
-            const prevRects = {};
-            board.querySelectorAll('.token').forEach(el => { prevRects[el.id] = el.getBoundingClientRect(); });
             board.querySelectorAll('.token').forEach(el => el.remove());
 
             // 1. Render Base Tokens inside base slots
@@ -5969,31 +5731,8 @@
                 group.forEach((t, i) => {
                     const tEl = createTokenElement(t);
                     if (group.length > 1) {
-                        // BUG FIX: stacked tokens (2+ colors sharing a
-                        // star/safe cell) used to sit only 4px apart on a
-                        // straight diagonal line — nowhere near enough
-                        // separation once tokens render as full-sized map
-                        // pins, so with 3-4 colors stacked together, taps
-                        // kept landing on the wrong piece (or seemed not
-                        // to register at all). Spreading them evenly
-                        // around a small circle — using a PERCENTAGE
-                        // offset (relative to each token's own rendered
-                        // size, not a fixed px amount) — keeps them
-                        // clearly separated and individually tappable
-                        // regardless of how big the board/tokens actually
-                        // render on a given screen.
-                        const angle = (2 * Math.PI * i) / group.length - Math.PI / 2;
-                        const spread = 34; // % of the token's own size
-                        const ox = (Math.cos(angle) * spread).toFixed(1);
-                        const oy = (Math.sin(angle) * spread).toFixed(1);
-                        const scale = Math.max(1 - group.length * 0.09, 0.55).toFixed(2);
-                        // Custom properties only — .token's own CSS rule
-                        // already composes these (plus --flip-x/--flip-y)
-                        // into the actual transform, so there's no inline
-                        // style.transform to set here anymore.
-                        tEl.style.setProperty('--stack-x', `${ox}%`);
-                        tEl.style.setProperty('--stack-y', `${oy}%`);
-                        tEl.style.setProperty('--stack-scale', scale);
+                        const offset = (i - (group.length - 1) / 2) * 4;
+                        tEl.style.transform = `translate(${offset}px, ${offset}px) scale(${1 - group.length * 0.08})`;
                     }
                     cellEl.appendChild(tEl);
                 });
@@ -6001,25 +5740,6 @@
 
             syncOnlineStateIfNeeded();
             saveResumeState();
-
-            requestAnimationFrame(() => {
-                board.querySelectorAll('.token').forEach(el => {
-                    const before = prevRects[el.id];
-                    if (!before) return; // e.g. just left BASE — nothing to glide from
-                    const after = el.getBoundingClientRect();
-                    const dx = before.left + before.width / 2 - (after.left + after.width / 2);
-                    const dy = before.top + before.height / 2 - (after.top + after.height / 2);
-                    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return; // same spot — e.g. just a re-stack, not a move
-                    el.style.transition = 'none';
-                    el.style.setProperty('--flip-x', `${dx}px`);
-                    el.style.setProperty('--flip-y', `${dy}px`);
-                    requestAnimationFrame(() => {
-                        el.style.transition = '';
-                        el.style.setProperty('--flip-x', '0px');
-                        el.style.setProperty('--flip-y', '0px');
-                    });
-                });
-            });
         }
 
         // ─── 3D pawn tokens ─────────────────────────────────────────────────
@@ -6076,18 +5796,18 @@
             const uid = 'pawn' + (pawnSvgUid++);
             return `<svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMid meet">
                 <defs>
-                    <radialGradient id="${uid}b" cx="35%" cy="15%" r="95%">
+                    <radialGradient id="${uid}b" cx="35%" cy="12%" r="100%">
                         <stop offset="0%" stop-color="${c.light}"/>
                         <stop offset="55%" stop-color="${c.mid}"/>
                         <stop offset="100%" stop-color="${c.dark}"/>
                     </radialGradient>
                 </defs>
-                <ellipse cx="50" cy="132" rx="26" ry="6" fill="rgba(0,0,0,0.32)"/>
-                <ellipse cx="50" cy="120" rx="22" ry="8" fill="${c.dark}" stroke="rgba(0,0,0,0.35)" stroke-width="2"/>
-                <polygon points="50,14 78,52 66,52 50,124 34,52 22,52" fill="url(#${uid}b)" stroke="rgba(0,0,0,0.4)" stroke-width="2" stroke-linejoin="round"/>
-                <polygon points="50,14 66,52 34,52" fill="#ffffff" opacity="0.32"/>
-                <polygon points="50,14 66,52 78,52" fill="#000000" opacity="0.14"/>
-                <polygon points="34,52 50,124 22,52" fill="#000000" opacity="0.16"/>
+                <ellipse cx="50" cy="133" rx="29" ry="6.5" fill="rgba(0,0,0,0.32)"/>
+                <ellipse cx="50" cy="122" rx="25" ry="9" fill="${c.dark}" stroke="rgba(0,0,0,0.35)" stroke-width="2"/>
+                <polygon points="50,7 87,50 68,50 50,130 32,50 13,50" fill="url(#${uid}b)" stroke="rgba(0,0,0,0.4)" stroke-width="2" stroke-linejoin="round"/>
+                <polygon points="50,7 68,50 32,50" fill="#ffffff" opacity="0.32"/>
+                <polygon points="50,7 68,50 87,50" fill="#000000" opacity="0.14"/>
+                <polygon points="32,50 50,130 13,50" fill="#000000" opacity="0.16"/>
             </svg>`;
         }
 
@@ -6108,11 +5828,11 @@
                         <stop offset="100%" stop-color="${c.dark}"/>
                     </radialGradient>
                 </defs>
-                <ellipse cx="50" cy="132" rx="28" ry="7" fill="rgba(0,0,0,0.32)"/>
-                <path d="M20 128 L37 42 Q50 33 63 42 L80 128 Z" fill="url(#${uid}b)" stroke="rgba(0,0,0,0.35)" stroke-width="2" stroke-linejoin="round"/>
-                <ellipse cx="50" cy="42" rx="13" ry="5" fill="${c.dark}" opacity="0.5"/>
-                <ellipse cx="50" cy="36" rx="11" ry="8" fill="url(#${uid}h)" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
-                <path d="M32 122 L44 46" stroke="#ffffff" stroke-width="5" opacity="0.18" stroke-linecap="round"/>
+                <ellipse cx="50" cy="133" rx="32" ry="7" fill="rgba(0,0,0,0.32)"/>
+                <path d="M13 129 L34 34 Q50 23 66 34 L87 129 Z" fill="url(#${uid}b)" stroke="rgba(0,0,0,0.35)" stroke-width="2" stroke-linejoin="round"/>
+                <ellipse cx="50" cy="35" rx="16" ry="6" fill="${c.dark}" opacity="0.5"/>
+                <ellipse cx="50" cy="27" rx="14" ry="10" fill="url(#${uid}h)" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+                <path d="M29 124 L42 40" stroke="#ffffff" stroke-width="6" opacity="0.18" stroke-linecap="round"/>
             </svg>`;
         }
 
@@ -6166,140 +5886,16 @@
             </svg>`;
         }
 
-        // Ludo King-style layered 3D pawn — wide base disc, waisted neck
-        // ring, tapered body and a glossy top sphere, each piece shaded
-        // with its own gradient so the whole token reads as a rounded
-        // 3D object lit from the upper-left, the same silhouette Ludo
-        // King uses for its pieces.
-        function pawnSVG_ludoking3d(color) {
-            const c = PAWN_PALETTE[color] || PAWN_PALETTE.Red;
-            const uid = 'pawn' + (pawnSvgUid++);
-            return `<svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMid meet">
-                <defs>
-                    <radialGradient id="${uid}base" cx="38%" cy="25%" r="85%">
-                        <stop offset="0%" stop-color="${c.light}"/>
-                        <stop offset="60%" stop-color="${c.mid}"/>
-                        <stop offset="100%" stop-color="${c.dark}"/>
-                    </radialGradient>
-                    <linearGradient id="${uid}body" x1="10%" y1="0%" x2="95%" y2="0%">
-                        <stop offset="0%" stop-color="${c.dark}"/>
-                        <stop offset="38%" stop-color="${c.light}"/>
-                        <stop offset="70%" stop-color="${c.mid}"/>
-                        <stop offset="100%" stop-color="${c.dark}"/>
-                    </linearGradient>
-                    <radialGradient id="${uid}head" cx="34%" cy="26%" r="78%">
-                        <stop offset="0%" stop-color="#ffffff"/>
-                        <stop offset="25%" stop-color="${c.light}"/>
-                        <stop offset="65%" stop-color="${c.mid}"/>
-                        <stop offset="100%" stop-color="${c.dark}"/>
-                    </radialGradient>
-                    <linearGradient id="${uid}ring" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#ffffff"/>
-                        <stop offset="100%" stop-color="#c9c9c9"/>
-                    </linearGradient>
-                </defs>
-                <ellipse cx="50" cy="133" rx="32" ry="6.5" fill="rgba(0,0,0,0.35)"/>
-                <ellipse cx="50" cy="121" rx="34" ry="13" fill="url(#${uid}base)" stroke="rgba(0,0,0,0.35)" stroke-width="2"/>
-                <ellipse cx="50" cy="117" rx="34" ry="12" fill="url(#${uid}base)" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
-                <path d="M 30 118 C 26 100 30 84 38 72 L 42 62 C 36 58 33 52 34 46 L 66 46 C 67 52 64 58 58 62 L 62 72 C 70 84 74 100 70 118 C 63 123 37 123 30 118 Z" fill="url(#${uid}body)" stroke="rgba(0,0,0,0.35)" stroke-width="2" stroke-linejoin="round"/>
-                <ellipse cx="50" cy="47" rx="16" ry="4.5" fill="url(#${uid}ring)" stroke="rgba(0,0,0,0.3)" stroke-width="1.2"/>
-                <circle cx="50" cy="27" r="21" fill="url(#${uid}head)" stroke="rgba(0,0,0,0.35)" stroke-width="2"/>
-                <ellipse cx="41" cy="18" rx="8" ry="5.5" fill="#ffffff" opacity="0.7"/>
-                <ellipse cx="38" cy="95" rx="6" ry="24" fill="#ffffff" opacity="0.14"/>
-                <path d="M32 116 C 29 100 32 86 39 74" stroke="#ffffff" stroke-width="4" opacity="0.16" stroke-linecap="round" fill="none"/>
-            </svg>`;
-        }
-
-        // ─── "Map Pin" token design — a flat white teardrop/map-marker
-        // pawn with a gold ring and a colour badge in the middle (copied
-        // in verbatim from the reference file, only the surrounding
-        // TOKEN_DESIGNS wiring below is new here). Uses the same
-        // PAWN_PALETTE (c.light/c.mid/c.dark) as every other design above,
-        // so no palette changes were needed for it to drop in cleanly.
-        function pawnSVG_mappin(color) {
-            const c = PAWN_PALETTE[color] || PAWN_PALETTE.Red;
-            const uid = 'pin' + (pawnSvgUid++);
-            return `<svg viewBox="0 0 80 112" preserveAspectRatio="xMidYMax meet">
-                <defs>
-                    <radialGradient id="${uid}body" cx="32%" cy="22%" r="78%">
-                        <stop offset="0%" stop-color="#ffffff"/>
-                        <stop offset="42%" stop-color="#f4f4f5"/>
-                        <stop offset="78%" stop-color="#d4d4d8"/>
-                        <stop offset="100%" stop-color="#8b8b93"/>
-                    </radialGradient>
-                    <linearGradient id="${uid}edge" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#9ca3af"/>
-                        <stop offset="35%" stop-color="#ffffff"/>
-                        <stop offset="100%" stop-color="#6b7280"/>
-                    </linearGradient>
-                    <radialGradient id="${uid}badge" cx="34%" cy="28%" r="72%">
-                        <stop offset="0%" stop-color="${c.light}"/>
-                        <stop offset="52%" stop-color="${c.mid}"/>
-                        <stop offset="100%" stop-color="${c.dark}"/>
-                    </radialGradient>
-                    <linearGradient id="${uid}gold" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#f8e7a8"/>
-                        <stop offset="38%" stop-color="#e0b33a"/>
-                        <stop offset="100%" stop-color="#8a5a14"/>
-                    </linearGradient>
-                    <linearGradient id="${uid}goldSide" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#a16207"/>
-                        <stop offset="45%" stop-color="#f5d77f"/>
-                        <stop offset="100%" stop-color="#713f12"/>
-                    </linearGradient>
-                    <radialGradient id="${uid}sh" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stop-color="rgba(0,0,0,0.50)"/>
-                        <stop offset="55%" stop-color="rgba(0,0,0,0.22)"/>
-                        <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
-                    </radialGradient>
-                    <filter id="${uid}ds" x="-50%" y="-20%" width="200%" height="170%">
-                        <feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000000" flood-opacity="0.42"/>
-                    </filter>
-                </defs>
-                <ellipse cx="40" cy="104" rx="27" ry="9" fill="url(#${uid}sh)"/>
-                <g class="pin-ring-spin">
-                    <circle cx="40" cy="97.5" r="13.5" fill="url(#${uid}badge)"/>
-                    <circle cx="40" cy="97.5" r="20" fill="none" stroke="url(#${uid}gold)" stroke-width="6" stroke-linecap="round" stroke-dasharray="16 10"/>
-                </g>
-                <g filter="url(#${uid}ds)">
-                    <path d="M40 6
-                             C57.5 6 71 20.5 71 38.5
-                             C71 51 62 63.5 49 82
-                             C45.5 87.5 42.4 93.2 40 99
-                             C37.6 93.2 34.5 87.5 31 82
-                             C18 63.5 9 51 9 38.5
-                             C9 20.5 22.5 6 40 6 Z"
-                          fill="url(#${uid}body)" stroke="url(#${uid}edge)" stroke-width="1.35" stroke-linejoin="round"/>
-                    <path d="M24 22 C28 14 36 10 40 10 C36 16 30 22 24 28 Z" fill="#ffffff" opacity="0.42"/>
-                    <circle cx="40" cy="38" r="18.2" fill="url(#${uid}goldSide)" stroke="#6b4420" stroke-width="0.8"/>
-                    <circle cx="40" cy="38" r="14.6" fill="url(#${uid}badge)" stroke="rgba(255,255,255,0.55)" stroke-width="1.4"/>
-                    <ellipse cx="34.5" cy="32.5" rx="5.6" ry="3.8" fill="#ffffff" opacity="0.42"/>
-                    <ellipse cx="30" cy="20" rx="7" ry="4.2" fill="#ffffff" opacity="0.38"/>
-                </g>
-            </svg>`;
-        }
-
-        // Only the Map Pin design is offered now (every other shape was
-        // removed on request) — the picker grid (openTokenPicker() below)
-        // just loops over this array, so leaving only one entry here
-        // automatically leaves only one tile there, nothing else to touch.
         const TOKEN_DESIGNS = [
-            { id: 'mappin',  name: 'Map Pin',       render: pawnSVG_mappin }
+            { id: 'classic', name: 'Classic Pawn', render: pawnSVG_classic },
+            { id: 'gem',     name: 'Crystal Gem',  render: pawnSVG_gem },
+            { id: 'cone',    name: 'Modern Cone',  render: pawnSVG_cone },
+            { id: 'crown',   name: 'Royal Crown',  render: pawnSVG_crown },
+            { id: 'marble',  name: 'Glass Marble', render: pawnSVG_marble }
         ];
         const TOKEN_DESIGN_KEY = 'lm_token_design';
         function loadSavedTokenDesign() {
-            try {
-                const v = localStorage.getItem(TOKEN_DESIGN_KEY);
-                // BUG FIX: 'ludoking3d' used to be the stored default even
-                // though createTokenElement always rendered WebGL over top
-                // of it anyway when available — so it never really meant
-                // "show the Ludo King 3D shape" for most players. Treat
-                // that old default (and no stored value at all) as "Map
-                // Pin", the new plain default, so existing saves migrate
-                // to a design that's actually consistently honoured now.
-                if (!v || v === 'ludoking3d') return 'mappin';
-                return v;
-            } catch (e) { return 'mappin'; }
+            try { return localStorage.getItem(TOKEN_DESIGN_KEY) || 'classic'; } catch (e) { return 'classic'; }
         }
         // The single entry point every token actually renders through
         // (createTokenElement calls this exact function, unchanged) — picks
@@ -6311,398 +5907,11 @@
             return design.render(color);
         }
 
-        // ═══════════════════════════════════════════════════════════════════
-        // ── REAL WebGL 3D PAWN TOKENS ─────────────────────────────────────
-        // ═══════════════════════════════════════════════════════════════════
-        // Each token gets its own small <canvas> placed INSIDE its own
-        // .token div, in normal document flow (not a page-wide overlay
-        // positioned by hand). That means the browser itself — not our
-        // own screen-coordinate math — decides exactly where and how big
-        // every pawn is: whatever size/position/board-rotation CSS gives
-        // the .token div, the canvas inside it automatically matches,
-        // including through the board's per-player rotation transform.
-        // This replaces an earlier version that used ONE shared
-        // full-viewport canvas + getBoundingClientRect()-driven scissor
-        // rectangles — that math kept drifting on real devices (mobile
-        // viewport units, visualViewport, rotated boards all shift the
-        // reference frame in ways that are easy to get wrong), which is
-        // exactly the "pawn floats way outside the board" bug this
-        // rewrite fixes.
-        //
-        // renderTokens() tears down and rebuilds every .token div on
-        // pretty much every move, so to avoid creating/destroying a fresh
-        // WebGL context 16 times a turn (browsers cap how many a page can
-        // hold), each token's {canvas, renderer, scene} is created ONCE
-        // per token id ("Red-0", "Blue-2", ...) and cached — later calls
-        // just re-parent the SAME <canvas> node into the new div, which
-        // keeps its live WebGL context intact.
-        let webglSupported = null; // null = not checked yet, true/false after first probe
-        let webglGeomCache = null;
-        const webglTokenEntries = {}; // token.id ("Red-0") -> { canvas, renderer, scene, camera, group, spin }
-        const webglMaterialCache = {};
-        let webglWhiteMat = null;
-        let webglLastFrameTime = 0;
-        let webglLoopStarted = false;
-        let webglResizeObserver = null;
-        // BUG FIX: a 4-player game needs 16 tokens (4 colours × 4 pawns),
-        // meaning 16 separate live WebGL contexts if every token gets its
-        // own canvas. Most mobile browsers/WebViews cap the number of
-        // simultaneous WebGL contexts a single page may hold way below
-        // that (commonly 8, sometimes lower) — once that cap is hit the
-        // browser silently kills/evicts the OLDEST contexts to make room
-        // for new ones. Since tokens are created colour-by-colour in
-        // order, whichever colours happen to be created FIRST (e.g. Red,
-        // then Green) are exactly the ones whose contexts get evicted —
-        // their tokens then have a dead canvas and render as blank/broken
-        // squares, while the LAST colours created (Blue, Yellow) still
-        // have live contexts and look perfectly fine. This is why the bug
-        // only ever showed up in 4-player games and always hit the same
-        // two colours. Capping how many WebGL tokens we ever create, and
-        // giving every colour beyond that cap the plain SVG pawn instead,
-        // means every single token always renders correctly, in any
-        // player count — it just means some tokens are the (still fully
-        // correct-looking) flat SVG pawn instead of the spinning 3D one
-        // once a game has enough tokens on the board at once.
-        const WEBGL_TOKEN_CONTEXT_CAP = 8;
-        let webglContextCount = 0;
-
-        const WEBGL_PAWN_HEX = {
-            Red: 0xdc2626, Green: 0x16a34a, Yellow: 0xca8a04, Blue: 0x2563eb
-        };
-
-        function webglAvailable() {
-            if (webglSupported !== null) return webglSupported;
-            if (typeof THREE === 'undefined') { webglSupported = false; return false; }
-            try {
-                const test = document.createElement('canvas');
-                const ctx = test.getContext('webgl') || test.getContext('experimental-webgl');
-                webglSupported = !!ctx;
-            } catch (e) {
-                webglSupported = false;
-            }
-            return webglSupported;
-        }
-
-        // Map-pin / location-marker silhouette (matches the reference
-        // image: a rounded white balloon-head tapering to a point at the
-        // bottom, with a solid colour circle badge set into the front,
-        // and a dark maroon backing plaque behind it). The pin body is
-        // built by revolving a 2D profile curve around the Y axis
-        // (THREE.LatheGeometry) rather than stacked primitives — that's
-        // the natural way to get a smooth teardrop/balloon shape.
-        function buildWebglPawnGeometry() {
-            const profile = [
-                new THREE.Vector2(0, -1.05),
-                new THREE.Vector2(0.07, -0.97),
-                new THREE.Vector2(0.20, -0.82),
-                new THREE.Vector2(0.33, -0.60),
-                new THREE.Vector2(0.42, -0.34),
-                new THREE.Vector2(0.465, -0.06),
-                new THREE.Vector2(0.46, 0.18),
-                new THREE.Vector2(0.40, 0.36),
-                new THREE.Vector2(0.28, 0.46),
-                new THREE.Vector2(0.12, 0.505),
-                new THREE.Vector2(0, 0.51)
-            ];
-            return {
-                pin: new THREE.LatheGeometry(profile, 32),
-                colorBadge: new THREE.SphereGeometry(0.24, 24, 24),
-                baseRing: new THREE.RingGeometry(0.36, 0.54, 44),
-                ringSpinArc: new THREE.RingGeometry(0.36, 0.54, 32, 1, 0, Math.PI / 2.3),
-                pulseRing: new THREE.RingGeometry(0.32, 0.46, 40),
-                contactShadow: new THREE.CircleGeometry(0.34, 20)
-            };
-        }
-
-        function getWebglPawnMaterial(colorKey) {
-            if (webglMaterialCache[colorKey]) return webglMaterialCache[colorKey];
-            // MeshPhysicalMaterial (not just Standard) so the clearcoat layer
-            // gives the colour badge a glossy, enamel-pin look instead of a
-            // flat matte finish.
-            const mat = new THREE.MeshPhysicalMaterial({
-                color: WEBGL_PAWN_HEX[colorKey] || WEBGL_PAWN_HEX.Red,
-                roughness: 0.32, metalness: 0.06,
-                clearcoat: 0.6, clearcoatRoughness: 0.25
-            });
-            webglMaterialCache[colorKey] = mat;
-            return mat;
-        }
-        function getWebglWhiteMaterial() {
-            if (!webglWhiteMat) webglWhiteMat = new THREE.MeshPhysicalMaterial({
-                color: 0xffffff, roughness: 0.3, clearcoat: 0.7, clearcoatRoughness: 0.2
-            });
-            return webglWhiteMat;
-        }
-        let webglHighlightMat = null;
-        function getWebglHighlightMaterial() {
-            if (!webglHighlightMat) webglHighlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 });
-            return webglHighlightMat;
-        }
-        let webglRingMat = null;
-        function getWebglRingMaterial() {
-            // The thin maroon "location ring" on the ground beneath every
-            // pin in the reference image — always this same dark red-brown,
-            // regardless of the pin's own colour.
-            if (!webglRingMat) webglRingMat = new THREE.MeshBasicMaterial({ color: 0x7a2020, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
-            return webglRingMat;
-        }
-        let webglPulseRingMat = null;
-        function getWebglPulseRingMaterial() {
-            if (!webglPulseRingMat) webglPulseRingMat = new THREE.MeshBasicMaterial({ color: 0x9a2b2b, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
-            return webglPulseRingMat;
-        }
-        let webglRingSpinMat = null;
-        function getWebglRingSpinMaterial() {
-            // A brighter warm accent for the little arc that continuously
-            // sweeps around the ring — gives the "always rotating" motion
-            // a visible highlight to actually rotate, since a plain solid
-            // ring is circularly symmetric and wouldn't show any spin.
-            if (!webglRingSpinMat) webglRingSpinMat = new THREE.MeshBasicMaterial({ color: 0xe8b34a, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
-            return webglRingSpinMat;
-        }
-
-        function buildWebglPawnGroup(colorKey) {
-            if (!webglGeomCache) webglGeomCache = buildWebglPawnGeometry();
-            const g = webglGeomCache;
-            const white = getWebglWhiteMaterial();
-            const group = new THREE.Group();
-
-            // Thicker, larger maroon "location marker" ring lying flat on
-            // the ground right under the pin's point.
-            const ring = new THREE.Mesh(g.baseRing, getWebglRingMaterial());
-            ring.rotation.x = -Math.PI / 2;
-            ring.position.y = -1.06;
-            group.add(ring);
-
-            // A bright little arc riding on that same ring that spins
-            // around it continuously and forever (independent of the
-            // pawn's own spin and of the radar-ping below) — put in its
-            // own wrapper Group so rotating the wrapper's Y axis sweeps
-            // the (already-flattened) arc around the ring like a compass
-            // needle / loading-spinner highlight.
-            const ringSpinner = new THREE.Group();
-            ringSpinner.position.y = -1.058;
-            group.add(ringSpinner);
-            const ringSpinArc = new THREE.Mesh(g.ringSpinArc, getWebglRingSpinMaterial());
-            ringSpinArc.rotation.x = -Math.PI / 2;
-            ringSpinner.add(ringSpinArc);
-            group.userData.ringSpinner = ringSpinner;
-
-            // A second, animated copy of that ring that continuously
-            // expands outward and fades — a classic "live location" radar
-            // ping. This is the professional-looking motion touch: each
-            // pawn's ping runs on its own independent, randomly-offset
-            // timer (set in getOrCreateTokenWebgl below) so a whole board
-            // of pawns doesn't pulse in obvious lockstep.
-            const pulseRing = new THREE.Mesh(g.pulseRing, getWebglPulseRingMaterial().clone());
-            pulseRing.rotation.x = -Math.PI / 2;
-            pulseRing.position.y = -1.055;
-            group.add(pulseRing);
-            group.userData.pulseRing = pulseRing;
-
-            // Soft contact shadow on the "ground" beneath the pin's point.
-            const contactShadow = new THREE.Mesh(g.contactShadow, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
-            contactShadow.rotation.x = -Math.PI / 2;
-            contactShadow.position.y = -1.1;
-            group.add(contactShadow);
-
-            // The pin body is now the player's own colour (not white) — a
-            // small white circle badge sits on the front instead, so each
-            // pin still reads clearly per-player at a glance.
-            const pin = new THREE.Mesh(g.pin, getWebglPawnMaterial(colorKey));
-            group.add(pin);
-
-            // White circle badge sits right on TOP of the pin's head (on
-            // the Y rotation axis, not out to the front) — like a little
-            // cap. This also fixes it visually staying centred and never
-            // swinging out to one side as the pawn continuously spins,
-            // since it's positioned exactly on the axis it spins around.
-            const badge = new THREE.Mesh(g.colorBadge, white);
-            badge.position.set(0, 0.46, 0);
-            group.add(badge);
-
-            // Small glossy highlight dot on the pin's head — a cheap,
-            // classic "studio light reflection" trick that makes a round
-            // glossy object read as 3D/shiny even at very small sizes.
-            if (!webglGeomCache.highlight) webglGeomCache.highlight = new THREE.SphereGeometry(0.06, 12, 12);
-            const highlight = new THREE.Mesh(webglGeomCache.highlight, getWebglHighlightMaterial());
-            highlight.position.set(-0.16, 0.34, 0.38);
-            group.add(highlight);
-
-            // Full, prominent size, correctly centred so the pin's tail
-            // still reaches down to the "ground" in its little scene.
-            group.scale.setScalar(0.92);
-
-            return group;
-        }
-
-        // Returns the persistent {canvas, renderer, scene, camera, group}
-        // for this exact token id, creating it (and its own tiny WebGL
-        // context) the first time, and simply handing back the SAME
-        // objects — canvas included — on every later call for that token.
-        function getOrCreateTokenWebgl(tokenId, colorKey) {
-            let entry = webglTokenEntries[tokenId];
-            if (entry) return entry;
-
-            // BUG FIX (see WEBGL_TOKEN_CONTEXT_CAP comment above): stop
-            // handing out fresh WebGL contexts once we're already at the
-            // safe cap — return null instead, so the caller falls back to
-            // the SVG pawn for this token rather than getting a context
-            // that the browser is about to silently kill anyway.
-            if (webglContextCount >= WEBGL_TOKEN_CONTEXT_CAP) return null;
-
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.className = 'token-webgl3d-canvas';
-                canvas.style.cssText = 'width:100%; height:100%; display:block; pointer-events:none;';
-
-                const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-                renderer.setClearColor(0x000000, 0);
-
-                const scene = new THREE.Scene();
-                const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
-                camera.position.set(0, 0.05, 3.15);
-                // Look at the pin's actual vertical midpoint (not world y=0) so
-                // the rounded head and the pointed tail are framed evenly and
-                // nothing clips against the canvas edge.
-                camera.lookAt(0, -0.27, 0);
-
-                scene.add(new THREE.AmbientLight(0xffffff, 0.72));
-                const key = new THREE.DirectionalLight(0xffffff, 0.85);
-                key.position.set(2.2, 4, 3);
-                scene.add(key);
-                const fill = new THREE.DirectionalLight(0xffffff, 0.28);
-                fill.position.set(-2.5, 1.5, -2);
-                scene.add(fill);
-
-                const group = buildWebglPawnGroup(colorKey);
-                scene.add(group);
-
-                entry = { canvas, renderer, scene, camera, group, spin: Math.random() * Math.PI * 2, pulsePhase: Math.random(), ringSpin: Math.random() * Math.PI * 2 };
-                webglTokenEntries[tokenId] = entry;
-                webglContextCount++;
-
-                // Keep each canvas's own pixel buffer in sync with its actual
-                // CSS box (the .token div's size — ~46px, but let it track
-                // real size rather than assume) whenever that box changes.
-                if (!webglResizeObserver) {
-                    webglResizeObserver = new ResizeObserver(entries => {
-                        entries.forEach(ent => {
-                            const c = ent.target;
-                            const w = Math.max(1, Math.round(ent.contentRect.width));
-                            const h = Math.max(1, Math.round(ent.contentRect.height));
-                            const found = Object.values(webglTokenEntries).find(v => v.canvas === c);
-                            if (found) {
-                                found.renderer.setSize(w, h, false);
-                                found.camera.aspect = w / h;
-                                found.camera.updateProjectionMatrix();
-                            }
-                        });
-                    });
-                }
-                webglResizeObserver.observe(canvas);
-
-                return entry;
-            } catch (e) {
-                // BUG FIX: if the browser genuinely refuses to hand out any
-                // more WebGL contexts (getContext returns null / the
-                // WebGLRenderer constructor throws), don't let that
-                // exception bubble up and abort the whole render pass —
-                // that used to leave every token AFTER the failing one
-                // un-rendered too. Just report failure for this one token;
-                // the caller falls back to the SVG pawn.
-                webglSupported = false; // stop trying for the rest of this session
-                return null;
-            }
-        }
-
-        // One shared render loop drives every token's own tiny scene into
-        // its own canvas/context — cheap since each canvas is only ~46px
-        // square — and keeps each pawn slowly spinning on its own axis so
-        // it genuinely reads as a rotating 3D object.
-        function webglTokenLoop(time) {
-            requestAnimationFrame(webglTokenLoop);
-            const dt = webglLastFrameTime ? Math.min((time - webglLastFrameTime) / 1000, 0.1) : 0;
-            webglLastFrameTime = time;
-
-            const gameScreen = document.getElementById('game-screen');
-            const visible = gameScreen && gameScreen.style.display !== 'none';
-            if (!visible) return;
-
-            Object.values(webglTokenEntries).forEach(entry => {
-                if (!entry.canvas.isConnected) return; // token div not on screen right now
-                entry.spin += dt * 0.8;
-                entry.group.rotation.y = entry.spin;
-
-                // Radar-ping animation on the ring beneath the pin: expands
-                // outward and fades to nothing on a smooth repeating cycle,
-                // each token running its own independently-phased cycle.
-                const pulse = entry.group.userData.pulseRing;
-                if (pulse) {
-                    const cycleSeconds = 1.8;
-                    const t = (((time / 1000) + entry.pulsePhase * cycleSeconds) % cycleSeconds) / cycleSeconds;
-                    const scale = 1 + t * 1.15;
-                    pulse.scale.set(scale, scale, scale);
-                    pulse.material.opacity = 0.5 * (1 - t);
-                }
-
-                // The bright arc riding the ring spins around it forever,
-                // completely independently of the pawn's own body spin.
-                const ringSpinner = entry.group.userData.ringSpinner;
-                if (ringSpinner) {
-                    entry.ringSpin += dt * 1.1;
-                    ringSpinner.rotation.y = entry.ringSpin;
-                }
-
-                entry.renderer.render(entry.scene, entry.camera);
-            });
-        }
-
-        function ensureWebglLoopStarted() {
-            if (webglLoopStarted) return;
-            webglLoopStarted = true;
-            requestAnimationFrame(webglTokenLoop);
-        }
-
         function createTokenElement(t) {
             const tEl = document.createElement('div');
             tEl.id = `t-${t.id}`;
             tEl.className = `token token-${t.color.toLowerCase()}` + (t.barrier ? ' token-barrier' : '');
-            // BUG FIX (4-player "two different token styles" glitch): this
-            // used to try WebGL for EVERY token regardless of which design
-            // was actually selected in the picker, only ever falling back
-            // to the chosen SVG design (e.g. Map Pin) once the WebGL
-            // context cap was hit. With 16 tokens in a 4-player game, the
-            // first 8 got the (unrelated) WebGL 3D pin shape and the last
-            // 8 got the real selected design — two different pawns on the
-            // same board. WebGL is now ONLY used for its own dedicated
-            // '3D Map Pin' picker entry; every other design (including the
-            // plain Map Pin) always renders as its own flat SVG, on every
-            // token, consistently.
-            const designId = loadSavedTokenDesign();
-            if (designId === 'webgl3d' && webglAvailable()) {
-                const entry = getOrCreateTokenWebgl(t.id, t.color);
-                if (entry) {
-                    tEl.classList.add('token-webgl3d');
-                    tEl.appendChild(entry.canvas);
-                    ensureWebglLoopStarted();
-                } else {
-                    // Context cap reached or creation failed for this
-                    // token — fall back to the flat SVG pawn instead of
-                    // leaving the token div empty/broken-looking.
-                    tEl.innerHTML = pawnSVG(t.color);
-                }
-            } else {
-                tEl.innerHTML = pawnSVG(t.color);
-                // The Map Pin design reads as a real marker "planted" on
-                // the board once a token is actually out on the path —
-                // but stays a normal contained size while still sitting
-                // in its base tray slot (the tray tokens sit neatly
-                // inside their little circular slots; only the ones on
-                // the track itself are meant to overflow like a pin).
-                if (designId === 'mappin' && t.status !== 'BASE') tEl.classList.add('token-pin-overflow');
-            }
+            tEl.innerHTML = pawnSVG(t.color);
             tEl.onclick = (e) => {
                 e.stopPropagation();
                 handleTokenClick(t);
@@ -6910,7 +6119,6 @@
             if (!data || !isOnlineMode) return;
             if (data.writer && window.LudoOnline && data.writer === window.LudoOnline.getUid()) return;
             startDiceSpin(data.color);
-            showBoardDicePop(data.color);
         }
 
         // Feeds the authoritative rolled value in for a color, from
@@ -6919,8 +6127,6 @@
         // smoothly rotates the cube to rest on the true result.
         function receiveRemoteDiceValue(color, value) {
             spinDiceTo(color, value, 480 / gameSpeed);
-            settleBoardDicePop(value, 480 / gameSpeed);
-            hideBoardDicePop(480 / gameSpeed + 900 / gameSpeed);
         }
 
         function attachOnlineRoomListeners(roomId) {
@@ -7374,34 +6580,34 @@
             const fmt = myCoins.toLocaleString();
             const menuBal = document.getElementById('menu-coin-balance');
             if (menuBal) menuBal.textContent = fmt;
-            const modalBal = document.getElementById('coin-modal-balance');
-            if (modalBal) modalBal.textContent = fmt;
             const lobbyBal = document.getElementById('onl-bet-balance');
             if (lobbyBal) lobbyBal.textContent = '🪙 ' + fmt;
             refreshBetPillAffordability();
 
-            const claimRow = document.getElementById('coin-claim-row');
-            if (!claimRow) return;
+            const claimBtn = document.getElementById('coin-claim-btn');
+            if (!claimBtn) return;
             if (claimCountdownTimer) { clearInterval(claimCountdownTimer); claimCountdownTimer = null; }
 
-            // Daily 500-coin bonus — available once every 24h, independent of
-            // current balance (previously this only ever showed once the
-            // balance hit exactly 0, and refilled to a flat 5000 coins).
+            // Daily Spin & Win — available once every 24h, independent of
+            // current balance.
             const DAY = 24 * 60 * 60 * 1000;
-            const btn = document.getElementById('coin-claim-btn');
+            const btn = claimBtn;
             const countdownEl = document.getElementById('coin-claim-countdown');
+            const previewEl = document.getElementById('coin-claim-countdown-preview');
             const tick = () => {
                 const remaining = myLastDailyBonusAt ? (DAY - (Date.now() - myLastDailyBonusAt)) : 0;
                 if (remaining <= 0) {
                     btn.disabled = false;
-                    countdownEl.textContent = 'Ready to claim!';
+                    if (countdownEl) countdownEl.textContent = 'Ready to spin!';
+                    if (previewEl) previewEl.textContent = 'Free coins available now';
                     if (claimCountdownTimer) { clearInterval(claimCountdownTimer); claimCountdownTimer = null; }
                 } else {
                     btn.disabled = true;
                     const h = Math.floor(remaining / 3600000);
                     const m = Math.floor((remaining % 3600000) / 60000);
                     const s = Math.floor((remaining % 60000) / 1000);
-                    countdownEl.textContent = `Available in ${h}h ${m}m ${s}s`;
+                    if (countdownEl) countdownEl.textContent = `Next spin in ${h}h ${m}m ${s}s`;
+                    if (previewEl) previewEl.textContent = `Next free spin in ${h}h ${m}m`;
                 }
             };
             tick();
@@ -7424,6 +6630,45 @@
             });
         }
 
+        // ─── Spin & Win wheel ─────────────────────────────────────────────
+        // MUST list the exact same amounts, in the exact same order, as
+        // SPIN_AMOUNTS in functions/api/claimDailyBonus.js — the server
+        // rolls the real winning amount from that list; this just draws a
+        // matching wheel so it can visually land on whichever segment the
+        // server actually picked.
+        const SPIN_SEGMENTS = [50, 100, 150, 200, 250, 300, 400, 500];
+        const SPIN_COLORS = ['#dc2626', '#16a34a', '#2563eb', '#ca8a04', '#7c3aed', '#0891b2', '#db2777', '#059669'];
+        let spinWheelRotation = 0;
+
+        function buildSpinWheel() {
+            const wheel = document.getElementById('spin-wheel');
+            if (!wheel || wheel.dataset.built) return; // only ever needs building once
+            wheel.dataset.built = '1';
+            const n = SPIN_SEGMENTS.length;
+            const segAngle = 360 / n;
+            const stops = SPIN_SEGMENTS.map((amt, i) => `${SPIN_COLORS[i % SPIN_COLORS.length]} ${i * segAngle}deg ${(i + 1) * segAngle}deg`).join(', ');
+            wheel.style.background = `conic-gradient(${stops})`;
+            SPIN_SEGMENTS.forEach((amt, i) => {
+                const mid = i * segAngle + segAngle / 2;
+                const label = document.createElement('div');
+                label.className = 'spin-wheel-segment-label';
+                label.style.transform = `rotate(${mid}deg)`;
+                label.textContent = amt;
+                wheel.appendChild(label);
+            });
+            const center = document.createElement('div');
+            center.className = 'spin-wheel-center';
+            wheel.appendChild(center);
+        }
+
+        function openCoinsModal() {
+            buildSpinWheel();
+            document.getElementById('coins-modal').style.display = 'flex';
+        }
+        function closeCoinsModal() {
+            document.getElementById('coins-modal').style.display = 'none';
+        }
+
         // BUG FIX (Claim button "doing nothing"): this used to just return
         // silently for ANY failure other than the 24h cooldown — including
         // the very common case of tapping it before sign-in had finished (no
@@ -7433,33 +6678,59 @@
         // never updated at all until the next full reload). Now: it waits
         // briefly for identity to be ready, shows a real error if the claim
         // still fails, and refreshes the coin display immediately itself.
-        async function handleClaimDailyBonus() {
+        async function handleSpinWheel() {
             const btn = document.getElementById('coin-claim-btn');
-            if (btn) { btn.disabled = true; btn.textContent = 'Please wait…'; }
+            if (btn) { btn.disabled = true; btn.textContent = 'Spinning…'; }
 
             const ready = await waitForOnlineReady(5000);
             if (!ready || !window.LudoOnline) {
-                if (btn) { btn.disabled = false; btn.textContent = 'Claim Free ' + DAILY_BONUS_DISPLAY_AMOUNT + ' Coins'; }
+                if (btn) { btn.disabled = false; btn.textContent = '🎡 Spin & Win'; }
                 showOnlineNotice('⚠️', 'Not Connected', 'Still connecting — please wait a moment and try again.', null);
                 return;
             }
 
+            // The server (see functions/api/claimDailyBonus.js) rolls the
+            // REAL winning amount and pays it out atomically — this is
+            // coins, so, same as everywhere else in this game, the client
+            // is never trusted to decide or report the result itself. The
+            // wheel below just visually catches up to whatever the server
+            // already decided.
             const res = await window.LudoOnline.claimDailyBonus();
-            if (btn) { btn.disabled = false; btn.textContent = 'Claim Free ' + DAILY_BONUS_DISPLAY_AMOUNT + ' Coins'; }
 
-            if (res.ok) {
-                // Instant local refresh — don't wait on the realtime
-                // listener so the balance updates the moment the claim
-                // actually succeeds, same as it used to feel before.
-                if (typeof res.newBalance === 'number') { myCoins = res.newBalance; renderCoinUI(); }
-                myLastDailyBonusAt = Date.now();
-                renderCoinUI();
+            if (!res.ok) {
+                if (btn) { btn.disabled = false; btn.textContent = '🎡 Spin & Win'; }
+                if (res.reason === 'too-soon') return; // countdown already shown — nothing else to do
+                showOnlineNotice('⚠️', 'Could Not Spin', 'Something went wrong — please check your connection and try again.', null);
                 return;
             }
-            if (res.reason === 'too-soon') return; // countdown already shown — nothing else to do
-            showOnlineNotice('⚠️', 'Could Not Claim', 'Something went wrong claiming your bonus — please check your connection and try again.', null);
+
+            const amount = res.amount;
+            const idx = SPIN_SEGMENTS.indexOf(amount);
+            const wheel = document.getElementById('spin-wheel');
+            if (wheel && idx !== -1) {
+                const n = SPIN_SEGMENTS.length;
+                const segAngle = 360 / n;
+                const segMid = idx * segAngle + segAngle / 2;
+                // Rotating the wheel by R moves whatever was at angle A to
+                // angle (A+R) mod 360 under the fixed top pointer. We want
+                // segMid to land at 0 (the pointer), plus a few extra full
+                // turns purely for a satisfying spin.
+                const extraSpins = 5 + Math.floor(Math.random() * 2);
+                const targetMod = (360 - segMid) % 360;
+                const currentMod = ((spinWheelRotation % 360) + 360) % 360;
+                spinWheelRotation += extraSpins * 360 + ((targetMod - currentMod + 360) % 360);
+                wheel.style.transform = `rotate(${spinWheelRotation}deg)`;
+            }
+
+            myLastDailyBonusAt = Date.now();
+            renderCoinUI();
+            if (typeof res.newBalance === 'number') { myCoins = res.newBalance; }
+
+            setTimeout(() => {
+                if (btn) { btn.disabled = true; btn.textContent = '🎡 Spin & Win'; } // stays disabled — renderCoinUI's tick() re-enables it once the next cooldown actually ends
+                showOnlineNotice('🎉', 'You Won!', `The wheel landed on ${amount.toLocaleString()} coins!`, null);
+            }, 4200); // slightly longer than the wheel's 4s CSS spin animation
         }
-        const DAILY_BONUS_DISPLAY_AMOUNT = 100;
 
         // ─── Watch Ad for Coins ─────────────────────────────────────────────
         // Unlimited, repeatable: every time the player watches an ad through
