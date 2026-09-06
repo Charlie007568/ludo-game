@@ -2,7 +2,13 @@ import { requireAuth, rtdbTransaction, jsonResponse, optionsResponse } from '../
 
 const ONLINE_ROOT = 'lm_online';
 const STARTING_COINS = 5000;
-const DAILY_BONUS_AMOUNT = 100; // keep in sync with DAILY_BONUS_AMOUNT in the game HTML
+// The "Spin & Win" wheel — once per 24h, the player wins ONE of these
+// amounts. Kept as a small fixed set (not any random number in the range)
+// so the segment the wheel visually lands on can always exactly match what
+// was actually awarded — see SPIN_SEGMENTS in the game HTML, which must
+// list these same values in the same order (that's what draws the wheel
+// and makes it stop on the right slice).
+const SPIN_AMOUNTS = [50, 100, 150, 200, 250, 300, 400, 500];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export async function onRequestOptions() {
@@ -17,13 +23,18 @@ export async function onRequestPost(context) {
     catch (e) { return jsonResponse(e.statusCode || 401, { ok: false, reason: 'unauthenticated' }); }
 
     try {
+        // The winning amount is rolled ONCE, server-side, inside the same
+        // transaction that pays it out — never trust a client-supplied
+        // amount for something that pays real coins.
+        let awardedAmount = 0;
         const result = await rtdbTransaction(env, `${ONLINE_ROOT}/users/${auth.uid}`, u => {
             if (!u) return undefined;
             const lastClaim = u.lastDailyBonusAt;
             if (lastClaim && (Date.now() - lastClaim) < DAY_MS) return undefined;
+            awardedAmount = SPIN_AMOUNTS[Math.floor(Math.random() * SPIN_AMOUNTS.length)];
             const bal = typeof u.coins === 'number' ? u.coins : STARTING_COINS;
             return Object.assign({}, u, {
-                coins: bal + DAILY_BONUS_AMOUNT,
+                coins: bal + awardedAmount,
                 lastDailyBonusAt: Date.now(),
                 coinsZeroAt: null
             });
@@ -37,9 +48,9 @@ export async function onRequestPost(context) {
             }
             return jsonResponse(200, { ok: false, reason: 'not-ready' });
         }
-        return jsonResponse(200, { ok: true, newBalance: result.value.coins });
+        return jsonResponse(200, { ok: true, newBalance: result.value.coins, amount: awardedAmount });
     } catch (e) {
-        console.error('[claimDailyBonus]', e);
+        console.error('[claimDailyBonus/spin]', e);
         return jsonResponse(500, { ok: false, reason: 'server-error' });
     }
 }
