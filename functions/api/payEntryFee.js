@@ -1,7 +1,7 @@
 import { requireAuth, rtdbGet, rtdbPut, rtdbTransaction, jsonResponse, optionsResponse } from '../_firebaseAdmin.js';
 
 const ONLINE_ROOT = 'lm_online';
-const STARTING_COINS = 5000;
+const STARTING_COINS = 1000; // every new player starts with this many
 
 export async function onRequestOptions() {
     return optionsResponse();
@@ -30,8 +30,22 @@ export async function onRequestPost(context) {
         const bet = Math.max(0, Math.floor(Number(room.bet) || 0));
         if (bet === 0) return jsonResponse(200, { ok: true, alreadyPaid: false, amount: 0 });
 
-        const alreadyPaid = await rtdbGet(env, `${ONLINE_ROOT}/rooms/${roomId}/paidUids/${auth.uid}`);
-        if (alreadyPaid === true) return jsonResponse(200, { ok: true, alreadyPaid: true, amount: bet });
+        // BUG FIX: this used to check `paidUids/{uid}` with a plain rtdbGet
+        // and only THEN run a separate transaction to deduct the coins —
+        // two callers racing each other (a double-tap, or a client retry
+        // after a slow/timed-out response) could both pass the "not paid
+        // yet" check before either one had written `paidUids`, and both
+        // would deduct the entry fee, charging the player twice for one
+        // room. settleMatchRefund.js already avoids this by claiming its
+        // "already handled" flag ATOMICALLY, first, via a transaction —
+        // applying that same pattern here closes the race: only one
+        // concurrent request can ever flip paidUids/{uid} from unset to
+        // true, so only one can ever proceed to charge the fee.
+        const claimResult = await rtdbTransaction(env, `${ONLINE_ROOT}/rooms/${roomId}/paidUids/${auth.uid}`, cur => {
+            if (cur === true) return undefined; // already paid — abort, no double charge
+            return true;
+        });
+        if (!claimResult.committed) return jsonResponse(200, { ok: true, alreadyPaid: true, amount: bet });
 
         const result = await rtdbTransaction(env, `${ONLINE_ROOT}/users/${auth.uid}/coins`, cur => {
             const bal = typeof cur === 'number' ? cur : STARTING_COINS;
@@ -39,9 +53,13 @@ export async function onRequestPost(context) {
             return bal - bet;
         });
 
-        if (!result.committed) return jsonResponse(200, { ok: false, reason: 'insufficient-funds' });
+        if (!result.committed) {
+            // Couldn't actually charge them — release the paid claim so a
+            // later retry (e.g. after topping up coins) can still pay.
+            await rtdbPut(env, `${ONLINE_ROOT}/rooms/${roomId}/paidUids/${auth.uid}`, false).catch(() => {});
+            return jsonResponse(200, { ok: false, reason: 'insufficient-funds' });
+        }
 
-        await rtdbPut(env, `${ONLINE_ROOT}/rooms/${roomId}/paidUids/${auth.uid}`, true);
         return jsonResponse(200, { ok: true, newBalance: result.value, amount: bet });
     } catch (e) {
         console.error('[payEntryFee]', e);
