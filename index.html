@@ -5,27 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>Ludo Master Pro</title>
     <!-- ============================================================
-         ADDED: this game must only ever run inside the official Loader
-         (never opened directly / standalone, and never embedded by some
-         other, unrelated site). Runs first, before anything else, and
-         just sets a flag — the actual game engine script (further down)
-         checks this flag as its very first action and refuses to start
-         if it's set, replacing the page with a short message instead.
+         ADDED: this game must only ever run inside an iframe (the
+         official Loader), never opened directly/standalone as its own
+         top-level page. Runs first, before anything else, and just sets
+         a flag — the actual game engine script (further down) checks
+         this flag as its very first action and refuses to start if it's
+         set, replacing the page with a short message instead.
+
+         BUG FIX: this used to ALSO require the parent frame's origin to
+         exactly match this page's own origin. That's wrong for this
+         deployment — the Loader and the game are legitimately hosted on
+         two different domains (the game lives on its own Cloudflare
+         Pages URL, e.g. ludo-game-9rr.pages.dev, while the Loader shell
+         is a separate app/site) — so that check was blocking the real,
+         admin-approved Loader too, not just outsiders. It now only
+         checks that the page is inside AN iframe at all, which is the
+         actual requirement being asked for.
+
          This is a client-side check only (same caveat as the admin-email
          check in the Admin Panel) — the real, non-bypassable boundary is
          still the Loader + Firebase/Cloudflare access controls, but this
          stops the game from silently running for anyone who just opens
-         its raw URL directly.
+         its raw URL directly in a browser tab.
          ============================================================ -->
     <script>
         window.__RBE_STANDALONE_BLOCKED = (function () {
             try {
-                if (window.self === window.top) return true; // not inside any iframe at all
-                if (window.parent.location.origin !== window.location.origin) return true; // an iframe, but not our own same-origin Loader
+                return window.self === window.top; // true only when there's no parent frame at all
             } catch (e) {
-                return true; // cross-origin parent we can't verify — treat as untrusted
+                return false; // can't even check — don't block on an inconclusive result
             }
-            return false;
         })();
     </script>
     <meta name="description" content="A feature-rich Ludo board game with rolling 3D dice animations, vs Computer mode, gun shot capture sound, and premium audio chimes." />
