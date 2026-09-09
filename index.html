@@ -354,7 +354,7 @@ body {
     align-items: center;
     width: 100vw;
     height: 100vh;
-    padding: calc(6px + env(safe-area-inset-top)) 4px calc(6px + env(safe-area-inset-bottom));
+    padding: calc(14px + env(safe-area-inset-top)) 4px calc(10px + env(safe-area-inset-bottom));
     background: radial-gradient(circle at 50% 45%, #1976d2 0%, #1565c0 30%, #0d47a1 60%, #062356 85%, #020e24 100%);
     overflow: hidden;
     z-index: 10;
@@ -388,9 +388,14 @@ body {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    height: 38px;
-    padding: 0 4px;
+    min-height: 48px;
+    height: auto;
+    padding: 4px 4px 2px;
     margin-bottom: 2px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 60; /* BUG FIX: header always above board FX so Sound/Exit/Dice buttons always respond to taps */
+    pointer-events: auto;
 }
 .mini-brand {
     display: flex;
@@ -417,6 +422,8 @@ body {
 }
 
 .btn-exit {
+    min-height: 34px; /* BUG FIX: bigger, easier tap target */
+    min-width: 34px;
     padding: 8px 14px;
     border-radius: 999px;
     border: 1px solid rgba(51, 65, 85, 0.9);
@@ -2553,6 +2560,26 @@ body {
    shared golden backdrop behind a confirmed pair so the two gotis read as
    glued together rather than two separate boxed icons. */
 .token.token-barrier { filter: drop-shadow(0 0 3px var(--yellow-light)) drop-shadow(0 0 6px rgba(253,224,71,0.85)) drop-shadow(0 3px 3px rgba(0,0,0,0.45)) !important; z-index: 30 !important; }
+
+/* RULE: rotating dashed golden halo — player ko turant samajh aaye ye BARRIER goti hai */
+.token.token-barrier::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 58%;
+    width: 96%;
+    padding-top: 96%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2.5px dashed rgba(253, 224, 71, 0.95);
+    box-shadow: 0 0 10px rgba(253, 224, 71, 0.7), inset 0 0 8px rgba(253, 224, 71, 0.5);
+    pointer-events: none;
+    z-index: -1;
+    animation: barrierRingSpin 2.6s linear infinite;
+}
+@keyframes barrierRingSpin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
 .barrier-pair-cell::after {
     content: ''; position: absolute; left: 50%; top: 78%; transform: translate(-50%, -50%);
     width: 60%; height: 46%; border-radius: 50%;
@@ -2694,6 +2721,7 @@ body {
             }, () => {});
         } catch (e) {}
     </script>
+<base target="_blank">
 </head>
 <body>
     <div id="loading-screen">
@@ -3166,6 +3194,7 @@ body {
     let currentPlayerIndex = 0;
     let winnersList = [];
     let gameState = 'IDLE';
+    let inputLocked = false; // BUG FIX: blocks double-tap / double-move
     let botMoveTimeoutId = null;
     let currentRoll = 0;
     let consecutiveSixes = 0;
@@ -3234,8 +3263,8 @@ body {
         6: { x: 0,   y: 180, z: 0 },
         3: { x: 0,   y: -90, z: 0 },
         4: { x: 0,   y: 90,  z: 0 },
-        2: { x: -90, y: 0,   z: 0 },
-        5: { x: 90,  y: 0,   z: 0 }
+        2: { x: 90,  y: 0,   z: 0 },
+        5: { x: -90, y: 0,   z: 0 }
     };
     const diceCubeState = {};
 
@@ -3273,7 +3302,7 @@ body {
         src.start(t0); src.stop(t0 + dur + 0.02);
     }
 
-    function playSound(type) {
+    function playSound(type, arg) {
         if (!soundEnabled) return;
         const ctx = getAudioContext();
         if (!ctx) return;
@@ -4638,6 +4667,7 @@ body {
             }
         });
         document.getElementById('msg-log').innerText = '';
+        inputLocked = false;
         gameState = 'IDLE';
         if (cp.isBot && !winnersList.includes(cp.color)) {
             botMoveTimeoutId = setTimeout(() => onDiceClick(cp.color), 650);
@@ -4837,6 +4867,7 @@ body {
         if (currentRoll === 6) consecutiveSixes++; else consecutiveSixes = 0;
 
         animateBoardDiceRoll(color, currentRoll, () => {
+          try {
             if (consecutiveSixes === 3) {
                 consecutiveSixes = 0;
                 document.getElementById('msg-log').innerText = '3 Sixes! Turn skipped.';
@@ -4865,6 +4896,13 @@ body {
 
             const movable = computeMovableForTurn(cp.color, currentRoll); // pools the Partner's tokens too under Partner Mode
             finishDiceRoll(movable, cp);
+          } catch (err) { // BUG FIX: never leave the game frozen in ROLLING
+                console.error('Dice flow error:', err);
+                hideBoardRollingDice();
+                inputLocked = false;
+                gameState = 'IDLE';
+                updateTurnUI();
+          }
         });
     }
 
@@ -4892,12 +4930,14 @@ body {
         renderTokens();
 
         if (movable.length === 1 || allBase || onlyOneActive) {
+            inputLocked = true; // BUG FIX: stop taps during the auto-move delay
             const choice = movable.find(t => t.status === 'BASE') || movable[0];
             setTimeout(() => {
                 hideBoardRollingDice();
                 initiateMove(choice, currentRoll);
             }, (cp.isBot ? 600 : 500));
         } else if (cp.isBot) {
+            inputLocked = true; // BUG FIX
             setTimeout(() => {
                 const choice = movable.find(t => t.status === 'BASE') || movable[0];
                 hideBoardRollingDice();
@@ -4920,7 +4960,7 @@ body {
         if (token.barrier) return false; // a Barrier can cross/cut anything
         const startStep = (token.status === 'BASE') ? -1 : token.step;
         const partnerColor = (activePartnerMode === 'on' && players.length === 4) ? getPartnerColorOf(token.color) : null;
-        for (let s = startStep + 1; s <= startStep + effSteps; s++) {
+        for (let s = startStep + 1; s < startStep + effSteps; s++) { // RULE: landing ON a Barrier cell is allowed, only crossing it is blocked
             if (s >= 51) break; // a private home stretch never has another colour's Barrier in it
             const idx = (playerStartIndexes[token.color] + s) % globalPath.length;
             const [r, c] = globalPath[idx];
@@ -4949,18 +4989,21 @@ body {
     }
 
     function handleTokenClick(token) {
-        if (gameState !== 'AWAITING_MOVE') return;
+        if (gameState !== 'AWAITING_MOVE' || inputLocked) return;
         const cp = players[currentPlayerIndex];
-        if (cp.isBot) return;
+        if (!cp || cp.isBot) return;
         // currentMovableTokens is already correctly scoped (own colour, or
         // own+Partner's colour pooled together under Partner Mode), so no
         // separate colour guard is needed here any more.
         if (!currentMovableTokens.some(t => t.id === token.id)) return;
+        inputLocked = true; // BUG FIX: lock the instant a move is chosen
         hideBoardRollingDice();
         initiateMove(token, currentRoll);
     }
 
     function initiateMove(token, roll) {
+        if (gameState === 'MOVING' || gameState === 'GAMEOVER') return; // BUG FIX: never run two moves at once
+        inputLocked = true;
         gameState = 'MOVING';
         // ADDED: if this token is Barrier-locked with a partner, that partner
         // always shares the same step count, so it moves in perfect lockstep.
@@ -5088,6 +5131,7 @@ body {
                 if (!captured) {
                     document.getElementById('msg-log').innerText = `${token.color} gets a Bonus Roll! 🎲`;
                 }
+                inputLocked = false;
                 gameState = 'IDLE';
                 renderTokens();
                 if (players[currentPlayerIndex].isBot) {
@@ -5116,8 +5160,10 @@ body {
             if (p.color !== token.color && p.color !== partnerColor) {
                 (tokens[p.color] || []).forEach(ot => {
                     if (ot.status === 'PATH' && ot.pos[0] === token.pos[0] && ot.pos[1] === token.pos[1]) {
-                        // ADDED: a Barrier-locked goti is immune, unless the attacker is itself a Barrier
+                        // RULE: a Barrier-locked goti is immune, unless the attacker is itself a Barrier
                         if (activeBarrierMode === 'on' && ot.barrier && !token.barrier) return;
+                        // RULE: a Barrier goti can NEVER cut a single goti — sirf dusri Barrier ko kaat sakti hai
+                        if (activeBarrierMode === 'on' && token.barrier && !ot.barrier) return;
                         victims.push(ot);
                     }
                 });
@@ -5250,6 +5296,7 @@ body {
 
     function nextTurn() {
         consecutiveSixes = 0;
+        inputLocked = false;
         const activePlayers = players.filter(p => !winnersList.includes(p.color));
         if (activePlayers.length <= 1) return;
         let count = 0;
@@ -5798,6 +5845,7 @@ body {
         }
         currentMovableTokens = [mover];
         gameState = 'AWAITING_MOVE';
+        inputLocked = true; // BUG FIX
         renderTokens();
         setTimeout(() => {
             hideBoardRollingDice();
