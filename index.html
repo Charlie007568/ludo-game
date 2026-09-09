@@ -255,6 +255,54 @@ body {
 }
 .mode-tile:active { transform: translateY(0) scale(0.98); }
 .mode-tile.mode-red { --tile-accent: var(--red); }
+.mode-tile.selected {
+    border-color: var(--tile-accent, var(--yellow));
+    box-shadow: 0 0 0 2px var(--tile-accent, var(--yellow)), 0 8px 22px rgba(0, 0, 0, 0.45);
+}
+.mode-tile.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 6px;
+    right: 9px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--tile-accent, var(--yellow));
+    color: #0b1220;
+    font-size: 0.72rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.start-game-btn {
+    grid-column: 1 / -1;
+    margin-top: 2px;
+    padding: 13px !important;
+    font-size: 0.92rem !important;
+    background: linear-gradient(135deg, #4ade80, #16a34a 60%, #14532d) !important;
+    border-color: rgba(74, 222, 128, 0.65) !important;
+    color: #04180a !important;
+    box-shadow: 0 6px 18px rgba(34, 197, 94, 0.4) !important;
+}
+.menu-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 42px;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #1e1b4b, #0f172a);
+    border: 1.5px solid #fde047;
+    color: #ffffff;
+    padding: 9px 18px;
+    border-radius: 9999px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    z-index: 600;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+    display: none;
+    white-space: nowrap;
+    max-width: 92vw;
+}
 .mode-tile.mode-green { --tile-accent: var(--green); }
 .mode-tile.mode-yellow { --tile-accent: var(--yellow); }
 .mode-tile.mode-blue { --tile-accent: var(--blue); }
@@ -356,7 +404,8 @@ body {
     align-items: center;
     width: 100vw;
     height: 100vh;
-    padding: calc(14px + env(safe-area-inset-top)) 4px calc(10px + env(safe-area-inset-bottom));
+    padding: 32px 6px 20px; /* FIX: fallback — header hamesha status bar se neeche rahe */
+    padding: calc(26px + env(safe-area-inset-top, 0px)) 6px calc(16px + env(safe-area-inset-bottom, 0px)); /* FIX: sab kuch easily tappable — top options niche le aaye */
     background: radial-gradient(circle at 50% 45%, #1976d2 0%, #1565c0 30%, #0d47a1 60%, #062356 85%, #020e24 100%);
     overflow: hidden;
     z-index: 10;
@@ -396,7 +445,9 @@ body {
     margin-bottom: 2px;
     flex-shrink: 0;
     position: relative;
-    z-index: 60; /* BUG FIX: header always above board FX so Sound/Exit/Dice buttons always respond to taps */
+    margin-top: 4px;
+    margin-bottom: 4px;
+    z-index: 60; /* header always above board FX so Sound/Exit/Dice buttons always respond to taps */
     pointer-events: auto;
 }
 .mini-brand {
@@ -2789,26 +2840,27 @@ body {
                 <span class="dash-card-title">🎮 Select Game Mode</span>
             </div>
             <div class="mode-grid">
-                <div class="mode-tile mode-blue" onclick="window.LudoEngine.startGame('computer')">
+                <div class="mode-tile mode-blue selected" data-mode="computer" onclick="window.LudoEngine.selectMode('computer', this)">
                     <span class="mode-icon-badge">🤖</span>
                     <span class="mode-name">Vs Computer</span>
                     <span class="mode-sub">Random Base (Red/Yellow or Green/Blue)</span>
                 </div>
-                <div class="mode-tile mode-green" onclick="window.LudoEngine.startGame(2)">
+                <div class="mode-tile mode-green" data-mode="2" onclick="window.LudoEngine.selectMode(2, this)">
                     <span class="mode-icon-badge">🎲</span>
                     <span class="mode-name">Duel Match</span>
-                    <span class="mode-sub">Random 2 Players Match</span>
+                    <span class="mode-sub">2 Players Match</span>
                 </div>
-                <div class="mode-tile mode-yellow" onclick="window.LudoEngine.startGame(3)">
+                <div class="mode-tile mode-yellow" data-mode="3" onclick="window.LudoEngine.selectMode(3, this)">
                     <span class="mode-icon-badge">🎯</span>
                     <span class="mode-name">Triple Table</span>
                     <span class="mode-sub">3 Players Match</span>
                 </div>
-                <div class="mode-tile mode-red" onclick="window.LudoEngine.startGame(4)">
+                <div class="mode-tile mode-red" data-mode="4" onclick="window.LudoEngine.selectMode(4, this)">
                     <span class="mode-icon-badge">🏆</span>
                     <span class="mode-name">Full Table</span>
-                    <span class="mode-sub">4 Players Match</span>
+                    <span class="mode-sub">4 Players Match &bull; Barrier/Partner ke liye</span>
                 </div>
+                <button class="mod-single-btn start-game-btn" onclick="window.LudoEngine.startSelectedGame()">▶ Start Game</button>
             </div>
         </div>
 
@@ -2831,6 +2883,8 @@ body {
                 <span>Skins &amp; Trails Studio</span>
             </button>
         </div>
+
+        <div id="menu-toast" class="menu-toast"></div>
 
         <p class="dev-credit-ludo">
             <span class="dev-dots-mini">
@@ -3209,6 +3263,8 @@ body {
     let winnersList = [];
     let gameState = 'IDLE';
     let inputLocked = false; // BUG FIX: blocks double-tap / double-move
+    let justHomedThisMove = false; // RULE 1: is chaal me goti home pahunchi?
+    let activeMoveTokenId = null; // extra guard: ek baar me sirf ek hi goti move
     let botMoveTimeoutId = null;
     let currentRoll = 0;
     let consecutiveSixes = 0;
@@ -4683,6 +4739,7 @@ body {
         });
         document.getElementById('msg-log').innerText = '';
         inputLocked = false;
+        activeMoveTokenId = null;
         gameState = 'IDLE';
         if (cp.isBot && !winnersList.includes(cp.color)) {
             botMoveTimeoutId = setTimeout(() => onDiceClick(cp.color), 650);
@@ -5018,7 +5075,10 @@ body {
 
     function initiateMove(token, roll) {
         if (gameState === 'MOVING' || gameState === 'GAMEOVER') return; // BUG FIX: never run two moves at once
+        if (activeMoveTokenId === token.id) return; // BUG FIX: same goti dobara move nahi
         inputLocked = true;
+        activeMoveTokenId = token.id;
+        justHomedThisMove = false;
         gameState = 'MOVING';
         // ADDED: if this token is Barrier-locked with a partner, that partner
         // always shares the same step count, so it moves in perfect lockstep.
@@ -5044,6 +5104,7 @@ body {
                     token.status = 'HOME';
                     token.pos = [7, 7];
                     if (barrierMate) { barrierMate.status = 'HOME'; barrierMate.pos = [7, 7]; }
+                    justHomedThisMove = true; // RULE 1: home pahunchne pe extra chaal
                     playSound('home');
                 } else if (token.step < 51) {
                     const idx = (playerStartIndexes[token.color] + token.step) % globalPath.length;
@@ -5074,6 +5135,8 @@ body {
     }
 
     function afterMoveCheck(token, roll) {
+        const homedThisMove = justHomedThisMove; // RULE 1
+        justHomedThisMove = false;
         // RULE 5 FIX: even roll (2/4/6) pe goti STAR pe apni same-colour goti ke
         // paas aate hi player se poochho — Barrier banao ya single chalao.
         // (Pehle ye sirf NEXT roll pe check hota tha, isliye Barrier almost
@@ -5082,8 +5145,15 @@ body {
             && token.status === 'PATH' && token.step < 51 && safeSpots.includes(posKey(token))) {
             const mate = (tokens[token.color] || []).find(o => o.id !== token.id && !o.barrier && o.status === 'PATH' && o.step === token.step);
             if (mate) {
-                const cp = players[currentPlayerIndex];
-                if (cp && cp.isBot) {
+                // RULE 8: sirf OPTION dena hai — team me ek bhi human ho to popup dikhao,
+                // auto-barrier sirf tab jab POORI team bot ho.
+                const teamColors = (activePartnerMode === 'on' && players.length === 4)
+                    ? [token.color, getPartnerColorOf(token.color)] : [token.color];
+                const teamHasHuman = teamColors.some(c => {
+                    const pl = players.find(p => p.color === c);
+                    return pl && !pl.isBot;
+                });
+                if (!teamHasHuman) {
                     token.barrier = true; mate.barrier = true;
                     token.barrierWith = mate.id; mate.barrierWith = token.id;
                     document.getElementById('msg-log').innerText = `🚧 ${token.color} ne Barrier bana li!`;
@@ -5095,7 +5165,8 @@ body {
             }
         }
         checkCapture(token, (captured) => {
-            let hasBonus = (roll === 6) || captured;
+            // RULE 1: kaatne pe, 6 aane pe, YA goti home pahunchne pe — EXTRA CHAAL
+            let hasBonus = (roll === 6) || captured || homedThisMove;
 
             if (checkPlayerFinished(token.color)) {
                 if (!winnersList.includes(token.color)) {
@@ -5345,6 +5416,7 @@ body {
     function nextTurn() {
         consecutiveSixes = 0;
         inputLocked = false;
+        activeMoveTokenId = null;
         const activePlayers = players.filter(p => !winnersList.includes(p.color));
         if (activePlayers.length <= 1) return;
         let count = 0;
@@ -5795,7 +5867,43 @@ body {
     // Off/On toggles, so both could end up switched on at the same time.
     // Now there is exactly one selector — Off / Barrier / Partner — so
     // choosing one always turns the other off.
+    // Menu me selected mode track karta hai ('computer' | 2 | 3 | 4)
+    let selectedMode = 'computer';
+    let menuToastTimer = null;
+
+    function showMenuToast(msg) {
+        const t = document.getElementById('menu-toast');
+        if (!t) return;
+        t.textContent = msg;
+        t.style.display = 'block';
+        if (menuToastTimer) clearTimeout(menuToastTimer);
+        menuToastTimer = setTimeout(() => { t.style.display = 'none'; }, 2400);
+    }
+
+    function selectMode(mode, el) {
+        selectedMode = mode;
+        document.querySelectorAll('.mode-tile').forEach(t => t.classList.remove('selected'));
+        if (el) el.classList.add('selected');
+        // RULE: 2P/3P me Partner / Barrier+Partner allowed NAHI — auto off kar do
+        if ((mode === 2 || mode === 3) && partnerModeSetting === 'on') {
+            setMatchMod('off', document.getElementById('mod-off'));
+            showMenuToast('🤝 Partner Mode sirf Full Table (4 Players) me hota hai — Mod Off kar diya');
+        }
+    }
+
+    function startSelectedGame() {
+        startGame(selectedMode);
+    }
+
     function setMatchMod(mod, el) {
+        // RULE: Partner / Barrier+Partner select karo to game AUTOMATICALLY
+        // Full Table (4 Players) me set ho jata hai.
+        if ((mod === 'partner' || mod === 'both') && (selectedMode === 2 || selectedMode === 3)) {
+            selectedMode = 4;
+            document.querySelectorAll('.mode-tile').forEach(t =>
+                t.classList.toggle('selected', t.dataset.mode === '4'));
+            showMenuToast('🤝 Partner Mode ke liye Full Table (4 Players) auto-select ho gaya!');
+        }
         // 'both' = Barrier + Partner Mode ek saath khelna
         barrierModeSetting = (mod === 'barrier' || mod === 'both') ? 'on' : 'off';
         partnerModeSetting = (mod === 'partner' || mod === 'both') ? 'on' : 'off';
@@ -5976,6 +6084,8 @@ body {
         setCustomizerPreviewColor,
         selectCustomizerSkin,
         setMatchMod,
+        selectMode,
+        startSelectedGame,
         openCoinsModal,
         closeCoinsModal,
         handleSpinWheel,
