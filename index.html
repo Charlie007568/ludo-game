@@ -1386,47 +1386,6 @@ body {
     100% { transform: translate(var(--sx, 0px), var(--sy, 0px)) scale(0.1); opacity: 0; }
 }
 
-/* High-Visibility "GOTI CUT!" 3D Floating Badge */
-.goti-cut-badge {
-    position: absolute;
-    bottom: 115%;
-    left: 50%;
-    transform: translateX(-50%);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    border-radius: 9999px;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    border: 2px solid #facc15;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.75), 0 0 16px rgba(250, 204, 21, 0.7);
-    white-space: nowrap;
-    font-weight: 900;
-    font-size: 0.78rem;
-    letter-spacing: 0.9px;
-    color: #ffffff;
-    animation: gotiCutBadgePop 1.15s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
-    z-index: 100;
-    pointer-events: none;
-}
-.goti-cut-badge-icon {
-    font-size: 0.95rem;
-    filter: drop-shadow(0 0 4px #facc15);
-}
-.goti-cut-badge-text {
-    background: linear-gradient(135deg, #ffffff 0%, #fef08a 60%, #facc15 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-}
-@keyframes gotiCutBadgePop {
-    0%   { transform: translateX(-50%) translateY(8px) scale(0.3); opacity: 0; }
-    16%  { transform: translateX(-50%) translateY(-6px) scale(1.18); opacity: 1; }
-    32%  { transform: translateX(-50%) translateY(-8px) scale(1.0); opacity: 1; }
-    78%  { transform: translateX(-50%) translateY(-14px) scale(1.0); opacity: 1; }
-    100% { transform: translateX(-50%) translateY(-22px) scale(0.85); opacity: 0; }
-}
-
 /* Flying Goti Returning across the board into Home Base */
 .token-flying-return {
     position: absolute;
@@ -2571,6 +2530,27 @@ body {
    shared golden backdrop behind a confirmed pair so the two gotis read as
    glued together rather than two separate boxed icons. */
 .token.token-barrier { filter: drop-shadow(0 0 3px var(--yellow-light)) drop-shadow(0 0 6px rgba(253,224,71,0.85)) drop-shadow(0 3px 3px rgba(0,0,0,0.45)) !important; z-index: 30 !important; }
+/* Small "B" marker so it's easy to spot every Barrier-locked goti on the board at a glance */
+.token-barrier-tag {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #facc15;
+    border: 1px solid #78350f;
+    color: #1e293b;
+    font-size: 7px;
+    font-weight: 900;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 4px rgba(250,204,21,0.9);
+    z-index: 40;
+    pointer-events: none;
+}
 .barrier-pair-cell::after {
     content: ''; position: absolute; left: 50%; top: 78%; transform: translate(-50%, -50%);
     width: 60%; height: 46%; border-radius: 50%;
@@ -4534,6 +4514,12 @@ body {
                 }
 
                 tEl.innerHTML = pawnSVG_mappin(t.color);
+                if (t.barrier && isBarrierPair) {
+                    const bTag = document.createElement('span');
+                    bTag.className = 'token-barrier-tag';
+                    bTag.textContent = 'B';
+                    tEl.appendChild(bTag);
+                }
                 if (isThisMoving && activeMove && activeMove.type === 'GLIDE') {
                     const tailEl = document.createElement('div');
                     tailEl.className = `token-smooth-tail tail-${t.color.toLowerCase()} trail-style-${customization.trailEffect}`;
@@ -5220,10 +5206,6 @@ body {
                 <div class="goti-cut-flash"></div>
                 <div class="goti-cut-shockwave"></div>
                 <div class="goti-cut-shockwave shockwave-ring-2"></div>
-                <div class="goti-cut-badge">
-                    <span class="goti-cut-badge-icon">⚔️</span>
-                    <span class="goti-cut-badge-text">GOTI CUT!</span>
-                </div>
             `;
             for (let i = 0; i < 8; i++) {
                 const sp = document.createElement('div');
