@@ -170,9 +170,11 @@ body {
 
 .menu-topbar {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
     gap: 8px;
+    row-gap: 10px;
     margin-bottom: 12px;
 }
 .topbar-pill {
@@ -369,7 +371,7 @@ body {
     align-items: center;
     width: 100vw;
     height: 100vh;
-    padding: calc(6px + env(safe-area-inset-top)) 4px calc(6px + env(safe-area-inset-bottom));
+    padding: max(30px, calc(6px + env(safe-area-inset-top))) 4px max(14px, calc(6px + env(safe-area-inset-bottom)));
     background: radial-gradient(circle at 50% 45%, #1976d2 0%, #1565c0 30%, #0d47a1 60%, #062356 85%, #020e24 100%);
     overflow: hidden;
     z-index: 10;
@@ -2562,6 +2564,7 @@ body {
 #adwatch-timer { font-size: 1.6rem; font-weight: 900; color: var(--yellow-light); margin: 10px 0; }
 .adwatch-status { font-size: 0.72rem; color: var(--ivory-dim); }
 .adwatch-slot { width: 100%; min-height: 140px; border-radius: 10px; background: rgba(30,41,59,0.7); border: 1px dashed rgba(148,163,184,0.4); display: flex; align-items: center; justify-content: center; font-size: 0.66rem; color: var(--ivory-dim); margin-bottom: 12px; overflow: hidden; }
+.adwatch-note { font-size: 0.62rem; color: var(--ivory-dim); margin: -6px 0 10px; line-height: 1.4; }
 
 /* Barrier token visual — a soft gold glow that hugs the actual pin shape
    (drop-shadow follows the SVG's silhouette, never a square/box), and a
@@ -2720,7 +2723,7 @@ body {
     <div id="menu-screen" class="glass-panel">
         <div class="menu-topbar">
             <!-- Left: Name input option -->
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                 <div class="topbar-player-name-pill" title="Click to edit your name">
                     <span class="name-avatar-icon">👤</span>
                     <input
@@ -2736,10 +2739,10 @@ body {
             </div>
 
             <!-- Right: Music, Sound, and Coin Balance -->
-            <div style="display: flex; align-items: center; gap: 6px;">
-                <button class="topbar-pill" id="music-btn-menu" onclick="window.LudoEngine.toggleMusic()" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800;">🎵 Music</button>
-                <button class="topbar-pill" id="sound-btn-menu" onclick="window.LudoEngine.toggleSound()" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800;">🔊 SFX</button>
-                <div class="topbar-pill topbar-coins" onclick="window.LudoEngine.openCoinsModal()" title="Coin Wallet — tap for more coins">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex: 1 1 auto; min-width: 0;">
+                <button class="topbar-pill" id="music-btn-menu" onclick="window.LudoEngine.toggleMusic()" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800; white-space: nowrap;">🎵 Music</button>
+                <button class="topbar-pill" id="sound-btn-menu" onclick="window.LudoEngine.toggleSound()" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800; white-space: nowrap;">🔊 SFX</button>
+                <div class="topbar-pill topbar-coins" onclick="window.LudoEngine.openCoinsModal()" title="Coin Wallet — tap for more coins" style="white-space: nowrap;">
                     <span class="coin-balance-amount" id="menu-coin-balance">🪙 1,000</span>
                     <span class="coin-plus-badge">+</span>
                 </div>
@@ -2809,7 +2812,7 @@ body {
             <span class="dev-dots-mini">
                 <i class="dot-r"></i><i class="dot-g"></i><i class="dot-y"></i><i class="dot-b"></i>
             </span>
-            <span>Designed &amp; Developed by <strong class="dev-name-accent">Rahbar Waris</strong></span>
+            <span>Designed &amp; Developed by <strong class="dev-name-accent"><span class="c-red">R</span><span class="c-green">a</span><span class="c-yellow">h</span><span class="c-blue">b</span><span class="c-red">a</span><span class="c-green">r</span> <span class="c-yellow">W</span><span class="c-blue">a</span><span class="c-red">r</span><span class="c-green">i</span><span class="c-yellow">s</span></strong></span>
         </p>
     </div>
 
@@ -2944,7 +2947,7 @@ body {
                     <span class="dev-dots-mini">
                         <i class="dot-r"></i><i class="dot-g"></i><i class="dot-y"></i><i class="dot-b"></i>
                     </span>
-                    <span>Designed &amp; Developed by <strong class="dev-name-accent">Rahbar Waris</strong></span>
+                    <span>Designed &amp; Developed by <strong class="dev-name-accent"><span class="c-red">R</span><span class="c-green">a</span><span class="c-yellow">h</span><span class="c-blue">b</span><span class="c-red">a</span><span class="c-green">r</span> <span class="c-yellow">W</span><span class="c-blue">a</span><span class="c-red">r</span><span class="c-green">i</span><span class="c-yellow">s</span></strong></span>
                 </div>
             </div>
         </div>
@@ -3046,6 +3049,7 @@ body {
             <div class="glass-panel adwatch-box">
                 <p class="coins-modal-title">🎬 Watch Ad</p>
                 <div class="adwatch-slot" id="adwatch-slot">Ad space — plug in your ad network's tag here</div>
+                <p class="adwatch-note">If the ad doesn't display, your reward still arrives normally.</p>
                 <p id="adwatch-timer">5</p>
                 <p class="adwatch-status" id="adwatch-status">Please wait…</p>
             </div>
