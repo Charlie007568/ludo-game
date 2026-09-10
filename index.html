@@ -4101,7 +4101,6 @@ body {
                             <span class="card-name">${skin.name}</span>
                             <span class="card-tag" style="background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.35); color: ${skin.badgeColor || '#fef08a'};">${skin.tag}</span>
                         </div>
-                        <p class="card-desc">${skin.desc}</p>
                     </div>
                     <div class="card-action-bar">
                         ${isSelected
@@ -4131,7 +4130,6 @@ body {
                             <span class="card-name">${skin.name}</span>
                             <span class="card-tag" style="background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.35); color: ${skin.badgeColor || '#fef08a'};">${skin.tag}</span>
                         </div>
-                        <p class="card-desc">${skin.desc}</p>
                     </div>
                     <div class="card-action-bar">
                         ${isSelected
@@ -4164,7 +4162,6 @@ body {
                             <span class="card-name">${trail.name}</span>
                             <span class="card-tag" style="background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.35); color: ${trail.badgeColor || '#fef08a'};">${trail.tag}</span>
                         </div>
-                        <p class="card-desc">${trail.desc}</p>
                     </div>
                     <div class="card-action-bar">
                         ${isSelected
@@ -4605,9 +4602,20 @@ body {
     }
 
     function renderScoreboard() {
+        // BUG FIX: this rebuilds each #dice-<color> element from scratch via
+        // innerHTML, which used to wipe out the 'active-roll' class (and with
+        // it, the pointer-events:auto that class grants — the base
+        // .dice-box-tag rule is pointer-events:none). Any mid-match call to
+        // renderScoreboard() — e.g. from the Studio customizer's Equip
+        // buttons or its Done/close — silently made the current player's
+        // dice unclickable, which looked exactly like the whole game
+        // freezing. Re-apply the current turn's active state right here so
+        // renderScoreboard() is self-contained and safe to call anytime.
+        const cpNow = players[currentPlayerIndex];
         colors.forEach(c => {
             const tag = document.getElementById(`tag-${c.name}`);
             const baseLabel = document.getElementById(`base-name-${c.name}`);
+            const baseQuad = document.querySelector(`.base-quadrant-${c.name.toLowerCase()}`);
             if (!tag) return;
             const p = players.find(pl => pl.color === c.name);
             if (p) {
@@ -4617,6 +4625,16 @@ body {
                 tag.style.pointerEvents = 'auto';
                 tag.innerHTML = `<div class="dice-box-tag" id="dice-${c.name}" onclick="window.LudoEngine.onDiceClick('${c.name}')">${dice3dHTML()}</div>`;
                 if (baseLabel) baseLabel.innerHTML = `${p.name}`;
+
+                const isFinished = winnersList.includes(c.name);
+                const diceEl = document.getElementById(`dice-${c.name}`);
+                const isActiveTurn = !isFinished && cpNow && cpNow.color === c.name && gameState === 'IDLE';
+                tag.classList.toggle('active', isActiveTurn);
+                if (diceEl) {
+                    diceEl.classList.toggle('active-roll', isActiveTurn);
+                    diceEl.style.pointerEvents = isActiveTurn ? 'auto' : 'none';
+                }
+                baseQuad?.classList.toggle('base-active-turn', isActiveTurn);
             } else {
                 tag.style.display = 'flex';
                 tag.style.visibility = 'hidden';
@@ -4624,6 +4642,8 @@ body {
                 tag.style.pointerEvents = 'none';
                 tag.innerHTML = '';
                 if (baseLabel) baseLabel.innerHTML = '';
+                tag.classList.remove('active');
+                baseQuad?.classList.remove('base-active-turn');
             }
         });
     }
@@ -5821,27 +5841,33 @@ body {
 
     function resolveBarrierChoice(decision, roll, wantsBarrier, cp) {
         hideBarrierDecisionModal();
-        let mover;
         if (wantsBarrier) {
             if (!decision.alreadyLocked) {
                 decision.a.barrier = true; decision.b.barrier = true;
                 decision.a.barrierWith = decision.b.id; decision.b.barrierWith = decision.a.id;
             }
-            mover = decision.a;
+            const mover = decision.a;
             document.getElementById('msg-log').innerText = `🚧 Barrier moves ${Math.floor(roll / 2)} step(s) — half speed!`;
-        } else {
-            decision.a.barrier = false; decision.b.barrier = false;
-            decision.a.barrierWith = null; decision.b.barrierWith = null;
-            mover = decision.a;
-            document.getElementById('msg-log').innerText = decision.alreadyLocked ? '🚧 Barrier broken — moving single goti.' : 'Moving single goti.';
+            currentMovableTokens = [mover];
+            gameState = 'AWAITING_MOVE';
+            renderTokens();
+            setTimeout(() => {
+                hideBoardRollingDice();
+                initiateMove(mover, roll);
+            }, cp.isBot ? 600 : 400);
+            return;
         }
-        currentMovableTokens = [mover];
-        gameState = 'AWAITING_MOVE';
-        renderTokens();
-        setTimeout(() => {
-            hideBoardRollingDice();
-            initiateMove(mover, roll);
-        }, cp.isBot ? 600 : 400);
+
+        // "Move Single Goti" — break/decline the Barrier, but let the player
+        // pick WHICH goti to move themselves (same as a normal roll), rather
+        // than forcing decision.a. Falls back to auto-move only when there's
+        // truly just one legal option (bot turn, single movable, etc.) —
+        // finishDiceRoll() already handles that logic.
+        decision.a.barrier = false; decision.b.barrier = false;
+        decision.a.barrierWith = null; decision.b.barrierWith = null;
+        document.getElementById('msg-log').innerText = decision.alreadyLocked ? '🚧 Barrier broken — tap a goti to move.' : 'Tap a goti to move.';
+        const movable = computeMovableForTurn(cp.color, roll);
+        finishDiceRoll(movable, cp);
     }
 
     // ============================================================
