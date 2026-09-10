@@ -4,36 +4,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>Ludo Master Pro</title>
+    <!-- ADDED: no aggressive caching — so a GitHub push (which rebuilds
+         the Cloudflare Pages deployment the Admin Panel points the Loader
+         at) shows up the very next time anyone opens the game, instead of
+         a browser serving a stale cached copy of this HTML file. -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <!-- ============================================================
-         ADDED: this game must only ever run inside an iframe (the
-         official Loader), never opened directly/standalone as its own
-         top-level page. Runs first, before anything else, and just sets
-         a flag — the actual game engine script (further down) checks
-         this flag as its very first action and refuses to start if it's
-         set, replacing the page with a short message instead.
+         ADDED: this game must only ever run inside the official Loader,
+         never opened directly/standalone as its own top-level page, and
+         never just because it happens to be inside SOME iframe (a preview
+         tool, or someone else's page with a copy-pasted <iframe> tag).
+         Runs first, before anything else, and just sets a flag — the
+         actual game engine script (further down) checks this flag as its
+         very first action and refuses to start if it's set, replacing the
+         page with a short message instead.
 
          BUG FIX: this used to ALSO require the parent frame's origin to
-         exactly match this page's own origin. That's wrong for this
-         deployment — the Loader and the game are legitimately hosted on
-         two different domains (the game lives on its own Cloudflare
-         Pages URL, e.g. ludo-game-9rr.pages.dev, while the Loader shell
-         is a separate app/site) — so that check was blocking the real,
-         admin-approved Loader too, not just outsiders. It now only
-         checks that the page is inside AN iframe at all, which is the
-         actual requirement being asked for.
+         exactly match this page's own origin, which broke the real Loader
+         (it's legitimately on a different domain than the game). That
+         requirement was removed — but that alone made "inside any iframe
+         at all" enough to unlock it, which is too loose (e.g. a file
+         preview tool that renders this HTML inside its own iframe would
+         also count). The fix adds a second requirement: the Loader must
+         also pass its own handshake key in the URL (see loadGame() in
+         4-loader.html, which appends &_lk=... to the game URL it loads) —
+         so both conditions are now required: inside an iframe, AND that
+         exact key present.
 
          This is a client-side check only (same caveat as the admin-email
          check in the Admin Panel) — the real, non-bypassable boundary is
          still the Loader + Firebase/Cloudflare access controls, but this
-         stops the game from silently running for anyone who just opens
-         its raw URL directly in a browser tab.
+         stops the game from silently running anywhere except through the
+         actual Loader.
          ============================================================ -->
     <script>
         window.__RBE_STANDALONE_BLOCKED = (function () {
             try {
-                return window.self === window.top; // true only when there's no parent frame at all
+                if (window.self === window.top) return true; // no parent frame at all — must be inside SOME iframe
+                const RBE_LOADER_KEY = 'rbe_ludo_loader_v1'; // must match RBE_LOADER_KEY in 4-loader.html
+                const key = new URLSearchParams(window.location.search).get('_lk');
+                if (key !== RBE_LOADER_KEY) return true; // wrong/missing key — not opened by the real Loader
+                return false;
             } catch (e) {
-                return false; // can't even check — don't block on an inconclusive result
+                return true; // can't verify — treat as untrusted
             }
         })();
     </script>
