@@ -158,8 +158,6 @@ body {
     justify-content: space-between;
     align-items: center;
     gap: 8px;
-    row-gap: 8px;
-    flex-wrap: wrap; /* FIX: coin pill never gets cut off — wraps to next row on small screens */
     margin-bottom: 12px;
 }
 .topbar-pill {
@@ -255,54 +253,6 @@ body {
 }
 .mode-tile:active { transform: translateY(0) scale(0.98); }
 .mode-tile.mode-red { --tile-accent: var(--red); }
-.mode-tile.selected {
-    border-color: var(--tile-accent, var(--yellow));
-    box-shadow: 0 0 0 2px var(--tile-accent, var(--yellow)), 0 8px 22px rgba(0, 0, 0, 0.45);
-}
-.mode-tile.selected::after {
-    content: '✓';
-    position: absolute;
-    top: 6px;
-    right: 9px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--tile-accent, var(--yellow));
-    color: #0b1220;
-    font-size: 0.72rem;
-    font-weight: 900;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.start-game-btn {
-    grid-column: 1 / -1;
-    margin-top: 2px;
-    padding: 13px !important;
-    font-size: 0.92rem !important;
-    background: linear-gradient(135deg, #4ade80, #16a34a 60%, #14532d) !important;
-    border-color: rgba(74, 222, 128, 0.65) !important;
-    color: #04180a !important;
-    box-shadow: 0 6px 18px rgba(34, 197, 94, 0.4) !important;
-}
-.menu-toast {
-    position: fixed;
-    left: 50%;
-    bottom: 42px;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, #1e1b4b, #0f172a);
-    border: 1.5px solid #fde047;
-    color: #ffffff;
-    padding: 9px 18px;
-    border-radius: 9999px;
-    font-size: 0.74rem;
-    font-weight: 800;
-    z-index: 600;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
-    display: none;
-    white-space: nowrap;
-    max-width: 92vw;
-}
 .mode-tile.mode-green { --tile-accent: var(--green); }
 .mode-tile.mode-yellow { --tile-accent: var(--yellow); }
 .mode-tile.mode-blue { --tile-accent: var(--blue); }
@@ -404,8 +354,7 @@ body {
     align-items: center;
     width: 100vw;
     height: 100vh;
-    padding: 32px 6px 20px; /* FIX: fallback — header hamesha status bar se neeche rahe */
-    padding: calc(26px + env(safe-area-inset-top, 0px)) 6px calc(16px + env(safe-area-inset-bottom, 0px)); /* FIX: sab kuch easily tappable — top options niche le aaye */
+    padding: calc(6px + env(safe-area-inset-top)) 4px calc(6px + env(safe-area-inset-bottom));
     background: radial-gradient(circle at 50% 45%, #1976d2 0%, #1565c0 30%, #0d47a1 60%, #062356 85%, #020e24 100%);
     overflow: hidden;
     z-index: 10;
@@ -439,16 +388,9 @@ body {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    min-height: 48px;
-    height: auto;
-    padding: 4px 4px 2px;
+    height: 38px;
+    padding: 0 4px;
     margin-bottom: 2px;
-    flex-shrink: 0;
-    position: relative;
-    margin-top: 4px;
-    margin-bottom: 4px;
-    z-index: 60; /* header always above board FX so Sound/Exit/Dice buttons always respond to taps */
-    pointer-events: auto;
 }
 .mini-brand {
     display: flex;
@@ -475,8 +417,6 @@ body {
 }
 
 .btn-exit {
-    min-height: 34px; /* BUG FIX: bigger, easier tap target */
-    min-width: 34px;
     padding: 8px 14px;
     border-radius: 999px;
     border: 1px solid rgba(51, 65, 85, 0.9);
@@ -2524,18 +2464,7 @@ body {
    ADDED: Coin Economy + Barrier Mode + Partner Mode + Ads
    (Purely additive — does not alter any existing rule above)
    ============================================================ */
-.topbar-coins { cursor: pointer; display: flex; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap; }
-.topbar-pill { flex-shrink: 0; white-space: nowrap; }
-
-/* FIX: compact topbar on narrow screens so coin balance is always fully visible */
-@media (max-width: 440px) {
-    .menu-topbar { gap: 6px; row-gap: 6px; }
-    .topbar-player-name-pill { padding: 5px 9px !important; }
-    .topbar-name-input { width: 68px !important; font-size: 0.74rem !important; }
-    #music-btn-menu, #sound-btn-menu { padding: 5px 9px !important; font-size: 0.64rem !important; }
-    .topbar-coins { padding: 5px 9px !important; }
-    .coin-balance-amount { font-size: 0.82rem !important; }
-}
+.topbar-coins { cursor: pointer; display: flex; align-items: center; gap: 4px; }
 .coin-plus-badge {
     display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px;
     border-radius: 50%; background: var(--yellow-light); color: #1a1206; font-size: 0.65rem; font-weight: 900;
@@ -2624,26 +2553,6 @@ body {
    shared golden backdrop behind a confirmed pair so the two gotis read as
    glued together rather than two separate boxed icons. */
 .token.token-barrier { filter: drop-shadow(0 0 3px var(--yellow-light)) drop-shadow(0 0 6px rgba(253,224,71,0.85)) drop-shadow(0 3px 3px rgba(0,0,0,0.45)) !important; z-index: 30 !important; }
-
-/* RULE: rotating dashed golden halo — player ko turant samajh aaye ye BARRIER goti hai */
-.token.token-barrier::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 58%;
-    width: 96%;
-    padding-top: 96%;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    border: 2.5px dashed rgba(253, 224, 71, 0.95);
-    box-shadow: 0 0 10px rgba(253, 224, 71, 0.7), inset 0 0 8px rgba(253, 224, 71, 0.5);
-    pointer-events: none;
-    z-index: -1;
-    animation: barrierRingSpin 2.6s linear infinite;
-}
-@keyframes barrierRingSpin {
-    to { transform: translate(-50%, -50%) rotate(360deg); }
-}
 .barrier-pair-cell::after {
     content: ''; position: absolute; left: 50%; top: 78%; transform: translate(-50%, -50%);
     width: 60%; height: 46%; border-radius: 50%;
@@ -2785,7 +2694,6 @@ body {
             }, () => {});
         } catch (e) {}
     </script>
-<base target="_blank">
 </head>
 <body>
     <div id="loading-screen">
@@ -2813,7 +2721,7 @@ body {
             </div>
 
             <!-- Right: Music, Sound, and Coin Balance -->
-            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto;">
+            <div style="display: flex; align-items: center; gap: 6px;">
                 <button class="topbar-pill" id="music-btn-menu" onclick="window.LudoEngine.toggleMusic()" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800;">🎵 Music</button>
                 <button class="topbar-pill" id="sound-btn-menu" onclick="window.LudoEngine.toggleSound()" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800;">🔊 SFX</button>
                 <div class="topbar-pill topbar-coins" onclick="window.LudoEngine.openCoinsModal()" title="Coin Wallet — tap for more coins">
@@ -2840,27 +2748,26 @@ body {
                 <span class="dash-card-title">🎮 Select Game Mode</span>
             </div>
             <div class="mode-grid">
-                <div class="mode-tile mode-blue selected" data-mode="computer" onclick="window.LudoEngine.selectMode('computer', this)">
+                <div class="mode-tile mode-blue" onclick="window.LudoEngine.startGame('computer')">
                     <span class="mode-icon-badge">🤖</span>
                     <span class="mode-name">Vs Computer</span>
                     <span class="mode-sub">Random Base (Red/Yellow or Green/Blue)</span>
                 </div>
-                <div class="mode-tile mode-green" data-mode="2" onclick="window.LudoEngine.selectMode(2, this)">
+                <div class="mode-tile mode-green" onclick="window.LudoEngine.startGame(2)">
                     <span class="mode-icon-badge">🎲</span>
                     <span class="mode-name">Duel Match</span>
-                    <span class="mode-sub">2 Players Match</span>
+                    <span class="mode-sub">Random 2 Players Match</span>
                 </div>
-                <div class="mode-tile mode-yellow" data-mode="3" onclick="window.LudoEngine.selectMode(3, this)">
+                <div class="mode-tile mode-yellow" onclick="window.LudoEngine.startGame(3)">
                     <span class="mode-icon-badge">🎯</span>
                     <span class="mode-name">Triple Table</span>
                     <span class="mode-sub">3 Players Match</span>
                 </div>
-                <div class="mode-tile mode-red" data-mode="4" onclick="window.LudoEngine.selectMode(4, this)">
+                <div class="mode-tile mode-red" onclick="window.LudoEngine.startGame(4)">
                     <span class="mode-icon-badge">🏆</span>
                     <span class="mode-name">Full Table</span>
-                    <span class="mode-sub">4 Players Match &bull; Barrier/Partner ke liye</span>
+                    <span class="mode-sub">4 Players Match</span>
                 </div>
-                <button class="mod-single-btn start-game-btn" onclick="window.LudoEngine.startSelectedGame()">▶ Start Game</button>
             </div>
         </div>
 
@@ -2873,7 +2780,6 @@ body {
                 <div class="diff-pill active" id="mod-off" onclick="window.LudoEngine.setMatchMod('off', this)">Off</div>
                 <div class="diff-pill" id="mod-barrier" onclick="window.LudoEngine.setMatchMod('barrier', this)">🚧 Barrier</div>
                 <div class="diff-pill" id="mod-partner" onclick="window.LudoEngine.setMatchMod('partner', this)">🤝 Partner</div>
-                <div class="diff-pill" id="mod-both" onclick="window.LudoEngine.setMatchMod('both', this)">🚧🤝 Barrier+Partner</div>
             </div>
         </div>
 
@@ -2883,8 +2789,6 @@ body {
                 <span>Skins &amp; Trails Studio</span>
             </button>
         </div>
-
-        <div id="menu-toast" class="menu-toast"></div>
 
         <p class="dev-credit-ludo">
             <span class="dev-dots-mini">
@@ -3071,8 +2975,8 @@ body {
                 <p class="coins-modal-title">🚧 Barrier Point!</p>
 
                 <p class="coins-modal-sub" id="barrier-decision-sub"></p>
-                <button class="coin-claim-btn" id="barrier-yes-btn" onclick="window.LudoEngine.chooseBarrierOption(true)">🚧 Use Barrier</button>
-                <button class="coin-claim-btn coin-ad-btn" id="barrier-no-btn" onclick="window.LudoEngine.chooseBarrierOption(false)">🎯 Move Single Goti</button>
+                <button class="coin-claim-btn" onclick="window.LudoEngine.chooseBarrierOption(true)">🚧 Use Barrier</button>
+                <button class="coin-claim-btn coin-ad-btn" onclick="window.LudoEngine.chooseBarrierOption(false)">🎯 Move Single Goti</button>
             </div>
         </div>
 
@@ -3113,7 +3017,7 @@ body {
 
                 <button class="coin-claim-btn" id="coin-spin-btn" onclick="window.LudoEngine.handleSpinWheel()">🎡 Spin &amp; Win</button>
                 <span class="coin-claim-countdown" id="coin-spin-countdown"></span>
-                <button class="coin-claim-btn coin-ad-btn" id="coin-ad-btn" onclick="window.LudoEngine.handleWatchAdForCoins()">🎬 Watch Ad for 100 Coins</button>
+                <button class="coin-claim-btn coin-ad-btn" id="coin-ad-btn" onclick="window.LudoEngine.handleWatchAdForCoins()">🎬 Watch Ad for 50 Coins</button>
                 <span class="coin-claim-countdown">Watch as many times as you like</span>
                 <button class="coins-modal-close" onclick="window.LudoEngine.closeCoinsModal()">Close</button>
             </div>
@@ -3262,9 +3166,6 @@ body {
     let currentPlayerIndex = 0;
     let winnersList = [];
     let gameState = 'IDLE';
-    let inputLocked = false; // BUG FIX: blocks double-tap / double-move
-    let justHomedThisMove = false; // RULE 1: is chaal me goti home pahunchi?
-    let activeMoveTokenId = null; // extra guard: ek baar me sirf ek hi goti move
     let botMoveTimeoutId = null;
     let currentRoll = 0;
     let consecutiveSixes = 0;
@@ -3283,7 +3184,7 @@ body {
     // fallback below, and to show accurate copy even before the server
     // has responded once.
     const SPIN_AMOUNTS = [50, 100, 150, 200, 250, 300, 400, 500];
-    const COIN_SPIN_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours, same as the server
+    const COIN_SPIN_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour — must match DAY_MS in functions/api/claimDailyBonus.js
 
     let soundEnabled = true;
     let musicEnabled = true;
@@ -3333,8 +3234,8 @@ body {
         6: { x: 0,   y: 180, z: 0 },
         3: { x: 0,   y: -90, z: 0 },
         4: { x: 0,   y: 90,  z: 0 },
-        2: { x: 90,  y: 0,   z: 0 },
-        5: { x: -90, y: 0,   z: 0 }
+        2: { x: -90, y: 0,   z: 0 },
+        5: { x: 90,  y: 0,   z: 0 }
     };
     const diceCubeState = {};
 
@@ -3372,7 +3273,7 @@ body {
         src.start(t0); src.stop(t0 + dur + 0.02);
     }
 
-    function playSound(type, arg) {
+    function playSound(type) {
         if (!soundEnabled) return;
         const ctx = getAudioContext();
         if (!ctx) return;
@@ -4429,8 +4330,7 @@ body {
                 <line x1="100" y1="0" x2="0" y2="100" stroke="#0f172a" stroke-width="2"/>
                 <circle cx="50" cy="50" r="16.5" fill="url(#ch-gold)" stroke="#451a03" stroke-width="1.6"/>
                 <circle cx="50" cy="50" r="13.5" fill="none" stroke="#fef9c3" stroke-width="0.9" opacity="0.85"/>
-                <text x="50" y="45" text-anchor="middle" font-size="10" font-weight="900" fill="#ffffff" stroke="#451a03" stroke-width="0.8">LUDO</text>
-                <text x="50" y="55" text-anchor="middle" font-size="4.6" font-weight="800" fill="#fef9c3" letter-spacing="0.4">MASTER PRO</text>
+                <text x="50" y="55.5" text-anchor="middle" font-size="14.5" font-weight="900" fill="#ffffff">★</text>
             </svg>
         `;
         board.appendChild(centerHome);
@@ -4738,8 +4638,6 @@ body {
             }
         });
         document.getElementById('msg-log').innerText = '';
-        inputLocked = false;
-        activeMoveTokenId = null;
         gameState = 'IDLE';
         if (cp.isBot && !winnersList.includes(cp.color)) {
             botMoveTimeoutId = setTimeout(() => onDiceClick(cp.color), 650);
@@ -4939,7 +4837,6 @@ body {
         if (currentRoll === 6) consecutiveSixes++; else consecutiveSixes = 0;
 
         animateBoardDiceRoll(color, currentRoll, () => {
-          try {
             if (consecutiveSixes === 3) {
                 consecutiveSixes = 0;
                 document.getElementById('msg-log').innerText = '3 Sixes! Turn skipped.';
@@ -4968,13 +4865,6 @@ body {
 
             const movable = computeMovableForTurn(cp.color, currentRoll); // pools the Partner's tokens too under Partner Mode
             finishDiceRoll(movable, cp);
-          } catch (err) { // BUG FIX: never leave the game frozen in ROLLING
-                console.error('Dice flow error:', err);
-                hideBoardRollingDice();
-                inputLocked = false;
-                gameState = 'IDLE';
-                updateTurnUI();
-          }
         });
     }
 
@@ -5002,14 +4892,12 @@ body {
         renderTokens();
 
         if (movable.length === 1 || allBase || onlyOneActive) {
-            inputLocked = true; // BUG FIX: stop taps during the auto-move delay
             const choice = movable.find(t => t.status === 'BASE') || movable[0];
             setTimeout(() => {
                 hideBoardRollingDice();
                 initiateMove(choice, currentRoll);
             }, (cp.isBot ? 600 : 500));
         } else if (cp.isBot) {
-            inputLocked = true; // BUG FIX
             setTimeout(() => {
                 const choice = movable.find(t => t.status === 'BASE') || movable[0];
                 hideBoardRollingDice();
@@ -5029,10 +4917,15 @@ body {
     // over it either. A teammate's Barrier never blocks you under Partner Mode.
     function isMoveBlockedByBarrier(token, effSteps) {
         if (activeBarrierMode !== 'on') return false;
-        if (token.barrier) return false; // a Barrier can cross/cut anything
+        if (token.barrier) return false; // a Barrier can cross/cut/land anywhere
         const startStep = (token.status === 'BASE') ? -1 : token.step;
+        const finalStep = startStep + effSteps;
         const partnerColor = (activePartnerMode === 'on' && players.length === 4) ? getPartnerColorOf(token.color) : null;
-        for (let s = startStep + 1; s < startStep + effSteps; s++) { // RULE: landing ON a Barrier cell is allowed, only crossing it is blocked
+        // RULE: a single goti can land exactly ON a Barrier's cell (they just
+        // coexist there — see checkCapture, neither one captures the other)
+        // but can never pass THROUGH it to reach further, so only the
+        // intermediate cells are checked here, not the final landing cell.
+        for (let s = startStep + 1; s < finalStep; s++) {
             if (s >= 51) break; // a private home stretch never has another colour's Barrier in it
             const idx = (playerStartIndexes[token.color] + s) % globalPath.length;
             const [r, c] = globalPath[idx];
@@ -5061,24 +4954,25 @@ body {
     }
 
     function handleTokenClick(token) {
-        if (gameState !== 'AWAITING_MOVE' || inputLocked) return;
+        if (gameState !== 'AWAITING_MOVE') return;
         const cp = players[currentPlayerIndex];
-        if (!cp || cp.isBot) return;
+        if (cp.isBot) return;
         // currentMovableTokens is already correctly scoped (own colour, or
         // own+Partner's colour pooled together under Partner Mode), so no
         // separate colour guard is needed here any more.
         if (!currentMovableTokens.some(t => t.id === token.id)) return;
-        inputLocked = true; // BUG FIX: lock the instant a move is chosen
         hideBoardRollingDice();
         initiateMove(token, currentRoll);
     }
 
     function initiateMove(token, roll) {
-        if (gameState === 'MOVING' || gameState === 'GAMEOVER') return; // BUG FIX: never run two moves at once
-        if (activeMoveTokenId === token.id) return; // BUG FIX: same goti dobara move nahi
-        inputLocked = true;
-        activeMoveTokenId = token.id;
-        justHomedThisMove = false;
+        // BUG FIX: several code paths schedule initiateMove via setTimeout
+        // (auto-move for a single option, bot moves, Barrier decisions). If
+        // the player manually taps the token in that brief window before the
+        // scheduled call fires, both would run and move the token twice
+        // (e.g. rolling a 2 but actually travelling 4). A move already in
+        // progress must never be started again.
+        if (gameState === 'MOVING') return;
         gameState = 'MOVING';
         // ADDED: if this token is Barrier-locked with a partner, that partner
         // always shares the same step count, so it moves in perfect lockstep.
@@ -5104,7 +4998,6 @@ body {
                     token.status = 'HOME';
                     token.pos = [7, 7];
                     if (barrierMate) { barrierMate.status = 'HOME'; barrierMate.pos = [7, 7]; }
-                    justHomedThisMove = true; // RULE 1: home pahunchne pe extra chaal
                     playSound('home');
                 } else if (token.step < 51) {
                     const idx = (playerStartIndexes[token.color] + token.step) % globalPath.length;
@@ -5135,38 +5028,8 @@ body {
     }
 
     function afterMoveCheck(token, roll) {
-        const homedThisMove = justHomedThisMove; // RULE 1
-        justHomedThisMove = false;
-        // RULE 5 FIX: even roll (2/4/6) pe goti STAR pe apni same-colour goti ke
-        // paas aate hi player se poochho — Barrier banao ya single chalao.
-        // (Pehle ye sirf NEXT roll pe check hota tha, isliye Barrier almost
-        // kabhi banti nahi dikhti thi. Bot hamesha Barrier bana leta hai.)
-        if (activeBarrierMode === 'on' && (roll === 2 || roll === 4 || roll === 6)
-            && token.status === 'PATH' && token.step < 51 && safeSpots.includes(posKey(token))) {
-            const mate = (tokens[token.color] || []).find(o => o.id !== token.id && !o.barrier && o.status === 'PATH' && o.step === token.step);
-            if (mate) {
-                // RULE 8: sirf OPTION dena hai — team me ek bhi human ho to popup dikhao,
-                // auto-barrier sirf tab jab POORI team bot ho.
-                const teamColors = (activePartnerMode === 'on' && players.length === 4)
-                    ? [token.color, getPartnerColorOf(token.color)] : [token.color];
-                const teamHasHuman = teamColors.some(c => {
-                    const pl = players.find(p => p.color === c);
-                    return pl && !pl.isBot;
-                });
-                if (!teamHasHuman) {
-                    token.barrier = true; mate.barrier = true;
-                    token.barrierWith = mate.id; mate.barrierWith = token.id;
-                    document.getElementById('msg-log').innerText = `🚧 ${token.color} ne Barrier bana li!`;
-                    renderTokens();
-                } else {
-                    showBarrierArrivalModal(token, mate, roll, cp);
-                    return; // player ka decision aane tak flow yahin rukega
-                }
-            }
-        }
         checkCapture(token, (captured) => {
-            // RULE 1: kaatne pe, 6 aane pe, YA goti home pahunchne pe — EXTRA CHAAL
-            let hasBonus = (roll === 6) || captured || homedThisMove;
+            let hasBonus = (roll === 6) || captured || token.status === 'HOME';
 
             if (checkPlayerFinished(token.color)) {
                 if (!winnersList.includes(token.color)) {
@@ -5179,19 +5042,6 @@ body {
                     const rankLabels = { 1: '1st Place 🥇', 2: '2nd Place 🥈', 3: '3rd Place 🥉' };
                     const rankText = rankLabels[rank] || `${rank}th Place`;
                     document.getElementById('msg-log').innerText = `🏆 ${pName} secured ${rankText}!`;
-                }
-                // PARTNER MODE FIX: agar partner colour bhi finish ho chuka hai to
-                // poori TEAM jeet gayi — bache opponents progress ke hisaab se rank paate hain.
-                if (activePartnerMode === 'on' && players.length === 4) {
-                    const pc = getPartnerColorOf(token.color);
-                    if (pc && winnersList.includes(pc)) {
-                        players.filter(p => !winnersList.includes(p.color))
-                            .sort((a, b) => totalSteps(b.color) - totalSteps(a.color))
-                            .forEach(p => {
-                                winnersList.push(p.color);
-                                displayBaseRankCrown(p.color, winnersList.length);
-                            });
-                    }
                 }
                 hasBonus = false; // Player finished, no more turns for them
             }
@@ -5248,9 +5098,10 @@ body {
 
             if (hasBonus) {
                 if (!captured) {
-                    document.getElementById('msg-log').innerText = `${token.color} gets a Bonus Roll! 🎲`;
+                    document.getElementById('msg-log').innerText = (token.status === 'HOME' && roll !== 6)
+                        ? `🏠 Goti reached Home! Bonus Roll! 🎲`
+                        : `${token.color} gets a Bonus Roll! 🎲`;
                 }
-                inputLocked = false;
                 gameState = 'IDLE';
                 renderTokens();
                 if (players[currentPlayerIndex].isBot) {
@@ -5279,10 +5130,11 @@ body {
             if (p.color !== token.color && p.color !== partnerColor) {
                 (tokens[p.color] || []).forEach(ot => {
                     if (ot.status === 'PATH' && ot.pos[0] === token.pos[0] && ot.pos[1] === token.pos[1]) {
-                        // RULE: a Barrier-locked goti is immune, unless the attacker is itself a Barrier
-                        if (activeBarrierMode === 'on' && ot.barrier && !token.barrier) return;
-                        // RULE: a Barrier goti can NEVER cut a single goti — sirf dusri Barrier ko kaat sakti hai
-                        if (activeBarrierMode === 'on' && token.barrier && !ot.barrier) return;
+                        // RULE: capturing only ever happens Barrier-vs-Barrier.
+                        // A Barrier can never capture a single goti, and a
+                        // single goti can never capture a Barrier — they just
+                        // peacefully coexist on the same cell.
+                        if (activeBarrierMode === 'on' && !!ot.barrier !== !!token.barrier) return;
                         victims.push(ot);
                     }
                 });
@@ -5415,8 +5267,6 @@ body {
 
     function nextTurn() {
         consecutiveSixes = 0;
-        inputLocked = false;
-        activeMoveTokenId = null;
         const activePlayers = players.filter(p => !winnersList.includes(p.color));
         if (activePlayers.length <= 1) return;
         let count = 0;
@@ -5656,7 +5506,10 @@ body {
             btn.disabled = true;
             const h = Math.floor(remaining / 3600000);
             const m = Math.floor((remaining % 3600000) / 60000);
-            label.textContent = `Next free spin in ${h}h ${m}m`;
+            const s = Math.floor((remaining % 60000) / 1000);
+            label.textContent = h > 0
+                ? `Next free spin in ${h}h ${m}m`
+                : (m > 0 ? `Next free spin in ${m}m ${s}s` : `Next free spin in ${s}s`);
         } else {
             btn.disabled = false;
             label.textContent = 'Free spin available now!';
@@ -5830,7 +5683,7 @@ body {
                 if (res && res.ok && typeof res.newBalance === 'number') {
                     setCoinBalance(res.newBalance);
                     openCoinsModal();
-                    if (label) label.textContent = '🎬 +100 coins added!';
+                    if (label) label.textContent = `🎬 +${typeof res.amount === 'number' ? res.amount : 50} coins added!`;
                     return;
                 }
                 // BUG FIX: the server explicitly answered (e.g. {ok:false,
@@ -5850,9 +5703,9 @@ body {
                 // through to the offline credit below.
             }
         }
-        addCoins(100);
+        addCoins(50);
         openCoinsModal();
-        if (label) label.textContent = '🎬 +100 coins added!';
+        if (label) label.textContent = '🎬 +50 coins added!';
     }
 
     // ============================================================
@@ -5867,46 +5720,9 @@ body {
     // Off/On toggles, so both could end up switched on at the same time.
     // Now there is exactly one selector — Off / Barrier / Partner — so
     // choosing one always turns the other off.
-    // Menu me selected mode track karta hai ('computer' | 2 | 3 | 4)
-    let selectedMode = 'computer';
-    let menuToastTimer = null;
-
-    function showMenuToast(msg) {
-        const t = document.getElementById('menu-toast');
-        if (!t) return;
-        t.textContent = msg;
-        t.style.display = 'block';
-        if (menuToastTimer) clearTimeout(menuToastTimer);
-        menuToastTimer = setTimeout(() => { t.style.display = 'none'; }, 2400);
-    }
-
-    function selectMode(mode, el) {
-        selectedMode = mode;
-        document.querySelectorAll('.mode-tile').forEach(t => t.classList.remove('selected'));
-        if (el) el.classList.add('selected');
-        // RULE: 2P/3P me Partner / Barrier+Partner allowed NAHI — auto off kar do
-        if ((mode === 2 || mode === 3) && partnerModeSetting === 'on') {
-            setMatchMod('off', document.getElementById('mod-off'));
-            showMenuToast('🤝 Partner Mode sirf Full Table (4 Players) me hota hai — Mod Off kar diya');
-        }
-    }
-
-    function startSelectedGame() {
-        startGame(selectedMode);
-    }
-
     function setMatchMod(mod, el) {
-        // RULE: Partner / Barrier+Partner select karo to game AUTOMATICALLY
-        // Full Table (4 Players) me set ho jata hai.
-        if ((mod === 'partner' || mod === 'both') && (selectedMode === 2 || selectedMode === 3)) {
-            selectedMode = 4;
-            document.querySelectorAll('.mode-tile').forEach(t =>
-                t.classList.toggle('selected', t.dataset.mode === '4'));
-            showMenuToast('🤝 Partner Mode ke liye Full Table (4 Players) auto-select ho gaya!');
-        }
-        // 'both' = Barrier + Partner Mode ek saath khelna
-        barrierModeSetting = (mod === 'barrier' || mod === 'both') ? 'on' : 'off';
-        partnerModeSetting = (mod === 'partner' || mod === 'both') ? 'on' : 'off';
+        barrierModeSetting = (mod === 'barrier') ? 'on' : 'off';
+        partnerModeSetting = (mod === 'partner') ? 'on' : 'off';
         document.querySelectorAll('.diff-pill[id^="mod-"]').forEach(p => p.classList.remove('active'));
         if (el) el.classList.add('active');
     }
@@ -5962,56 +5778,14 @@ body {
     }
 
     function showBarrierDecisionModal(decision, roll, cp) {
-        pendingBarrierDecision = { type: 'nextroll', decision, roll, cp };
+        pendingBarrierDecision = { decision, roll, cp };
         const half = Math.floor(roll / 2);
         const sub = document.getElementById('barrier-decision-sub');
         if (sub) sub.textContent = decision.alreadyLocked
-            ? `Rolled ${roll} — Barrier ko saath chalao (${half} step) ya todo-kar single chalao?`
-            : `Rolled ${roll} — in dono gotiyon ko Barrier me lock karo (${half} step) ya sirf ek chalao?`;
-        const yesBtn = document.getElementById('barrier-yes-btn');
-        const noBtn = document.getElementById('barrier-no-btn');
-        if (yesBtn) yesBtn.textContent = decision.alreadyLocked ? `🚧 Saath Chalao (${half} step)` : `🚧 Barrier Banao (${half} step)`;
-        if (noBtn) noBtn.textContent = decision.alreadyLocked ? `🎯 Barrier Todo, Single Chalao` : `🎯 Single Goti Chalao`;
+            ? `Rolled ${roll} — keep moving together (${half} step${half === 1 ? '' : 's'}) or split apart?`
+            : `Rolled ${roll} — lock these two gotis into a Barrier (${half} step${half === 1 ? '' : 's'}) or move just one?`;
         const modal = document.getElementById('barrier-decision-modal');
         if (modal) modal.style.display = 'flex';
-    }
-
-    // RULE 5: goti abhi-abhi star pe apni goti ke paas AAYI hai — turant popup.
-    function showBarrierArrivalModal(token, mate, roll, cp) {
-        pendingBarrierDecision = { type: 'arrival', token, mate, roll, cp };
-        const half = Math.floor(roll / 2);
-        const sub = document.getElementById('barrier-decision-sub');
-        if (sub) sub.textContent = `Rolled ${roll} — aapki goti star pe apni hi goti ke saath hai! Barrier banao (${half} step, dono saath chalenge) ya single chalao (${roll} step)?`;
-        const yesBtn = document.getElementById('barrier-yes-btn');
-        const noBtn = document.getElementById('barrier-no-btn');
-        if (yesBtn) yesBtn.textContent = `🚧 Barrier Banao (${half} step)`;
-        if (noBtn) noBtn.textContent = `🎯 Single Chalao (${roll} step)`;
-        const modal = document.getElementById('barrier-decision-modal');
-        if (modal) modal.style.display = 'flex';
-    }
-
-    function resolveArrivalChoice(d, wantsBarrier) {
-        const { token, mate, roll, cp } = d;
-        if (wantsBarrier) {
-            token.barrier = true; mate.barrier = true;
-            token.barrierWith = mate.id; mate.barrierWith = token.id;
-            document.getElementById('msg-log').innerText = `🚧 Barrier formed! Dono saath chalenge — half speed (${Math.floor(roll / 2)} step)`;
-        } else {
-            document.getElementById('msg-log').innerText = 'Single goti chal rahi hai…';
-        }
-        inputLocked = true;
-        gameState = 'AWAITING_MOVE';
-        currentMovableTokens = [token];
-        renderTokens();
-        setTimeout(() => {
-            hideBoardRollingDice();
-            initiateMove(token, roll);
-        }, 350);
-    }
-
-    // Partner Mode: team jeetne pe opponents ko progress ke hisaab se rank dene ke liye
-    function totalSteps(color) {
-        return (tokens[color] || []).reduce((sum, t) => sum + (t.status === 'BASE' ? -1 : t.step), 0);
     }
 
     function hideBarrierDecisionModal() {
@@ -6022,10 +5796,8 @@ body {
 
     function chooseBarrierOption(wantsBarrier) {
         if (!pendingBarrierDecision) return;
-        const d = pendingBarrierDecision;
-        hideBarrierDecisionModal();
-        if (d.type === 'arrival') resolveArrivalChoice(d, wantsBarrier);
-        else resolveBarrierChoice(d.decision, d.roll, wantsBarrier, d.cp);
+        const { decision, roll, cp } = pendingBarrierDecision;
+        resolveBarrierChoice(decision, roll, wantsBarrier, cp);
     }
 
     function resolveBarrierChoice(decision, roll, wantsBarrier, cp) {
@@ -6046,7 +5818,6 @@ body {
         }
         currentMovableTokens = [mover];
         gameState = 'AWAITING_MOVE';
-        inputLocked = true; // BUG FIX
         renderTokens();
         setTimeout(() => {
             hideBoardRollingDice();
@@ -6084,8 +5855,6 @@ body {
         setCustomizerPreviewColor,
         selectCustomizerSkin,
         setMatchMod,
-        selectMode,
-        startSelectedGame,
         openCoinsModal,
         closeCoinsModal,
         handleSpinWheel,
@@ -6100,6 +5869,33 @@ body {
 
     loadCoinsFromStorage();
     updateCoinDisplays();
+
+    // BUG FIX: a "frozen game" safety net. Normally ROLLING/MOVING only
+    // ever last a second or two (dice animation, token glide). If either
+    // one is ever still the state several seconds later — from any cause,
+    // including ones we haven't been able to reproduce — force the game
+    // back to a responsive state instead of leaving it stuck forever.
+    let __watchdogLastState = gameState;
+    let __watchdogSince = Date.now();
+    setInterval(() => {
+        if (gameState !== __watchdogLastState) {
+            __watchdogLastState = gameState;
+            __watchdogSince = Date.now();
+            return;
+        }
+        if ((gameState === 'ROLLING' || gameState === 'MOVING') && (Date.now() - __watchdogSince > 6000)) {
+            console.warn('[Ludo] Recovered from a stuck game state:', gameState);
+            gameState = 'IDLE';
+            hideBoardRollingDice();
+            renderTokens();
+            __watchdogLastState = gameState;
+            __watchdogSince = Date.now();
+            const cp = players[currentPlayerIndex];
+            if (cp && cp.isBot) {
+                botMoveTimeoutId = setTimeout(() => onDiceClick(cp.color), 500);
+            }
+        }
+    }, 1000);
 
     setTimeout(() => {
         document.getElementById('loading-screen').style.display = 'none';
