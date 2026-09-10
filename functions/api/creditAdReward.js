@@ -1,8 +1,8 @@
 import { requireAuth, rtdbTransaction, jsonResponse, optionsResponse } from '../_firebaseAdmin.js';
 
 const ONLINE_ROOT = 'lm_online';
-const STARTING_COINS = 5000;
-const AD_REWARD_AMOUNT = 100; // keep in sync with AD_REWARD_AMOUNT in the game HTML
+const STARTING_COINS = 1000; // every new player starts with this many
+const AD_REWARD_AMOUNT = 50; // keep in sync with the game HTML (was 100)
 const AD_REWARD_COOLDOWN_MS = 15 * 1000; // blocks a scripted tight loop; a real ad takes far longer
 
 export async function onRequestOptions() {
