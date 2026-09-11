@@ -2782,7 +2782,7 @@ body {
             </div>
         </div>
 
-        <!-- ADDED: Match Mods — single mutually-exclusive selector -->
+        <!-- ADDED: Match Mods — Barrier and Partner can now be switched on together; "Off" resets both -->
         <div class="dash-card">
             <div class="dash-card-head">
                 <span class="dash-card-title">🎮 Match Mods</span>
@@ -4563,7 +4563,7 @@ body {
 
             cellEl.onclick = (e) => {
                 if (gameState !== 'AWAITING_MOVE') return;
-                const cp = players[currentPlayerIndex];
+                const cp = getEffectiveCurrentPlayer();
                 if (!cp) return;
                 const movable = getMovableTokens(cp.color, currentRoll);
                 const target = movable.find(m => group.some(gt => gt.id === m.id));
@@ -4614,7 +4614,7 @@ body {
         // dice unclickable, which looked exactly like the whole game
         // freezing. Re-apply the current turn's active state right here so
         // renderScoreboard() is self-contained and safe to call anytime.
-        const cpNow = players[currentPlayerIndex];
+        const cpNow = getEffectiveCurrentPlayer();
         colors.forEach(c => {
             const tag = document.getElementById(`tag-${c.name}`);
             const baseLabel = document.getElementById(`base-name-${c.name}`);
@@ -4652,7 +4652,7 @@ body {
     }
 
     function updateTurnUI() {
-        const cp = players[currentPlayerIndex];
+        const cp = getEffectiveCurrentPlayer();
         if (!cp) return;
         colors.forEach(c => {
             const tag = document.getElementById(`tag-${c.name}`);
@@ -4880,7 +4880,7 @@ body {
     }
 
     function onDiceClick(color) {
-        const cp = players[currentPlayerIndex];
+        const cp = getEffectiveCurrentPlayer();
         if (!cp || cp.color !== color || gameState !== 'IDLE') return;
 
         gameState = 'ROLLING';
@@ -5006,7 +5006,7 @@ body {
 
     function handleTokenClick(token) {
         if (gameState !== 'AWAITING_MOVE') return;
-        const cp = players[currentPlayerIndex];
+        const cp = getEffectiveCurrentPlayer();
         if (cp.isBot) return;
         // currentMovableTokens is already correctly scoped (own colour, or
         // own+Partner's colour pooled together under Partner Mode), so no
@@ -5172,8 +5172,9 @@ body {
                 }
                 gameState = 'IDLE';
                 renderTokens();
-                if (players[currentPlayerIndex].isBot) {
-                    botMoveTimeoutId = setTimeout(() => onDiceClick(players[currentPlayerIndex].color), 650);
+                const cpForBonus = getEffectiveCurrentPlayer();
+                if (cpForBonus && cpForBonus.isBot) {
+                    botMoveTimeoutId = setTimeout(() => onDiceClick(cpForBonus.color), 650);
                 }
             } else {
                 nextTurn();
@@ -5337,7 +5338,7 @@ body {
         do {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
             count++;
-        } while (winnersList.includes(players[currentPlayerIndex].color) && count <= players.length * 2);
+        } while (isSlotExhausted(players[currentPlayerIndex]) && count <= players.length * 2);
         updateTurnUI();
     }
 
@@ -5780,19 +5781,63 @@ body {
     // keeps them in lockstep automatically). A Barrier can only be cut by
     // another Barrier.
     // ============================================================
-    // BUG FIX: Barrier Mode and Partner Mode used to be two independent
-    // Off/On toggles, so both could end up switched on at the same time.
-    // Now there is exactly one selector — Off / Barrier / Partner — so
-    // choosing one always turns the other off.
+    // ADDED: Barrier Mod and Partner Mod can now be switched on TOGETHER —
+    // "Off" resets both, but tapping "Barrier" or "Partner" now toggles
+    // just that one on/off independently, so a match can run Partner Mode
+    // with Barrier Mode layered on top of it.
     function setMatchMod(mod, el) {
-        barrierModeSetting = (mod === 'barrier') ? 'on' : 'off';
-        partnerModeSetting = (mod === 'partner') ? 'on' : 'off';
-        document.querySelectorAll('.diff-pill[id^="mod-"]').forEach(p => p.classList.remove('active'));
-        if (el) el.classList.add('active');
+        if (mod === 'off') {
+            barrierModeSetting = 'off';
+            partnerModeSetting = 'off';
+        } else if (mod === 'barrier') {
+            barrierModeSetting = (barrierModeSetting === 'on') ? 'off' : 'on';
+        } else if (mod === 'partner') {
+            partnerModeSetting = (partnerModeSetting === 'on') ? 'off' : 'on';
+        }
+        const anyOn = (barrierModeSetting === 'on' || partnerModeSetting === 'on');
+        const offPill = document.getElementById('mod-off');
+        const barrierPill = document.getElementById('mod-barrier');
+        const partnerPill = document.getElementById('mod-partner');
+        if (offPill) offPill.classList.toggle('active', !anyOn);
+        if (barrierPill) barrierPill.classList.toggle('active', barrierModeSetting === 'on');
+        if (partnerPill) partnerPill.classList.toggle('active', partnerModeSetting === 'on');
     }
 
     function getPartnerColorOf(color) { return PARTNER_OF[color] || null; }
     function posKey(t) { return `${t.pos[0]}-${t.pos[1]}`; }
+
+    // ============================================================
+    // ADDED: PARTNER MODE — hand-off on finish
+    // Once a player's all 4 gotis reach Home, their seat in the turn order
+    // is no longer skipped outright — instead their partner (Red<->Yellow,
+    // Green<->Blue) takes over that seat's dice roll for the rest of the
+    // match, using their OWN colour's dice/base and moving their OWN
+    // gotis with whatever number comes up. isSlotExhausted() decides
+    // whether a seat still has anyone able to act (only truly "done" once
+    // both partners are finished, or there's no Partner Mode to hand off
+    // to); getEffectiveCurrentPlayer() resolves the seat at
+    // currentPlayerIndex to whichever player should actually be rolling.
+    // ============================================================
+    function isSlotExhausted(p) {
+        if (!p || !winnersList.includes(p.color)) return false;
+        if (activePartnerMode === 'on' && players.length === 4) {
+            const partnerColor = getPartnerColorOf(p.color);
+            const partnerPlayer = partnerColor ? players.find(pl => pl.color === partnerColor) : null;
+            if (partnerPlayer && !winnersList.includes(partnerPlayer.color)) return false;
+        }
+        return true;
+    }
+
+    function getEffectiveCurrentPlayer() {
+        const raw = players[currentPlayerIndex];
+        if (!raw) return raw;
+        if (activePartnerMode === 'on' && players.length === 4 && winnersList.includes(raw.color)) {
+            const partnerColor = getPartnerColorOf(raw.color);
+            const partnerPlayer = partnerColor ? players.find(pl => pl.color === partnerColor) : null;
+            if (partnerPlayer && !winnersList.includes(partnerPlayer.color)) return partnerPlayer;
+        }
+        return raw;
+    }
 
     // ============================================================
     // ADDED: BARRIER MODE (star-only, player-decided)
@@ -6006,7 +6051,7 @@ body {
             renderTokens();
             __watchdogLastState = gameState;
             __watchdogSince = Date.now();
-            const cp = players[currentPlayerIndex];
+            const cp = getEffectiveCurrentPlayer();
             if (cp && cp.isBot) {
                 botMoveTimeoutId = setTimeout(() => onDiceClick(cp.color), 500);
             }
