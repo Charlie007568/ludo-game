@@ -404,8 +404,11 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    row-gap: 4px;
     width: 100%;
-    height: 38px;
+    height: auto;
+    min-height: 38px;
     padding: 0 4px;
     margin-bottom: 2px;
 }
@@ -430,7 +433,25 @@ body {
 .header-actions {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 6px;
+    row-gap: 4px;
+    min-width: 0;
+}
+
+/* BUG FIX: on narrow phones the header actions (Skins / Coins / Report /
+   Music / SFX / Exit) used to overflow the right edge of the screen —
+   pushed off entirely after the Report button was added — making Exit
+   untappable. Shrink the pills on small screens so the whole row always
+   fits; the header also wraps to a second row if it still can't. */
+@media (max-width: 520px) {
+    .btn-exit { padding: 6px 9px; font-size: 0.66rem; }
+    .header-pro-text { display: none; }
+}
+@media (max-width: 380px) {
+    .btn-exit { padding: 5px 7px; font-size: 0.62rem; }
+    .header-actions { gap: 4px; }
 }
 
 .btn-exit {
@@ -2660,21 +2681,33 @@ body {
             deviceId = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
             saveLocal('rbe_device_id', deviceId);
         }
+        // BUG FIX: the old device name was just "Android · Chrome ·
+        // 1080x2400" — no actual model. Android/iOS user agents DO carry
+        // the real model (e.g. "SM-S908B", "Pixel 7"), so parse it out.
         function buildDeviceName() {
             const ua = navigator.userAgent || '';
-            let os = 'Device';
-            if (/android/i.test(ua)) os = 'Android';
-            else if (/iphone|ipad|ipod/i.test(ua)) os = 'iOS';
+            let os = 'Device', model = '';
+            const android = ua.match(/Android\s+([\d.]+);\s*([^;)]+)/i);
+            const ipad = /ipad/i.test(ua);
+            if (android) {
+                os = 'Android ' + (android[1] || '').trim();
+                model = (android[2] || '').trim().replace(/^Build\//i, '').replace(/\s*wv$/i, '');
+                // strip duplicated "Build/..." fragments some UAs append
+                model = model.split(/\s+Build\//i)[0].trim();
+            }
+            else if (/iphone|ipad|ipod/i.test(ua)) { os = ipad ? 'iPad' : 'iOS'; model = 'Apple ' + (ipad ? 'iPad' : 'iPhone'); }
             else if (/windows/i.test(ua)) os = 'Windows';
             else if (/mac os|macintosh/i.test(ua)) os = 'Mac';
             else if (/linux/i.test(ua)) os = 'Linux';
             let br = 'Browser';
             if (/edg\//i.test(ua)) br = 'Edge';
+            else if (/samsungbrowser/i.test(ua)) br = 'Samsung Internet';
             else if (/opr\//i.test(ua) || /opera/i.test(ua)) br = 'Opera';
             else if (/chrome/i.test(ua)) br = 'Chrome';
             else if (/firefox/i.test(ua)) br = 'Firefox';
             else if (/safari/i.test(ua)) br = 'Safari';
-            return os + ' · ' + br + ' · ' + (window.screen ? screen.width + 'x' + screen.height : '?');
+            const name = (model && model.toLowerCase() !== 'linux') ? (model + ' (' + os + ')') : os;
+            return name + ' · ' + br + ' · ' + (window.screen ? screen.width + 'x' + screen.height : '?');
         }
         const deviceName = buildDeviceName();
         function fallbackLocation() {
@@ -2683,9 +2716,30 @@ body {
         }
         let deviceLocation = '';
 
+        // BUG FIX: turn GPS coordinates into an actual human-readable
+        // address (locality, state, country) via a free no-key reverse
+        // geocoder, so the Admin Panel shows a real place instead of raw
+        // numbers — or the timezone when GPS/geocoding is unavailable.
+        function reverseGeocodeAddress(lat, lon) {
+            return fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='
+                    + lat + '&longitude=' + lon + '&localityLanguage=en')
+                .then(r => r.json())
+                .then(d => {
+                    const parts = [d.locality || d.city, d.principalSubdivision, d.countryName]
+                        .filter(Boolean);
+                    return parts.length ? parts.join(', ') : null;
+                })
+                .catch(() => null);
+        }
+
         function registerDevice() {
             const devRef = ref(rtdb, 'devices/' + deviceId);
-            deviceLocation = deviceLocation || fallbackLocation();
+            // Reuse the last known good address/coords on every load so the
+            // admin panel shows a meaningful location immediately, even
+            // before this session's GPS permission resolves.
+            deviceLocation = deviceLocation
+                || loadLocal('rbe_device_location', '')
+                || fallbackLocation();
             // update(), not set() — never clobber an existing record (or
             // the admin's blocked flag) when the same device reconnects.
             update(devRef, {
@@ -2708,20 +2762,43 @@ body {
                 }
             }, () => {});
 
-            // Best-effort GPS location (asks the user once). Whatever the
-            // answer, the record above is still created with at least the
-            // timezone, so the admin always sees something immediately.
+            // GPS location (asks the user once). Whatever the answer, the
+            // record above is still created with at least the saved /
+            // timezone location, so the admin always sees something
+            // immediately. Coordinates go up first, then the reverse-geocoded
+            // address replaces them as soon as it arrives.
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
-                        deviceLocation = pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4);
+                        const lat = pos.coords.latitude, lon = pos.coords.longitude;
+                        deviceLocation = lat.toFixed(4) + ', ' + lon.toFixed(4);
+                        saveLocal('rbe_device_last_coords', lat + ',' + lon);
                         update(devRef, { location: deviceLocation }).catch(() => {});
+                        reverseGeocodeAddress(lat, lon).then((addr) => {
+                            if (!addr) return;
+                            deviceLocation = addr + ' (' + lat.toFixed(3) + ', ' + lon.toFixed(3) + ')';
+                            saveLocal('rbe_device_location', deviceLocation);
+                            update(devRef, { location: deviceLocation }).catch(() => {});
+                        });
                     },
                     () => {
+                        // GPS denied/unavailable — try geocoding the last
+                        // known coords if we have any, else keep timezone.
+                        const saved = loadLocal('rbe_device_last_coords', '');
+                        if (saved) {
+                            const parts = saved.split(',');
+                            reverseGeocodeAddress(parseFloat(parts[0]), parseFloat(parts[1])).then((addr) => {
+                                if (addr) {
+                                    deviceLocation = addr;
+                                    saveLocal('rbe_device_location', deviceLocation);
+                                    update(devRef, { location: deviceLocation }).catch(() => {});
+                                }
+                            });
+                        }
                         deviceLocation = deviceLocation || fallbackLocation();
                         update(devRef, { location: deviceLocation }).catch(() => {});
                     },
-                    { timeout: 5000, maximumAge: 600000 }
+                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 600000 }
                 );
             }
         }
