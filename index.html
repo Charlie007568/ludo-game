@@ -5395,17 +5395,18 @@ body {
     // 1. Computer is ALWAYS Red, User is ALWAYS Yellow, dice is at Yellow's base.
     // 2. Random player starts!
     function startGame(mode) {
-        // BUG FIX: Partner Mod only ever works with a full 4-player table.
-        // Previously, switching it on and then tapping Dual (2) or Triple
-        // (3) silently force-upgraded the match to Full Table (4) — the
-        // player asked for a smaller table and got a different one instead.
-        // Now Partner Mode (and its "Dice Pass to Partner" sub-option) is
-        // simply switched off for this match, and Dual/Triple starts with
-        // the player count they actually tapped. (vs-Computer already
-        // expands to 4 players on its own when a Mod is active, so it
-        // needs no change here.)
+        // BUG FIX: Partner Mod AND its "Dice Pass to Partner" sub-option
+        // only ever work with a full 4-player table. Previously, turning
+        // just "Dice Pass to Partner" on (without Partner Mode) and then
+        // tapping Dual (2) or Triple (3) was not caught by this check, so
+        // Dice Pass stayed "on" for a 2/3 player match where it can never
+        // actually do anything. Now BOTH settings are checked and both get
+        // auto-disabled the same way, with the same toast, whichever one
+        // (or both) was on. Dual/Triple always starts with the player
+        // count actually tapped. (vs-Computer already expands to 4 players
+        // on its own when a Mod is active, so it needs no change here.)
         let partnerAutoDisabledForSmallTable = false;
-        if (partnerModeSetting === 'on' && (mode === 2 || mode === 3)) {
+        if ((partnerModeSetting === 'on' || handoffModeSetting === 'on') && (mode === 2 || mode === 3)) {
             partnerModeSetting = 'off';
             handoffModeSetting = 'off';
             partnerAutoDisabledForSmallTable = true;
@@ -5437,7 +5438,7 @@ body {
         const customName = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Player 1';
 
         if (mode === 'computer') {
-            const modActive = (barrierModeSetting === 'on' || partnerModeSetting === 'on');
+            const modActive = (barrierModeSetting === 'on' || partnerModeSetting === 'on' || handoffModeSetting === 'on');
             if (modActive) {
                 // ADDED: Barrier/Partner Mod needs a full table to mean
                 // anything (Partner especially needs a real partner), so
