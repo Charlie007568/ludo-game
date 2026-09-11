@@ -5344,7 +5344,7 @@ body {
                 const cube = box.querySelector('.dice3d');
                 if (cube) {
                     const rot = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
-                    cube.style.transition = 'transform 250ms cubic-bezier(0.2, 0.8, 0.25, 1)';
+                    cube.style.transition = 'transform 180ms cubic-bezier(0.2, 0.8, 0.25, 1)'; // SPEED UP: was 250ms
                     cube.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
                 }
             }
@@ -5384,7 +5384,7 @@ body {
         const rotSpinsY = 4 * 360;
         const rotSpinsZ = 2 * 360;
 
-        const totalDuration = 420;
+        const totalDuration = 300; // SPEED UP: was 420 — dice throw plays faster now
         const startTime = performance.now();
         let firstBounceDone = false;
         let secondBounceDone = false;
@@ -5393,7 +5393,7 @@ body {
 
         const watchdog = setTimeout(() => {
             if (!finished) finishRoll();
-        }, 900);
+        }, 650); // SPEED UP: was 900, kept proportional to the faster throw
 
         function frame(now) {
             if (finished) return;
@@ -5455,7 +5455,7 @@ body {
 
                     setTimeout(() => {
                         finishRoll();
-                    }, 220);
+                    }, 140); // SPEED UP: was 220 — less pause after landing
                 }
             } catch (e) {
                 clearTimeout(watchdog);
