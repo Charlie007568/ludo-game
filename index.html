@@ -1119,6 +1119,16 @@ body {
     --tok-scale: 1.02 !important;
 }
 
+/* FIX: movable goti ka tap area uske charo taraf bada (invisible catcher) —
+   goti ka pin-visual cell se upar tika hota hai, isliye sir pe tap karne pe
+   cell miss ho jata tha. Ab 16px extra margin ke saath har tap pakda jayega. */
+.token-movable::after {
+    content: '';
+    position: absolute;
+    inset: -16px;
+    border-radius: 14px;
+}
+
 /* Base Token Movable Pulse */
 .token-in-base.token-movable {
     animation: tokenBaseHopPulse 1.05s infinite alternate cubic-bezier(0.42, 0, 0.58, 1) !important;
@@ -5536,6 +5546,32 @@ body {
         });
     }
 
+    // FIX: board pe kahin bhi tap ho, us point ke hisaab se SAHI movable goti
+    // dhundo (animated bounding box + 14px tolerance + nearest-center). Isse
+    // goti ke sir pe tap karne pe bhi wahi goti move hoti hai — dusri nahi.
+    function boardTapFallback(e) {
+        if (gameState !== 'AWAITING_MOVE' || !currentMovableTokens.length) return;
+        const cp = getEffectiveCurrentPlayer();
+        if (!cp || cp.isBot) return;
+        const x = e.clientX, y = e.clientY;
+        let best = null, bestDist = Infinity;
+        for (const t of currentMovableTokens) {
+            const el = document.getElementById(`t-${t.id}`);
+            if (!el) continue;
+            const r = el.getBoundingClientRect(); // animation ka live position
+            const pad = 14;
+            if (x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad) {
+                const d = Math.hypot(x - (r.left + r.width / 2), y - (r.top + r.height / 2));
+                if (d < bestDist) { bestDist = d; best = t; }
+            }
+        }
+        if (best) {
+            e.stopPropagation();
+            e.preventDefault();
+            handleTokenClick(best);
+        }
+    }
+
     function handleTokenClick(token) {
         if (gameState !== 'AWAITING_MOVE') return;
         clearAutoMove(); // player ne khud tap kiya — auto-move cancel
@@ -6780,6 +6816,11 @@ body {
         closeBugReport,
         submitBugReport
     };
+
+    // goti-tap fallback: board-stage pe bubble-phase listener (cells/tokens
+    // pehle handle karte hain; ye sirf miss hone wale taps pakadta hai)
+    const boardStageEl = document.querySelector('.board-stage');
+    if (boardStageEl) boardStageEl.addEventListener('pointerdown', boardTapFallback);
 
     loadCoinsFromStorage();
     updateCoinDisplays();
