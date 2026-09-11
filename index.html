@@ -391,7 +391,7 @@ body {
 }
 .shell-inner {
     width: 100%;
-    max-width: min(98vw, 760px); /* BOARD SIZE: was 680px */
+    max-width: min(98vw, 880px); /* BOARD SIZE: enlarged per user request */
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -483,7 +483,7 @@ body {
     overflow: visible !important;
 }
 .board-column {
-    width: min(100%, 760px, calc(100dvh - 86px)); /* BOARD SIZE: was 680px / -98px */
+    width: min(100%, 880px, calc(100dvh - 64px)); /* BOARD SIZE: enlarged per user request */
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -793,7 +793,7 @@ body {
     display: grid;
     grid-template-columns: repeat(15, minmax(0, 1fr));
     grid-template-rows: repeat(15, minmax(0, 1fr));
-    border: 3px solid #0f172a;
+    border: 3px solid transparent; /* BORDER: removed — replaced with a transparent border */
     position: relative;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.08);
     overflow: visible !important;
@@ -922,7 +922,7 @@ body {
 /* Track Cells - Premium Dark Contrasting Track Lines */
 .cell {
     background-color: #ffffff;
-    border: 1.5px solid #0f172a;
+    border: 0.6px solid #0f172a;
     box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08);
     display: flex;
     justify-content: center;
@@ -934,19 +934,19 @@ body {
 }
 .cell-red-path    { 
     background: linear-gradient(135deg, var(--red-light), var(--red)) !important;
-    border: 1.5px solid #7f1d1d !important;
+    border: 0.6px solid #7f1d1d !important;
 }
 .cell-green-path  { 
     background: linear-gradient(135deg, var(--green-light), var(--green)) !important;
-    border: 1.5px solid #14532d !important;
+    border: 0.6px solid #14532d !important;
 }
 .cell-yellow-path { 
     background: linear-gradient(135deg, var(--yellow-light), var(--yellow)) !important;
-    border: 1.5px solid #713f12 !important;
+    border: 0.6px solid #713f12 !important;
 }
 .cell-blue-path   { 
     background: linear-gradient(135deg, var(--blue-light), var(--blue)) !important;
-    border: 1.5px solid #1e3a8a !important;
+    border: 0.6px solid #1e3a8a !important;
 }
 
 .star-icon {
@@ -1008,10 +1008,10 @@ body {
 }
 
 .token.token-in-base {
-    width: 118%;
-    height: 164%;
-    max-width: 86px;
-    max-height: 122px;
+    width: 132%;
+    height: 185%;
+    max-width: 96px;
+    max-height: 136px;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -85.7%);
@@ -1021,10 +1021,10 @@ body {
 
 /* CRITICAL FIX 3: In Home, animation is NONE so existing tokens NEVER bounce when other tokens move! */
 .token.token-in-home {
-    width: 38%;
-    height: 52%;
-    max-width: 32px;
-    max-height: 44px;
+    width: 46%;
+    height: 62%;
+    max-width: 38px;
+    max-height: 52px;
     position: absolute;
     transform: translate(-50%, -85.7%) scale(var(--home-scale, 0.90));
     transform-origin: 50% 85.7%;
@@ -1045,10 +1045,10 @@ body {
 }
 
 .token.token-pin-overflow {
-    width: 124%;
-    height: 172%;
-    max-width: 90px;
-    max-height: 128px;
+    width: 140%;
+    height: 198%;
+    max-width: 104px;
+    max-height: 146px;
     left: 50%;
     top: 50%;
     transform: translate(var(--tok-tx, -50%), var(--tok-ty, -85.7%)) scale(var(--tok-scale, 1));
@@ -1424,8 +1424,8 @@ body {
 /* Flying Goti Returning across the board into Home Base */
 .token-flying-return {
     position: absolute;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     pointer-events: none;
     z-index: 120;
     filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
@@ -5327,144 +5327,24 @@ body {
     }
 
     function animateBoardDiceRoll(color, finalValue, onDone) {
-        // BUG FIX: a leftover hide-cleanup from the PREVIOUS roll (still
-        // pending on its 240ms timer) must never be allowed to hide this
-        // brand-new roll mid-animation — cancel it before doing anything else.
+        // USER REQUEST: the 3D dice that used to fly from the player's tag
+        // and tumble across the board mid-roll has been REMOVED. The result
+        // now simply snaps onto that player's own dice tag instantly, and
+        // the roll resolves immediately — no sliding cube on the board.
         if (__diceHideTimeoutId) { clearTimeout(__diceHideTimeoutId); __diceHideTimeoutId = null; }
-
         const stage = document.getElementById('board-dice-stage');
-        const boardWrapper = document.querySelector('.board-wrapper');
-        const tagEl = document.getElementById(`dice-${color}`) || document.getElementById(`tag-${color}`);
-
-        let finished = false;
-        function finishRoll() {
-            if (finished) return;
-            finished = true;
-            const box = document.getElementById(`dice-${color}`);
-            if (box) {
-                const cube = box.querySelector('.dice3d');
-                if (cube) {
-                    const rot = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
-                    cube.style.transition = 'transform 180ms cubic-bezier(0.2, 0.8, 0.25, 1)'; // SPEED UP: was 250ms
-                    cube.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
-                }
-            }
-            onDone();
-        }
-
-        if (!stage || !boardWrapper || !tagEl) {
-            finishRoll();
-            return;
-        }
-
-        const shadow = document.getElementById('board-dice-shadow');
-        const cube = document.getElementById('board-dice-cube');
-        if (!shadow || !cube) {
-            finishRoll();
-            return;
-        }
-
-        cube.className = 'board-dice-cube dice-skin-' + customization.diceSkin;
-        cube.innerHTML = diceFacesHTML(customization.diceSkin);
-        stage.classList.remove('dice-fading-out');
-        stage.style.display = 'block';
-        stage.querySelectorAll('.board-dice-result-badge, .board-dice-settle-glow').forEach(el => el.remove());
-
-        const bRect = boardWrapper.getBoundingClientRect();
-        const tRect = tagEl.getBoundingClientRect();
-
-        const startX = (tRect.left + tRect.width / 2) - bRect.left;
-        const startY = (tRect.top + tRect.height / 2) - bRect.top;
-
-        // Roll and rotate right in the center of the board
-        const targetX = bRect.width * (0.5 + (Math.random() * 0.06 - 0.03));
-        const targetY = bRect.height * (0.5 + (Math.random() * 0.06 - 0.03));
-
-        const targetRot = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
-        const rotSpinsX = 3 * 360;
-        const rotSpinsY = 4 * 360;
-        const rotSpinsZ = 2 * 360;
-
-        const totalDuration = 300; // SPEED UP: was 420 — dice throw plays faster now
-        const startTime = performance.now();
-        let firstBounceDone = false;
-        let secondBounceDone = false;
-
+        if (stage) { stage.style.display = 'none'; stage.classList.remove('dice-fading-out'); }
         playSound('roll');
-
-        const watchdog = setTimeout(() => {
-            if (!finished) finishRoll();
-        }, 650); // SPEED UP: was 900, kept proportional to the faster throw
-
-        function frame(now) {
-            if (finished) return;
-            try {
-                const elapsed = now - startTime;
-                const p = Math.min(elapsed / totalDuration, 1);
-                const easeP = 1 - Math.pow(1 - p, 2.4);
-                const curX = startX + (targetX - startX) * easeP;
-                const curY = startY + (targetY - startY) * easeP;
-
-                let height = 0;
-                if (p < 0.55) {
-                    const bp = p / 0.55;
-                    height = 72 * (1 - Math.pow(2 * bp - 1, 2));
-                } else if (p < 0.82) {
-                    if (!firstBounceDone) {
-                        firstBounceDone = true;
-                        playSound('bounce');
-                    }
-                    const bp = (p - 0.55) / 0.27;
-                    height = 20 * (1 - Math.pow(2 * bp - 1, 2));
-                } else {
-                    if (!secondBounceDone) {
-                        secondBounceDone = true;
-                        playSound('bounce');
-                    }
-                    const bp = (p - 0.82) / 0.18;
-                    height = 6 * (1 - Math.pow(2 * bp - 1, 2));
-                }
-                height = Math.max(0, height);
-
-                const curRotX = rotSpinsX * (1 - p) + targetRot.x;
-                const curRotY = rotSpinsY * (1 - p) + targetRot.y;
-                const curRotZ = rotSpinsZ * (1 - p);
-
-                cube.style.transform = `translate3d(${curX - 24}px, ${curY - 24 - height}px, 0px) rotateX(${curRotX}deg) rotateY(${curRotY}deg) rotateZ(${curRotZ}deg)`;
-
-                const shadowScale = Math.max(0.4, 1.15 - height / 100);
-                const shadowOpacity = Math.max(0.2, 0.8 - height / 120);
-                shadow.style.left = `${curX}px`;
-                shadow.style.top = `${curY}px`;
-                shadow.style.transform = `translate(-50%, -50%) scale(${shadowScale})`;
-                shadow.style.opacity = `${shadowOpacity}`;
-
-                if (p < 1) {
-                    requestAnimationFrame(frame);
-                } else {
-                    clearTimeout(watchdog);
-                    cube.style.transform = `translate3d(${targetX - 24}px, ${targetY - 24}px, 0px) rotateX(${targetRot.x}deg) rotateY(${targetRot.y}deg) rotateZ(0deg)`;
-                    shadow.style.transform = `translate(-50%, -50%) scale(1.05)`;
-                    shadow.style.opacity = '0.75';
-
-                    const glow = document.createElement('div');
-                    glow.className = 'board-dice-settle-glow';
-                    glow.style.left = `${targetX}px`;
-                    glow.style.top = `${targetY}px`;
-                    stage.appendChild(glow);
-                    setTimeout(() => glow.remove(), 450);
-
-                    setTimeout(() => {
-                        finishRoll();
-                    }, 140); // SPEED UP: was 220 — less pause after landing
-                }
-            } catch (e) {
-                clearTimeout(watchdog);
-                finishRoll();
+        const box = document.getElementById(`dice-${color}`);
+        if (box) {
+            const cube = box.querySelector('.dice3d');
+            if (cube) {
+                const rot = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
+                cube.style.transition = 'transform 180ms cubic-bezier(0.2, 0.8, 0.25, 1)';
+                cube.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
             }
         }
-
-        requestAnimationFrame(frame);
+        onDone();
     }
 
     let __diceHideTimeoutId = null;
