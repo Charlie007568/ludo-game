@@ -3623,31 +3623,105 @@ body {
         src.start(t0); src.stop(t0 + dur + 0.02);
     }
 
+    // ── PREMIUM SFX ─────────────────────────────────────────────────
+    // Short wooden-board tap — the shared "piece meets board" sound.
+    // Pitch randomised so repeated taps sound like footsteps, not a loop.
+    function playWoodTap(ctx, t, vol) {
+        playNoiseKnock(ctx, t, 900 + Math.random() * 500, 1.6, 0.05, vol);
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(150 + Math.random() * 60, t);
+        g.gain.setValueAtTime(vol * 0.8, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t); o.stop(t + 0.1);
+    }
+
+    // 🎲 A real die tumbling across the wooden board: a burst of fast,
+    // irregular plastic clicks whose spacing stretches out as the die
+    // decelerates, ending in a firm woody landing thud with a low body.
+    function playDiceRattleSound(ctx, now) {
+        let t = now;
+        const ticks = 16;
+        for (let i = 0; i < ticks; i++) {
+            const p = i / ticks;
+            const gap = 0.024 + (1 - p) * 0.045 + Math.random() * 0.015;
+            const f = 2400 - p * 1200 + Math.random() * 500;
+            playNoiseKnock(ctx, t, f, 3.2, 0.045, 0.30 * (1 - p * 0.45));
+            t += gap;
+        }
+        playWoodTap(ctx, t + 0.01, 0.5);
+        playNoiseKnock(ctx, t + 0.01, 260, 1.1, 0.12, 0.4);
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(95, t + 0.01);
+        o.frequency.exponentialRampToValueAtTime(55, t + 0.16);
+        g.gain.setValueAtTime(0.35, t + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t + 0.01); o.stop(t + 0.22);
+    }
+
+    // ♟️ Goti walking the board — a light wooden tap per step.
+    function playGotiStepSound(ctx, now) {
+        playWoodTap(ctx, now, 0.28);
+    }
+
+    // ⚔️ Ninja slash capture: a fast whoosh (sweeping bandpass noise),
+    // a metallic "shing" ring from two detuned high sines, and a low
+    // impact thud underneath — replaces the old gunshot.
+    function playNinjaSlashSound(ctx, now) {
+        const src = ctx.createBufferSource();
+        src.buffer = getNoiseBuffer(ctx);
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass'; bp.Q.value = 1.4;
+        bp.frequency.setValueAtTime(500, now);
+        bp.frequency.exponentialRampToValueAtTime(5200, now + 0.09);
+        bp.frequency.exponentialRampToValueAtTime(900, now + 0.32);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(0.5, now + 0.06);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+        src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+        src.start(now); src.stop(now + 0.4);
+        [3400, 5100].forEach((f, i) => {
+            const o = ctx.createOscillator(), g2 = ctx.createGain();
+            o.type = 'sine';
+            o.frequency.setValueAtTime(f, now + 0.05);
+            o.detune.value = i === 0 ? -8 : 6;
+            g2.gain.setValueAtTime(0.0001, now + 0.05);
+            g2.gain.exponentialRampToValueAtTime(0.22 - i * 0.07, now + 0.06);
+            g2.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
+            o.connect(g2); g2.connect(ctx.destination);
+            o.start(now + 0.05); o.stop(now + 0.36);
+        });
+        const o2 = ctx.createOscillator(), g3 = ctx.createGain();
+        o2.type = 'sine';
+        o2.frequency.setValueAtTime(120, now + 0.07);
+        o2.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+        g3.gain.setValueAtTime(0.4, now + 0.07);
+        g3.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+        o2.connect(g3); g3.connect(ctx.destination);
+        o2.start(now + 0.07); o2.stop(now + 0.26);
+    }
+
     function playSound(type) {
         if (!soundEnabled) return;
         const ctx = getAudioContext();
         if (!ctx) return;
         const now = ctx.currentTime;
         if (type === 'roll') {
-            let t = now;
-            for (let i = 0; i < 6; i++) {
-                playNoiseKnock(ctx, t, 1200 + Math.random() * 800, 3, 0.06, 0.35);
-                t += 0.05 + Math.random() * 0.03;
-            }
-            playNoiseKnock(ctx, t + 0.02, 380, 1.4, 0.14, 0.45);
+            // 🎲 premium dice rattle across the board
+            playDiceRattleSound(ctx, now);
         } else if (type === 'bounce') {
-            playNoiseKnock(ctx, now, 650, 2.0, 0.08, 0.4);
+            // woody board tap as the die touches down mid-roll
+            playWoodTap(ctx, now, 0.35);
         } else if (type === 'step') {
-            const osc = ctx.createOscillator();
-            const g = ctx.createGain();
-            osc.connect(g); g.connect(ctx.destination);
-            osc.type = 'sine'; osc.frequency.setValueAtTime(620, now);
-            g.gain.setValueAtTime(0.35, now);
-            g.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
-            osc.start(now); osc.stop(now + 0.08);
+            // ♟️ goti tapping along the board
+            playGotiStepSound(ctx, now);
         } else if (type === 'cut') {
-            // Gun Kill Shot Sound Effect!
-            playGunKillShotSound(ctx, now);
+            // ⚔️ ninja slash capture
+            playNinjaSlashSound(ctx, now);
         } else if (type === 'star') {
             // Premium Celestial Star Sound
             playPremiumStarSound(ctx, now);
