@@ -1,7 +1,7 @@
 import { requireAuth, rtdbGet, rtdbPatch, jsonResponse, optionsResponse } from '../_firebaseAdmin.js';
 
 const ONLINE_ROOT = 'lm_online';
-const STARTING_COINS = 5000;
+const STARTING_COINS = 1000; // every new player starts with this many
 
 export async function onRequestOptions() {
     return optionsResponse();
@@ -25,21 +25,19 @@ export async function onRequestPost(context) {
             return jsonResponse(200, { ok: true, alreadyInitialized: true, newBalance: existingCoins });
         }
 
-        let startingCoins = STARTING_COINS;
-        let coinsZeroAt = null;
-        let lastDailyBonusAt = null;
-
-        if (publicId) {
-            const oldUid = await rtdbGet(env, `${ONLINE_ROOT}/idIndex/${publicId}`);
-            if (oldUid && oldUid !== uid) {
-                const old = await rtdbGet(env, `${ONLINE_ROOT}/users/${oldUid}`);
-                if (old && typeof old.coins === 'number') {
-                    startingCoins = old.coins;
-                    coinsZeroAt = old.coinsZeroAt || null;
-                    lastDailyBonusAt = old.lastDailyBonusAt || null;
-                }
-            }
-        }
+        // BUG FIX: this used to look up an older uid linked to the same
+        // publicId (idIndex/{publicId}) and, if found, COPY that old
+        // account's coin balance as the "starting" balance for the brand
+        // new uid. On any device/browser that had been used before (or
+        // whose old test account had built up coins via ad rewards / daily
+        // bonuses / manual crediting), this silently handed the new uid
+        // that old balance instead of STARTING_COINS — which is exactly
+        // the "shows 1000, then a couple seconds later flips to 5000"
+        // symptom. A genuinely first-time account must always get exactly
+        // STARTING_COINS, so that inheritance is removed.
+        const startingCoins = STARTING_COINS;
+        const coinsZeroAt = null;
+        const lastDailyBonusAt = null;
 
         await rtdbPatch(env, `${ONLINE_ROOT}/users/${uid}`, { coins: startingCoins, coinsZeroAt, lastDailyBonusAt });
         return jsonResponse(200, { ok: true, newBalance: startingCoins });
