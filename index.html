@@ -546,7 +546,7 @@ body {
     justify-content: center;
     align-items: center;
     cursor: default;
-    perspective: 450px;
+    perspective: 520px;
     opacity: 0.75;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
     transition: all 0.25s ease;
@@ -566,8 +566,8 @@ body {
 
 .dice3d {
     position: relative;
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
     transform-style: preserve-3d;
     transform: rotateX(0deg) rotateY(0deg);
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.25, 1);
@@ -583,8 +583,8 @@ body {
 .dice-face {
     position: absolute;
     inset: 0;
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
     border-radius: 9px;
     background: linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #e2e8f0 100%);
     border: 1.8px solid rgba(203, 213, 225, 0.95);
@@ -596,12 +596,12 @@ body {
     backface-visibility: hidden;
     box-sizing: border-box;
 }
-.dice-face-front  { transform: rotateY(0deg) translateZ(22px); }
-.dice-face-back   { transform: rotateY(180deg) translateZ(22px); }
-.dice-face-right  { transform: rotateY(90deg) translateZ(22px); }
-.dice-face-left   { transform: rotateY(-90deg) translateZ(22px); }
-.dice-face-top    { transform: rotateX(90deg) translateZ(22px); }
-.dice-face-bottom { transform: rotateX(-90deg) translateZ(22px); }
+.dice-face-front  { transform: rotateY(0deg) translateZ(26px); }
+.dice-face-back   { transform: rotateY(180deg) translateZ(26px); }
+.dice-face-right  { transform: rotateY(90deg) translateZ(26px); }
+.dice-face-left   { transform: rotateY(-90deg) translateZ(26px); }
+.dice-face-top    { transform: rotateX(90deg) translateZ(26px); }
+.dice-face-bottom { transform: rotateX(-90deg) translateZ(26px); }
 
 .dice-pip-grid {
     display: grid;
@@ -614,8 +614,8 @@ body {
 .dice-pip {
     display: block;
     border-radius: 50%;
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     margin: auto;
     background: radial-gradient(circle at 35% 30%, #334155 0%, #090d16 90%);
     opacity: 0;
@@ -623,7 +623,7 @@ body {
 }
 .dice-pip.on { opacity: 1; transform: scale(1); }
 .dice-pip.on.red-pip { background: radial-gradient(circle at 35% 30%, #ef4444 0%, #991b1b 90%); }
-.dice-pip.on.center-ace { width: 11px; height: 11px; }
+.dice-pip.on.center-ace { width: 14px; height: 14px; }
 
 .board-dice-stage {
     position: absolute;
@@ -647,17 +647,17 @@ body {
 }
 .board-dice-cube {
     position: absolute;
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
     transform-style: preserve-3d;
-    transform-origin: 22px 22px 0px;
+    transform-origin: 26px 26px 0px;
 }
-.board-dice-cube .dice-face-front  { transform: rotateY(0deg) translateZ(22px); }
-.board-dice-cube .dice-face-back   { transform: rotateY(180deg) translateZ(22px); }
-.board-dice-cube .dice-face-right  { transform: rotateY(90deg) translateZ(22px); }
-.board-dice-cube .dice-face-left   { transform: rotateY(-90deg) translateZ(22px); }
-.board-dice-cube .dice-face-top    { transform: rotateX(90deg) translateZ(22px); }
-.board-dice-cube .dice-face-bottom { transform: rotateX(-90deg) translateZ(22px); }
+.board-dice-cube .dice-face-front  { transform: rotateY(0deg) translateZ(26px); }
+.board-dice-cube .dice-face-back   { transform: rotateY(180deg) translateZ(26px); }
+.board-dice-cube .dice-face-right  { transform: rotateY(90deg) translateZ(26px); }
+.board-dice-cube .dice-face-left   { transform: rotateY(-90deg) translateZ(26px); }
+.board-dice-cube .dice-face-top    { transform: rotateX(90deg) translateZ(26px); }
+.board-dice-cube .dice-face-bottom { transform: rotateX(-90deg) translateZ(26px); }
 
 .board-dice-settle-glow {
     position: absolute;
@@ -686,9 +686,7 @@ body {
     border: 3px solid transparent; /* PREMIUM LOOK: border removed, was solid #d97706 */
     box-shadow: 
         0 24px 60px rgba(0, 0, 0, 0.85), 
-        0 0 45px rgba(234, 179, 8, 0.35),
-        inset 0 0 0 1px rgba(253, 224, 71, 0.18),
-        inset 0 2px 6px rgba(253, 224, 71, 0.6),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.06),
         inset 0 -3px 8px rgba(0, 0, 0, 0.95);
     margin: auto;
     overflow: visible !important;
@@ -3230,10 +3228,6 @@ body {
                     </div>
 
                     <div class="board-wrapper">
-                        <div class="board-gold-bracket top-left"></div>
-                        <div class="board-gold-bracket top-right"></div>
-                        <div class="board-gold-bracket bottom-left"></div>
-                        <div class="board-gold-bracket bottom-right"></div>
                         <div class="ludo-board" id="board"></div>
                         <div id="board-dice-stage" class="board-dice-stage">
                             <div id="board-dice-shadow" class="board-dice-shadow"></div>
@@ -5337,14 +5331,21 @@ body {
         playSound('roll');
         const box = document.getElementById(`dice-${color}`);
         if (box) {
-            const cube = box.querySelector('.dice3d');
-            if (cube) {
-                const rot = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
-                cube.style.transition = 'transform 180ms cubic-bezier(0.2, 0.8, 0.25, 1)';
-                cube.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
-            }
+            // pehle dice ko 3D me ghumao, phir rolled number waale face pe settle karo
+            box.classList.add('spinning');
+            setTimeout(() => {
+                box.classList.remove('spinning');
+                const cube = box.querySelector('.dice3d');
+                if (cube) {
+                    const rot = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
+                    cube.style.transition = 'transform 240ms cubic-bezier(0.2, 0.8, 0.25, 1)';
+                    cube.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
+                }
+                onDone();
+            }, 560);
+        } else {
+            onDone();
         }
-        onDone();
     }
 
     let __diceHideTimeoutId = null;
