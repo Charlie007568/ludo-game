@@ -579,8 +579,8 @@ body {
     animation: diceSpinLoop 0.5s linear infinite;
 }
 @keyframes diceSpinLoop {
-    0%   { transform: rotateX(0deg) rotateY(0deg); }
-    100% { transform: rotateX(360deg) rotateY(720deg); }
+    0%   { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+    100% { transform: rotateX(360deg) rotateY(720deg) rotateZ(360deg); }
 }
 
 .dice-face {
@@ -991,8 +991,11 @@ body {
     z-index: 2;
 }
 
-/* FIX: 60Hz smooth rendering — GPU layer hints on everything that moves */
-.token, .dice3d, .player-tag, .dice-box-tag, .token-smooth-tail, .token-trail-ghost, .token-flying-return {
+/* FIX: 60Hz smooth rendering — GPU layer hints on 2D moving parts.
+   .dice3d jaan-boojhkar CHHODA GAYA: preserve-3d cube pe
+   backface-visibility/will-change lagane se Chrome usay FLATTEN kar deta
+   hai — spin ke dauran dice black/gayab ho jata tha. */
+.token, .player-tag, .dice-box-tag, .token-smooth-tail, .token-trail-ghost, .token-flying-return {
     will-change: transform, opacity;
     backface-visibility: hidden;
 }
