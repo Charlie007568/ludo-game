@@ -2513,15 +2513,15 @@ body {
 .diff-pill-row { display: flex; gap: 6px; margin-top: 6px; }
 .settings-hint { font-size: 0.62rem; color: var(--ivory-dim); margin-top: 8px; line-height: 1.5; }
 
-#coins-modal, #adwatch-overlay, #barrier-decision-modal {
+#coins-modal, #adwatch-overlay, #barrier-decision-modal, #bug-report-modal {
     display: none; position: fixed; inset: 0; background: rgba(2,6,23,0.92); backdrop-filter: blur(10px);
     z-index: 400; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
 }
-#admin-lock-overlay {
+#admin-lock-overlay, #device-block-overlay {
     display: none; position: fixed; inset: 0; background: rgba(2,6,23,0.96); backdrop-filter: blur(10px);
     z-index: 900; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
 }
-#admin-lock-overlay .glass-panel { max-width: 320px; width: 100%; padding: 26px 22px; }
+#admin-lock-overlay .glass-panel, #device-block-overlay .glass-panel { max-width: 320px; width: 100%; padding: 26px 22px; }
 #menu-announcement {
     margin: 10px 0 4px; padding: 10px 14px; border-radius: 12px; text-align: center;
     background: linear-gradient(135deg, rgba(236,72,153,0.16), rgba(139,92,246,0.16));
@@ -2625,7 +2625,7 @@ body {
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getDatabase, ref, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, update, onValue, serverTimestamp, onDisconnect, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey:            "AIzaSyDPYuTSyVY5_I9DoAUg6NCkZ_3ERpZ705M",
@@ -2647,6 +2647,84 @@ body {
 
         let uid = null;
         let coinsSeenOnce = false;
+
+        // ─── ADDED: Device identity, live presence & real-time block ───
+        // Writes this device's record to the Realtime Database `devices/`
+        // node — the exact node the Admin Panel's "Active Users / Devices"
+        // list and its Block/Unblock buttons already read and write. Keeps
+        // it marked online while this page is open, marks it offline on
+        // disconnect, and listens for the admin's `blocked` flag so a
+        // block takes effect instantly — even mid-game — with no reload.
+        let deviceId = loadLocal('rbe_device_id', '');
+        if (!deviceId) {
+            deviceId = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+            saveLocal('rbe_device_id', deviceId);
+        }
+        function buildDeviceName() {
+            const ua = navigator.userAgent || '';
+            let os = 'Device';
+            if (/android/i.test(ua)) os = 'Android';
+            else if (/iphone|ipad|ipod/i.test(ua)) os = 'iOS';
+            else if (/windows/i.test(ua)) os = 'Windows';
+            else if (/mac os|macintosh/i.test(ua)) os = 'Mac';
+            else if (/linux/i.test(ua)) os = 'Linux';
+            let br = 'Browser';
+            if (/edg\//i.test(ua)) br = 'Edge';
+            else if (/opr\//i.test(ua) || /opera/i.test(ua)) br = 'Opera';
+            else if (/chrome/i.test(ua)) br = 'Chrome';
+            else if (/firefox/i.test(ua)) br = 'Firefox';
+            else if (/safari/i.test(ua)) br = 'Safari';
+            return os + ' · ' + br + ' · ' + (window.screen ? screen.width + 'x' + screen.height : '?');
+        }
+        const deviceName = buildDeviceName();
+        function fallbackLocation() {
+            try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown'; }
+            catch (e) { return 'Unknown'; }
+        }
+        let deviceLocation = '';
+
+        function registerDevice() {
+            const devRef = ref(rtdb, 'devices/' + deviceId);
+            deviceLocation = deviceLocation || fallbackLocation();
+            // update(), not set() — never clobber an existing record (or
+            // the admin's blocked flag) when the same device reconnects.
+            update(devRef, {
+                deviceId: deviceId,
+                deviceName: deviceName,
+                location: deviceLocation,
+                online: true,
+                lastSeen: serverTimestamp()
+            }).catch(() => {});
+            onDisconnect(devRef).update({
+                online: false,
+                lastSeen: serverTimestamp()
+            }).catch(() => {});
+
+            // Real-time block/unblock — the admin panel writes
+            // devices/{id}/blocked; this listener reacts instantly.
+            onValue(ref(rtdb, 'devices/' + deviceId + '/blocked'), (snap) => {
+                if (window.LudoEngine && window.LudoEngine.applyDeviceBlock) {
+                    window.LudoEngine.applyDeviceBlock(!!snap.val());
+                }
+            }, () => {});
+
+            // Best-effort GPS location (asks the user once). Whatever the
+            // answer, the record above is still created with at least the
+            // timezone, so the admin always sees something immediately.
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        deviceLocation = pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4);
+                        update(devRef, { location: deviceLocation }).catch(() => {});
+                    },
+                    () => {
+                        deviceLocation = deviceLocation || fallbackLocation();
+                        update(devRef, { location: deviceLocation }).catch(() => {});
+                    },
+                    { timeout: 5000, maximumAge: 600000 }
+                );
+            }
+        }
 
         // Same device identity keys the hub itself uses (localStorage is
         // shared per-origin), so a device that already played the hub
@@ -2681,6 +2759,7 @@ body {
 
         function registerIdentity(theUid) {
             uid = theUid;
+            registerDevice();
             const userRef = ref(rtdb, `${ONLINE_ROOT}/users/${uid}`);
             // update(), not set() — never overwrite an existing coin balance
             update(userRef, { uid, publicId, online: true, updatedAt: serverTimestamp() }).catch(() => {});
@@ -2708,7 +2787,23 @@ body {
             isReady() { return !!uid && coinsSeenOnce; },
             claimDailyBonus() { return callFn('claimDailyBonus', {}); },
             creditAdReward() { return callFn('creditAdReward', {}); },
-            ensureAccount() { return callFn('initAccount', { publicId, name }); }
+            ensureAccount() { return callFn('initAccount', { publicId, name }); },
+            // ADDED: sends a player's bug report (with this device's
+            // identity + location) to the bugReports/ node the Admin
+            // Panel reads live. RTDB rules allow any signed-in user to
+            // CREATE a report; only the admin email can edit/delete them.
+            reportBug(message, context) {
+                const repRef = push(ref(rtdb, 'bugReports'));
+                return set(repRef, {
+                    message: String(message || '').slice(0, 1900),
+                    deviceId: deviceId,
+                    deviceName: deviceName,
+                    location: deviceLocation || fallbackLocation(),
+                    context: context === 'game' ? 'game' : 'menu',
+                    status: 'new',
+                    createdAt: Date.now()
+                });
+            }
         };
 
         onAuthStateChanged(auth, (user) => { if (user) registerIdentity(user.uid); });
@@ -2764,6 +2859,7 @@ body {
             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex: 1 1 auto; min-width: 0;">
                 <button class="topbar-pill" id="music-btn-menu" onclick="window.LudoEngine.toggleMusic()" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800; white-space: nowrap;">🎵 Music</button>
                 <button class="topbar-pill" id="sound-btn-menu" onclick="window.LudoEngine.toggleSound()" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800; white-space: nowrap;">🔊 SFX</button>
+                <button class="topbar-pill" onclick="window.LudoEngine.openBugReport('menu')" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800; white-space: nowrap;" title="Report a Bug">🐞 Report</button>
                 <div class="topbar-pill topbar-coins" onclick="window.LudoEngine.openCoinsModal()" title="Coin Wallet — tap for more coins" style="white-space: nowrap;">
                     <span class="coin-balance-amount" id="menu-coin-balance">🪙 1,000</span>
                     <span class="coin-plus-badge">+</span>
@@ -2933,6 +3029,7 @@ body {
                 <div class="header-actions">
                     <button class="btn-exit" onclick="window.LudoEngine.openCustomizer()" title="Skins &amp; Trails Studio">🎨</button>
                     <button class="btn-exit" onclick="window.LudoEngine.openCoinsModal()" title="Get More Coins">🪙</button>
+                    <button class="btn-exit" onclick="window.LudoEngine.openBugReport('game')" title="Report a Bug">🐞</button>
                     <button class="btn-exit" id="music-btn-header" onclick="window.LudoEngine.toggleMusic()">🎵</button>
                     <button class="btn-exit" id="sound-btn-header" onclick="window.LudoEngine.toggleSound()">🔊</button>
                     <button class="btn-exit" onclick="window.LudoEngine.goToMenu()">Exit</button>
@@ -3006,6 +3103,29 @@ body {
             <div class="glass-panel" style="text-align:center;">
                 <p style="font-size:1.4rem; margin-bottom:10px;">⚠️ Unavailable</p>
                 <p id="admin-lock-message" style="font-size:0.8rem; color:var(--ivory-dim); line-height:1.6;">Game is currently under maintenance. Please try again later.</p>
+            </div>
+        </div>
+
+        <!-- ADDED: real-time device block — shown the instant the admin
+             blocks this device from the Admin Panel's Devices list. -->
+        <div id="device-block-overlay">
+            <div class="glass-panel" style="text-align:center;">
+                <p style="font-size:1.4rem; margin-bottom:10px;">🚫 Device Blocked</p>
+                <p style="font-size:0.8rem; color:var(--ivory-dim); line-height:1.6;">This device has been blocked by the administrator. Contact support to regain access.</p>
+            </div>
+        </div>
+
+        <!-- ADDED: Report a Bug — available from the main menu and
+             mid-game; the message goes straight to the Admin Panel's
+             Bug Reports list, along with this device & location. -->
+        <div id="bug-report-modal" onclick="if(event.target===this) window.LudoEngine.closeBugReport()">
+            <div class="glass-panel" style="max-width:320px; width:100%; text-align:center; padding:22px;">
+                <p class="coins-modal-title">🐞 Report a Bug</p>
+                <p class="coins-modal-sub">Your message goes straight to the admin, along with your device &amp; location.</p>
+                <textarea id="bug-report-text" rows="4" maxlength="1900" placeholder="Describe the bug you saw…" style="width:100%; padding:12px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.2); border-radius:10px; color:#fff; font-size:0.82rem; outline:none; font-family:'Plus Jakarta Sans',sans-serif; resize:vertical; margin-bottom:10px;"></textarea>
+                <button class="coin-claim-btn" id="bug-report-send-btn" onclick="window.LudoEngine.submitBugReport()">📨 Send Report</button>
+                <p id="bug-report-status" class="coin-claim-countdown" style="margin:0 0 8px;"></p>
+                <button class="coins-modal-close" onclick="window.LudoEngine.closeBugReport()">Cancel</button>
             </div>
         </div>
 
@@ -5560,6 +5680,13 @@ body {
     // ============================================================
     let lastDailyBonusAt = null; // ms epoch, mirrored from the server once known
     let rewardAdUrl = ''; // ADDED: admin-supplied URL to show inside the Watch Ad overlay, if any
+    // ADDED: coin-display bug fix. The hardcoded offline default (1,000)
+    // used to render immediately on every load, then visibly jump the
+    // moment the first server snapshot arrived with the real balance.
+    // Now nothing is shown until either the server has spoken
+    // (coinsDisplayReady via applyRemoteCoinBalance) or a short grace
+    // period has passed with no server — only then the local wallet shows.
+    let coinsDisplayReady = false;
 
     function loadCoinsFromStorage() {
         try {
@@ -5581,7 +5708,7 @@ body {
     }
 
     function updateCoinDisplays() {
-        const formatted = coinBalance.toLocaleString('en-IN');
+        const formatted = coinsDisplayReady ? coinBalance.toLocaleString('en-IN') : '—';
         const topbar = document.getElementById('menu-coin-balance');
         if (topbar) topbar.textContent = '🪙 ' + formatted;
         const wallet = document.getElementById('coin-wallet-amount');
@@ -5606,6 +5733,7 @@ body {
     // server. Server is always authoritative once connected.
     function applyRemoteCoinBalance(remoteBalance) {
         if (typeof remoteBalance !== 'number') return;
+        coinsDisplayReady = true; // server is authoritative — show real numbers from here on
         setCoinBalance(remoteBalance);
     }
 
@@ -6081,6 +6209,67 @@ body {
         return own.concat(getMovableTokens(partnerColor, roll));
     }
 
+    // ADDED: real-time device block — reacts instantly to the admin's
+    // Block/Unblock from the Admin Panel's Devices list. Blocking pauses
+    // the game behind a full-screen overlay; unblocking resumes a bot
+    // turn if one was pending.
+    function applyDeviceBlock(blocked) {
+        const ov = document.getElementById('device-block-overlay');
+        if (!ov) return;
+        if (blocked) {
+            if (botMoveTimeoutId) { clearTimeout(botMoveTimeoutId); botMoveTimeoutId = null; }
+            hideBoardRollingDice();
+            ov.style.display = 'flex';
+        } else {
+            ov.style.display = 'none';
+            const cp = getEffectiveCurrentPlayer();
+            if (cp && cp.isBot && gameState === 'IDLE') {
+                botMoveTimeoutId = setTimeout(() => onDiceClick(cp.color), 700);
+            }
+        }
+    }
+
+    // ADDED: Report a Bug — opened from the main menu or mid-game; the
+    // message (plus this device's identity & location) is written to the
+    // bugReports/ node the Admin Panel reads live.
+    let bugReportContext = 'menu';
+    function openBugReport(context) {
+        bugReportContext = (context === 'game') ? 'game' : 'menu';
+        const modal = document.getElementById('bug-report-modal');
+        const ta = document.getElementById('bug-report-text');
+        const st = document.getElementById('bug-report-status');
+        if (ta) ta.value = '';
+        if (st) st.textContent = '';
+        if (modal) modal.style.display = 'flex';
+        if (ta) setTimeout(() => ta.focus(), 100);
+    }
+    function closeBugReport() {
+        const modal = document.getElementById('bug-report-modal');
+        if (modal) modal.style.display = 'none';
+    }
+    async function submitBugReport() {
+        const ta = document.getElementById('bug-report-text');
+        const st = document.getElementById('bug-report-status');
+        const btn = document.getElementById('bug-report-send-btn');
+        const msg = ta ? ta.value.trim() : '';
+        if (!msg) { if (st) st.textContent = '⚠️ Please describe the bug first.'; return; }
+        if (btn) btn.disabled = true;
+        if (st) st.textContent = 'Sending…';
+        try {
+            if (window.__ludoFirebaseBridge && window.__ludoFirebaseBridge.reportBug) {
+                await window.__ludoFirebaseBridge.reportBug(msg, bugReportContext);
+                if (st) st.textContent = '✅ Report sent — thank you!';
+                setTimeout(closeBugReport, 1100);
+            } else {
+                if (st) st.textContent = '⚠️ Not connected yet — please try again in a moment.';
+            }
+        } catch (e) {
+            if (st) st.textContent = '❌ Couldn\'t send: ' + (e && e.message ? e.message : 'unknown error');
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
     window.LudoEngine = {
         startGame,
         goToMenu,
@@ -6104,11 +6293,21 @@ body {
         chooseBarrierOption,
         applyAdminLock,
         applyAnnouncement,
-        applyRewardAdUrl
+        applyRewardAdUrl,
+        applyDeviceBlock,
+        openBugReport,
+        closeBugReport,
+        submitBugReport
     };
 
     loadCoinsFromStorage();
     updateCoinDisplays();
+    // ADDED: coin-display bug fix — if the server hasn't answered within
+    // 3 seconds (offline / backend unreachable), fall back to showing the
+    // local wallet instead of '—' forever.
+    setTimeout(() => {
+        if (!coinsDisplayReady) { coinsDisplayReady = true; updateCoinDisplays(); }
+    }, 3000);
 
     // BUG FIX: a "frozen game" safety net. Normally ROLLING/MOVING only
     // ever last a second or two (dice animation, token glide). If either
