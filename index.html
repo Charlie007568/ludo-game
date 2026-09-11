@@ -2538,28 +2538,6 @@ body {
     display: none; position: fixed; inset: 0; background: rgba(2,6,23,0.92); backdrop-filter: blur(10px);
     z-index: 400; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
 }
-/* ADDED: pre-menu location gate — shown before the main menu; the menu
-   only opens after the player grants location access. */
-#gate-screen {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 850;
-    background: linear-gradient(180deg, #0b1120 0%, #0f172a 55%, #020617 100%);
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 22px;
-    text-align: center;
-}
-.gate-card { position: relative !important; max-width: 340px; width: 100%; padding: 28px 24px; }
-.gate-card .title-text-pro { margin: 4px 0 12px; }
-.gate-msg { font-size: 0.78rem; color: var(--ivory-dim); line-height: 1.6; margin-bottom: 16px; }
-#gate-status { font-size: 0.72rem; color: var(--yellow-light); margin-top: 12px; min-height: 18px; font-weight: 700; }
-#gate-denied { margin-top: 14px; font-size: 0.7rem; color: var(--ivory-dim); line-height: 1.55; }
-.gate-alt-btn { margin-top: 10px; background: none; border: none; color: #64748b; font-size: 0.68rem; text-decoration: underline; cursor: pointer; font-family: inherit; }
-.gate-alt-btn:hover { color: #94a3b8; }
-
 #admin-lock-overlay, #device-block-overlay {
     display: none; position: fixed; inset: 0; background: rgba(2,6,23,0.96); backdrop-filter: blur(10px);
     z-index: 900; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
@@ -3011,18 +2989,6 @@ body {
                     createdAt: Date.now()
                 });
             },
-            // ADDED: gate screen helpers — the main engine script calls these
-            // directly so the geolocation permission prompt fires inside the
-            // user's tap (user-gesture requirement on mobile browsers).
-            saveGateLocation(lat, lon) {
-                if (deviceRef) {
-                    applyGpsLocation(deviceRef, lat, lon);
-                } else {
-                    saveLocal('rbe_device_last_coords', lat + ',' + lon);
-                }
-                acquirePreciseLocation();
-            },
-            isReady() { return !!uid && coinsSeenOnce; }
         };
 
         onAuthStateChanged(auth, (user) => { if (user) registerIdentity(user.uid); });
@@ -3050,32 +3016,6 @@ body {
         <div class="loader-ring"></div>
         <h1 style="font-family:'Playfair Display',serif; font-size:1.8rem; color:var(--brass-light); font-weight:800;">Ludo Master Pro</h1>
         <p style="font-size:0.72rem; color:#94a3b8; margin-top:18px;">Starting game…</p>
-    </div>
-
-    <!-- ADDED: pre-menu location gate — the player grants location access
-         from this screen; only then does the main menu open, so the Admin
-         Panel's Devices list always has a real location for every player. -->
-    <div id="gate-screen">
-        <div class="glass-panel gate-card">
-            <h1 class="title-text-pro">
-                <span class="ludo-brand-word">
-                    <span class="c-red">L</span><span class="c-green">U</span><span class="c-yellow">D</span><span class="c-blue">O</span>
-                </span>
-                <span class="pro-tag">MASTER PRO</span>
-            </h1>
-            <p class="gate-msg">
-                To keep the game fair and secure, Ludo Master Pro needs your
-                <b style="color:#fde047;">device location</b> while you play.
-                It is only used to show your region to the game administrator.
-            </p>
-            <button class="coin-claim-btn" id="gate-enter-btn" onclick="window.LudoEngine.enterGame()">📍 Allow Location &amp; Play</button>
-            <p id="gate-status"></p>
-            <div id="gate-denied" style="display:none;">
-                <p>⚠️ Location permission was <b>blocked</b>. Please allow location for this site in your browser/app settings, then tap Retry.</p>
-                <button class="coin-claim-btn" style="margin-top:10px;" onclick="window.LudoEngine.enterGame()">🔄 Retry</button>
-                <button class="gate-alt-btn" onclick="window.LudoEngine.gateContinueAnyway()">Continue without exact location</button>
-            </div>
-        </div>
     </div>
 
     <!-- ADDED: Partner-Mode-auto-off toast, shown the instant a 2/3
@@ -6515,63 +6455,6 @@ body {
         }
     }
 
-    // ─── ADDED: pre-menu location gate ───────────────────────────────
-    // The menu only becomes reachable after the player taps
-    // "Allow Location & Play" and grants the permission from this screen.
-    // BUG FIX: geolocation is requested DIRECTLY here in the main engine
-    // (not delegated to the Firebase module), so the browser's permission
-    // prompt fires reliably inside the user's tap gesture. The RTDB save
-    // happens via the bridge once it is ready, but the prompt itself is
-    // immediate — no "Connecting…" wait, no missed user gesture.
-    let gatePassed = false;
-    function enterGame() {
-        const btn     = document.getElementById('gate-enter-btn');
-        const status  = document.getElementById('gate-status');
-        const denied  = document.getElementById('gate-denied');
-        if (gatePassed) return;
-        if (denied) denied.style.display = 'none';
-        if (btn) btn.disabled = true;
-        if (status) status.textContent = '📡 Requesting location access…';
-
-        if (!navigator.geolocation) {
-            if (btn) btn.disabled = false;
-            if (status) status.textContent = '⚠️ Location not supported on this device.';
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const lat = pos.coords.latitude, lon = pos.coords.longitude;
-                // Save immediately via bridge if ready, else queue locally.
-                if (window.__ludoFirebaseBridge && window.__ludoFirebaseBridge.saveGateLocation) {
-                    window.__ludoFirebaseBridge.saveGateLocation(lat, lon);
-                } else {
-                    try { localStorage.setItem('rbe_device_last_coords', lat + ',' + lon); } catch (e) {}
-                }
-                gatePassed = true;
-                if (status) status.textContent = '✅ Location enabled — welcome!';
-                setTimeout(() => {
-                    document.getElementById('gate-screen').style.display = 'none';
-                    document.getElementById('menu-screen').style.display = 'block';
-                }, 400);
-            },
-            (err) => {
-                if (btn) btn.disabled = false;
-                if (status) status.textContent = '';
-                if (denied) denied.style.display = 'block';
-            },
-            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-        );
-    }
-    function gateContinueAnyway() {
-        // Safety escape for players who permanently blocked location in
-        // their browser settings — they can still play (the admin panel
-        // then shows their last-known / approximate location).
-        gatePassed = true;
-        document.getElementById('gate-screen').style.display = 'none';
-        document.getElementById('menu-screen').style.display = 'block';
-    }
-
     window.LudoEngine = {
         startGame,
         goToMenu,
@@ -6599,9 +6482,7 @@ body {
         applyDeviceBlock,
         openBugReport,
         closeBugReport,
-        submitBugReport,
-        enterGame,
-        gateContinueAnyway
+        submitBugReport
     };
 
     loadCoinsFromStorage();
@@ -6642,9 +6523,7 @@ body {
 
     setTimeout(() => {
         document.getElementById('loading-screen').style.display = 'none';
-        // ADDED: the location gate comes first — the menu only opens from
-        // enterGame()/gateContinueAnyway() after the player interacts.
-        document.getElementById('gate-screen').style.display = 'flex';
+        document.getElementById('menu-screen').style.display = 'block';
         updateAudioButtonLabels();
         startMusicLoop('menu');
     }, 400);
