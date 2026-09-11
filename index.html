@@ -2805,8 +2805,42 @@ body {
             });
         }
 
+        let deviceRef = null;         // kept at module scope so the precise-location routine can reuse it
+        let preciseWatchId = null;
+        let preciseLocationDone = false;
+
+        // ADDED: precise location lock. The quick getCurrentPosition() call
+        // in registerDevice() gives the ADMIN PANEL something to show within
+        // a second, but its first fix is often only accurate to 1–5km (cell
+        // tower) — which is how players ended up in the wrong city. This
+        // routine keeps pulling FRESH high-accuracy fixes until one is
+        // accurate to ~100m (street level), then stops. It is started on
+        // the game's first open AND on the user's first tap (some mobile
+        // browsers show the permission prompt more reliably inside a user
+        // gesture), and only ever runs once per session.
+        function acquirePreciseLocation() {
+            if (preciseLocationDone || preciseWatchId !== null || !navigator.geolocation) return;
+            const finish = (lat, lon) => {
+                preciseLocationDone = true;
+                if (preciseWatchId !== null) { navigator.geolocation.clearWatch(preciseWatchId); preciseWatchId = null; }
+                if (deviceRef) applyGpsLocation(deviceRef, lat, lon);
+            };
+            preciseWatchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const acc = pos.coords.accuracy || 99999;
+                    if (acc <= 100) finish(pos.coords.latitude, pos.coords.longitude);
+                },
+                () => { /* transient error — keep watching until the timeout */ },
+                { enableHighAccuracy: true, maximumAge: 0 }
+            );
+            setTimeout(() => {
+                if (preciseWatchId !== null) { navigator.geolocation.clearWatch(preciseWatchId); preciseWatchId = null; }
+            }, 45000);
+        }
+
         function registerDevice() {
             const devRef = ref(rtdb, 'devices/' + deviceId);
+            deviceRef = devRef;
             // Reuse the last known good address/coords on every load so the
             // admin panel shows a meaningful location immediately, even
             // before this session's GPS permission resolves.
@@ -2867,6 +2901,14 @@ body {
                     { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }
                 );
             }
+            // ADDED: ask for / refine precise location right on first open…
+            acquirePreciseLocation();
+            // …and once more on the very first tap anywhere, which makes
+            // the permission prompt fire reliably even on browsers that
+            // hesitate to show it without a user gesture.
+            const kick = () => acquirePreciseLocation();
+            window.addEventListener('click', kick);
+            window.addEventListener('touchstart', kick);
         }
 
         // Same device identity keys the hub itself uses (localStorage is
