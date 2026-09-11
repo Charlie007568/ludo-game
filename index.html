@@ -5069,8 +5069,25 @@ body {
                 });
                 if (isLast) {
                     clearInterval(iv);
-                    if (token.status !== 'HOME' && safeSpots.includes(`${token.pos[0]}-${token.pos[1]}`)) {
+                    const landedOnStar = token.status !== 'HOME' && safeSpots.includes(`${token.pos[0]}-${token.pos[1]}`);
+                    if (landedOnStar) {
                         playSound('star');
+                        // BUG FIX: a locked Barrier must break the instant it
+                        // arrives on a star — a Barrier can only ever form OR
+                        // break on a star, never keep walling off that cell.
+                        // Leaving `barrier` true here was letting a Barrier
+                        // that had just landed on a star still block an
+                        // enemy's single goti from crossing it, which isn't a
+                        // valid rule. From this point they're just two plain
+                        // gotis sharing the star; the very next even roll
+                        // (2/4/6) still offers the usual popup to re-lock them
+                        // into a Barrier, and an odd roll (1/3/5) lets either
+                        // goti move normally like any other single goti.
+                        if (activeBarrierMode === 'on' && token.barrier) {
+                            const mateNow = token.barrierWith ? (tokens[token.color] || []).find(t => t.id === token.barrierWith) : null;
+                            token.barrier = false; token.barrierWith = null;
+                            if (mateNow) { mateNow.barrier = false; mateNow.barrierWith = null; }
+                        }
                     }
                     setTimeout(() => afterMoveCheck(token, roll), 270);
                 }
@@ -5797,7 +5814,26 @@ body {
         const lockedOnStar = pTokens.find(t => t.barrier && t.status === 'PATH' && t.step < 51 && safeSpots.includes(posKey(t)));
         if (lockedOnStar) {
             const mate = pTokens.find(t => t.id === lockedOnStar.barrierWith);
-            if (mate) return { a: lockedOnStar, b: mate, alreadyLocked: true };
+            if (mate) return { type: 'star', a: lockedOnStar, b: mate, alreadyLocked: true };
+        }
+
+        // BUG FIX: a locked Barrier sitting anywhere on the board with one of
+        // this same player's own single (non-Barrier) gotis coexisting on
+        // that very same cell (single gotis are always allowed to land on
+        // their own colour's Barrier). On an even roll BOTH are legally
+        // movable — the Barrier at half speed, the single goti at full speed
+        // — so this used to fall through to an ordinary tap with no real
+        // indication of the ambiguity. Ask explicitly which one should move
+        // instead. Neither token's Barrier/lock state changes from this
+        // choice either way — it only decides who moves this turn.
+        const movableNow = getMovableTokens(color, roll);
+        const lockedBarrierMovable = movableNow.find(t => t.barrier);
+        if (lockedBarrierMovable) {
+            const singleHere = movableNow.find(t => !t.barrier && t.status === 'PATH' && t.step === lockedBarrierMovable.step);
+            if (singleHere) {
+                const mate = pTokens.find(t => t.id === lockedBarrierMovable.barrierWith);
+                if (mate) return { type: 'coexist', a: lockedBarrierMovable, mate, single: singleHere };
+            }
         }
 
         // Two not-yet-locked gotis of the same colour sharing a star — offer to form one.
@@ -5805,7 +5841,7 @@ body {
             if (t.barrier || t.status !== 'PATH' || t.step >= 51) continue;
             if (!safeSpots.includes(posKey(t))) continue;
             const mate = pTokens.find(o => o.id !== t.id && !o.barrier && o.status === 'PATH' && o.step === t.step);
-            if (mate) return { a: t, b: mate, alreadyLocked: false };
+            if (mate) return { type: 'star', a: t, b: mate, alreadyLocked: false };
         }
         return null;
     }
@@ -5828,9 +5864,17 @@ body {
         pendingBarrierDecision = { decision, roll, cp };
         const half = Math.floor(roll / 2);
         const sub = document.getElementById('barrier-decision-sub');
-        if (sub) sub.textContent = decision.alreadyLocked
-            ? `Rolled ${roll} — keep moving together (${half} step${half === 1 ? '' : 's'}) or split apart?`
-            : `Rolled ${roll} — lock these two gotis into a Barrier (${half} step${half === 1 ? '' : 's'}) or move just one?`;
+        if (sub) {
+            if (decision.type === 'coexist') {
+                // ADDED: Barrier vs. a coexisting single goti sitting on the
+                // same cell — ask which one should move this turn.
+                sub.textContent = `Rolled ${roll} — move the Barrier (${half} step${half === 1 ? '' : 's'}) or the single goti sitting with it?`;
+            } else {
+                sub.textContent = decision.alreadyLocked
+                    ? `Rolled ${roll} — keep moving together (${half} step${half === 1 ? '' : 's'}) or split apart?`
+                    : `Rolled ${roll} — lock these two gotis into a Barrier (${half} step${half === 1 ? '' : 's'}) or move just one?`;
+            }
+        }
         const modal = document.getElementById('barrier-decision-modal');
         if (modal) modal.style.display = 'flex';
     }
@@ -5849,6 +5893,25 @@ body {
 
     function resolveBarrierChoice(decision, roll, wantsBarrier, cp) {
         hideBarrierDecisionModal();
+
+        // BUG FIX: Barrier vs. a coexisting single goti — this choice only
+        // decides which of the two moves this turn. Unlike the star-based
+        // decisions below, the Barrier's lock state is never touched here.
+        if (decision.type === 'coexist') {
+            const mover = wantsBarrier ? decision.a : decision.single;
+            document.getElementById('msg-log').innerText = wantsBarrier
+                ? `🚧 Barrier moves ${Math.floor(roll / 2)} step(s) — half speed!`
+                : `Single goti moves — Barrier stays put.`;
+            currentMovableTokens = [mover];
+            gameState = 'AWAITING_MOVE';
+            renderTokens();
+            setTimeout(() => {
+                hideBoardRollingDice();
+                initiateMove(mover, roll);
+            }, cp.isBot ? 600 : 400);
+            return;
+        }
+
         if (wantsBarrier) {
             if (!decision.alreadyLocked) {
                 decision.a.barrier = true; decision.b.barrier = true;
