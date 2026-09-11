@@ -5817,18 +5817,33 @@ body {
         const attacker = players.find(p => p.color === token.color);
         const attackerName = attacker ? attacker.name : token.color;
 
+        // CRITICAL FIX: `chosen` may be a single token ([pickOne]) OR the
+        // full Barrier pair (an array of two). The old code always treated
+        // it as a single object, so when a Barrier was cut the properties
+        // were set on the ARRAY and the two gotis never left the board —
+        // only the cut sound played. Now both shapes are handled, and a
+        // safety-net timer guarantees the victims are sent home even if
+        // the fly-home animation is interrupted (e.g. background tab).
         const doCapture = (chosen) => {
+            const list = Array.isArray(chosen) ? chosen : [chosen];
             playSound('cut');
             gameState = 'MOVING';
-            triggerGotiCutAnimation(token, [chosen], () => {
-                chosen.status = 'BASE';
-                chosen.step = -1;
-                chosen.pos = [0, 0];
-                chosen.barrier = false;      // ADDED: cutting a Barrier breaks it
-                chosen.barrierWith = null;
+            let done = false;
+            const finish = () => {
+                if (done) return;
+                done = true;
+                list.forEach(ot => {
+                    ot.status = 'BASE';
+                    ot.step = -1;
+                    ot.pos = [0, 0];
+                    ot.barrier = false;      // cutting a Barrier breaks the pair
+                    ot.barrierWith = null;
+                });
                 renderTokens();
                 onComplete(true);
-            });
+            };
+            triggerGotiCutAnimation(token, list, () => setTimeout(finish, 150));
+            setTimeout(finish, 1600);
         };
 
         if (involvedColors.length > 1) {
