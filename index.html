@@ -483,7 +483,7 @@ body {
     overflow: visible !important;
 }
 .board-column {
-    width: min(100%, 880px, calc(100dvh - 122px)); /* BOARD SIZE: corner rows removed, board even bigger */
+    width: min(100%, 880px, calc(100dvh - 92px)); /* BOARD SIZE: corner rows ke saath */
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -496,28 +496,25 @@ body {
     align-items: center;
     gap: 6px;
     width: 100%;
-    height: 58px;
-    min-height: 58px;
-    max-height: 58px;
+    height: 76px;
+    min-height: 76px;
+    max-height: 76px;
     flex-shrink: 0;
     z-index: 10;
 }
 
-/* FIX: dice ab har base ke CENTER me — corner edge pe nahi, tap karna aasan */
-#tag-Red { left: 21%; top: 21%; }
-#tag-Green { left: 79%; top: 21%; }
-#tag-Blue { left: 21%; top: 79%; }
-#tag-Yellow { left: 79%; top: 79%; }
+#tag-Red { margin-right: auto; align-self: center; }
+#tag-Green { margin-left: auto; align-self: center; }
+#tag-Blue { margin-right: auto; align-self: center; }
+#tag-Yellow { margin-left: auto; align-self: center; }
 
 .player-tag {
-    position: absolute;
-    transform: translate(-50%, -50%);
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 72px;
     height: 72px;
-    z-index: 60;
     padding: 4px;
     border-radius: 14px;
     background: rgba(30, 41, 59, 0.92);
@@ -539,7 +536,7 @@ body {
 .player-tag.active {
     border-color: var(--tag-accent, var(--yellow));
     box-shadow: 0 0 18px var(--tag-accent, var(--yellow)), 0 4px 16px rgba(0, 0, 0, 0.6);
-    transform: translate(-50%, -50%) scale(1.08);
+    transform: scale(1.08);
 }
 
 .dice-box-tag {
@@ -683,14 +680,11 @@ body {
     position: relative;
     width: 100%;
     aspect-ratio: 1/1;
-    padding: 6px; /* BOARD SIZE: was 10px, gives the grid more room */
-    background: radial-gradient(circle at 50% 50%, #5c280c 0%, #3e1905 45%, #240c02 85%, #150601 100%);
-    border-radius: 22px;
-    border: 3px solid transparent; /* PREMIUM LOOK: border removed, was solid #d97706 */
-    box-shadow: 
-        0 24px 60px rgba(0, 0, 0, 0.85), 
-        inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-        inset 0 -3px 8px rgba(0, 0, 0, 0.95);
+    padding: 0; /* BLACK FRAME REMOVED: dark wooden padding-frame hataya */
+    background: transparent;
+    border-radius: 14px;
+    border: none;
+    box-shadow: none;
     margin: auto;
     overflow: visible !important;
     z-index: 5;
@@ -796,7 +790,7 @@ body {
     grid-template-rows: repeat(15, minmax(0, 1fr));
     border: 3px solid transparent; /* BORDER: removed — replaced with a transparent border */
     position: relative;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35); /* BLACK BORDER: inset dark edge removed */
+    box-shadow: none; /* BLACK BORDER: drop shadow bhi complete removed */
     overflow: visible !important;
     box-sizing: border-box;
 }
@@ -904,7 +898,7 @@ body {
     grid-row: 7 / 10;
     grid-column: 7 / 10;
     position: relative;
-    border: 2.5px solid #0f172a;
+    border: 2.5px solid transparent; /* black border removed */
     background: #0f172a;
     display: flex;
     justify-content: center;
@@ -3247,16 +3241,22 @@ body {
 
             <div class="board-stage">
                 <div class="board-column">
-                    <div class="board-wrapper">
+                    <div class="corner-row" id="corner-row-top">
                         <div class="player-tag" id="tag-Red" style="--tag-accent: var(--red);"></div>
                         <div class="player-tag" id="tag-Green" style="--tag-accent: var(--green);"></div>
-                        <div class="player-tag" id="tag-Blue" style="--tag-accent: var(--blue);"></div>
-                        <div class="player-tag" id="tag-Yellow" style="--tag-accent: var(--yellow);"></div>
+                    </div>
+
+                    <div class="board-wrapper">
                         <div class="ludo-board" id="board"></div>
                         <div id="board-dice-stage" class="board-dice-stage">
                             <div id="board-dice-shadow" class="board-dice-shadow"></div>
                             <div id="board-dice-cube" class="board-dice-cube"></div>
                         </div>
+                    </div>
+
+                    <div class="corner-row" id="corner-row-bottom">
+                        <div class="player-tag" id="tag-Blue" style="--tag-accent: var(--blue);"></div>
+                        <div class="player-tag" id="tag-Yellow" style="--tag-accent: var(--yellow);"></div>
                     </div>
 
                 </div>
@@ -5369,31 +5369,126 @@ body {
     }
 
     function animateBoardDiceRoll(color, finalValue, onDone) {
-        // USER REQUEST: the 3D dice that used to fly from the player's tag
-        // and tumble across the board mid-roll has been REMOVED. The result
-        // now simply snaps onto that player's own dice tag instantly, and
-        // the roll resolves immediately — no sliding cube on the board.
+        // USER REQUEST: purana wala rolling animation wapas — dice player ke
+        // tag (base ke niche) se uchhalta hua board ke center me aata hai,
+        // ghoomta hua, bilkul wahi speed ke saath.
         if (__diceHideTimeoutId) { clearTimeout(__diceHideTimeoutId); __diceHideTimeoutId = null; }
+
         const stage = document.getElementById('board-dice-stage');
-        if (stage) { stage.style.display = 'none'; stage.classList.remove('dice-fading-out'); }
-        playSound('roll');
-        const box = document.getElementById(`dice-${color}`);
-        if (box) {
-            // pehle dice ko 3D me ghumao, phir rolled number waale face pe settle karo
-            box.classList.add('spinning');
-            setTimeout(() => {
-                box.classList.remove('spinning');
+        const boardWrapper = document.querySelector('.board-wrapper');
+        const tagEl = document.getElementById(`dice-${color}`) || document.getElementById(`tag-${color}`);
+
+        let finished = false;
+        function finishRoll() {
+            if (finished) return;
+            finished = true;
+            const box = document.getElementById(`dice-${color}`);
+            if (box) {
                 const cube = box.querySelector('.dice3d');
                 if (cube) {
                     const rot = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
-                    cube.style.transition = 'transform 240ms cubic-bezier(0.2, 0.8, 0.25, 1)';
+                    cube.style.transition = 'transform 180ms cubic-bezier(0.2, 0.8, 0.25, 1)';
                     cube.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
                 }
-                onDone();
-            }, 560);
-        } else {
+            }
             onDone();
         }
+
+        if (!stage || !boardWrapper || !tagEl) { finishRoll(); return; }
+
+        const shadow = document.getElementById('board-dice-shadow');
+        const cube = document.getElementById('board-dice-cube');
+        if (!shadow || !cube) { finishRoll(); return; }
+
+        cube.className = 'board-dice-cube dice-skin-' + customization.diceSkin;
+        cube.innerHTML = diceFacesHTML(customization.diceSkin);
+        stage.classList.remove('dice-fading-out');
+        stage.style.display = 'block';
+        stage.querySelectorAll('.board-dice-result-badge, .board-dice-settle-glow').forEach(el => el.remove());
+
+        const bRect = boardWrapper.getBoundingClientRect();
+        const tRect = tagEl.getBoundingClientRect();
+        const startX = (tRect.left + tRect.width / 2) - bRect.left;
+        const startY = (tRect.top + tRect.height / 2) - bRect.top;
+
+        const targetX = bRect.width * (0.5 + (Math.random() * 0.06 - 0.03));
+        const targetY = bRect.height * (0.5 + (Math.random() * 0.06 - 0.03));
+
+        const targetRot = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
+        const rotSpinsX = 3 * 360;
+        const rotSpinsY = 4 * 360;
+        const rotSpinsZ = 2 * 360;
+
+        const totalDuration = 300; // wahi speed jo pehle thi
+        const startTime = performance.now();
+        let firstBounceDone = false;
+        let secondBounceDone = false;
+
+        playSound('roll');
+
+        const watchdog = setTimeout(() => { if (!finished) finishRoll(); }, 650);
+
+        function frame(now) {
+            if (finished) return;
+            try {
+                const elapsed = now - startTime;
+                const p = Math.min(elapsed / totalDuration, 1);
+                const easeP = 1 - Math.pow(1 - p, 2.4);
+                const curX = startX + (targetX - startX) * easeP;
+                const curY = startY + (targetY - startY) * easeP;
+
+                let height = 0;
+                if (p < 0.55) {
+                    const bp = p / 0.55;
+                    height = 72 * (1 - Math.pow(2 * bp - 1, 2));
+                } else if (p < 0.82) {
+                    if (!firstBounceDone) { firstBounceDone = true; playSound('bounce'); }
+                    const bp = (p - 0.55) / 0.27;
+                    height = 20 * (1 - Math.pow(2 * bp - 1, 2));
+                } else {
+                    if (!secondBounceDone) { secondBounceDone = true; playSound('bounce'); }
+                    const bp = (p - 0.82) / 0.18;
+                    height = 6 * (1 - Math.pow(2 * bp - 1, 2));
+                }
+                height = Math.max(0, height);
+
+                const curRotX = rotSpinsX * (1 - p) + targetRot.x;
+                const curRotY = rotSpinsY * (1 - p) + targetRot.y;
+                const curRotZ = rotSpinsZ * (1 - p);
+
+                // 60px cube — half = 30
+                cube.style.transform = `translate3d(${curX - 30}px, ${curY - 30 - height}px, 0px) rotateX(${curRotX}deg) rotateY(${curRotY}deg) rotateZ(${curRotZ}deg)`;
+
+                const shadowScale = Math.max(0.4, 1.15 - height / 100);
+                const shadowOpacity = Math.max(0.2, 0.8 - height / 120);
+                shadow.style.left = `${curX}px`;
+                shadow.style.top = `${curY}px`;
+                shadow.style.transform = `translate(-50%, -50%) scale(${shadowScale})`;
+                shadow.style.opacity = `${shadowOpacity}`;
+
+                if (p < 1) {
+                    requestAnimationFrame(frame);
+                } else {
+                    clearTimeout(watchdog);
+                    cube.style.transform = `translate3d(${targetX - 30}px, ${targetY - 30}px, 0px) rotateX(${targetRot.x}deg) rotateY(${targetRot.y}deg) rotateZ(0deg)`;
+                    shadow.style.transform = `translate(-50%, -50%) scale(1.05)`;
+                    shadow.style.opacity = '0.75';
+
+                    const glow = document.createElement('div');
+                    glow.className = 'board-dice-settle-glow';
+                    glow.style.left = `${targetX}px`;
+                    glow.style.top = `${targetY}px`;
+                    stage.appendChild(glow);
+                    setTimeout(() => glow.remove(), 450);
+
+                    setTimeout(() => { finishRoll(); }, 140); // wahi speed
+                }
+            } catch (e) {
+                clearTimeout(watchdog);
+                finishRoll();
+            }
+        }
+        requestAnimationFrame(frame);
     }
 
     let __diceHideTimeoutId = null;
