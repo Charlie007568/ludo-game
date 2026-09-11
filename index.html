@@ -3796,49 +3796,192 @@ body {
         });
     }
 
-    // Music Loops
+    // ═══════════════════════════════════════════════════════════════
+    // PREMIUM MUSIC ENGINE
+    // The old loops were bare oscillator bleeps. This engine synthesizes
+    // proper produced music with WebAudio: kick, snare & hi-hat drums,
+    // a deep low-passed bass, warm detuned pad chords and an echoing
+    // lead melody — all scheduled sample-accurately with a lookahead
+    // scheduler (no external audio files needed).
+    // ═══════════════════════════════════════════════════════════════
+    let musicStep = 0;
+    let musicNextTime = 0;
+    let musicBus = null;
+
+    function midiF(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+    function getMusicBus(ctx) {
+        if (musicBus && musicBus.ctx === ctx) return musicBus;
+        const master = ctx.createGain();
+        master.gain.value = 0.42;
+        // shared echo — this is what makes the lead sound "produced"
+        const delay = ctx.createDelay(1.0);
+        delay.delayTime.value = 0.27;
+        const fb = ctx.createGain(); fb.gain.value = 0.22;
+        const wet = ctx.createGain(); wet.gain.value = 0.22;
+        delay.connect(fb); fb.connect(delay);
+        delay.connect(wet); wet.connect(master);
+        master.connect(ctx.destination);
+        musicBus = { ctx, master, delay };
+        return musicBus;
+    }
+
+    function mKick(ctx, t, v) {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(130, t);
+        o.frequency.exponentialRampToValueAtTime(42, t + 0.11);
+        g.gain.setValueAtTime(v, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.26);
+        o.connect(g); g.connect(musicBus.master);
+        o.start(t); o.stop(t + 0.3);
+    }
+
+    function mHat(ctx, t, v) {
+        const src = ctx.createBufferSource();
+        src.buffer = getNoiseBuffer(ctx);
+        const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 8500;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(v, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        src.connect(f); f.connect(g); g.connect(musicBus.master);
+        src.start(t); src.stop(t + 0.08);
+    }
+
+    function mSnare(ctx, t, v) {
+        const src = ctx.createBufferSource();
+        src.buffer = getNoiseBuffer(ctx);
+        const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1900; f.Q.value = 0.9;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(v, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+        src.connect(f); f.connect(g); g.connect(musicBus.master);
+        src.start(t); src.stop(t + 0.2);
+        const o = ctx.createOscillator(), g2 = ctx.createGain();
+        o.type = 'triangle'; o.frequency.setValueAtTime(190, t);
+        g2.gain.setValueAtTime(v * 0.6, t);
+        g2.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+        o.connect(g2); g2.connect(musicBus.master);
+        o.start(t); o.stop(t + 0.1);
+    }
+
+    function mBass(ctx, t, f, dur, v) {
+        const o = ctx.createOscillator(), o2 = ctx.createOscillator();
+        const g = ctx.createGain(), fl = ctx.createBiquadFilter();
+        o.type = 'sawtooth'; o.frequency.value = f;
+        o2.type = 'sine'; o2.frequency.value = f / 2;
+        fl.type = 'lowpass'; fl.frequency.value = 420; fl.Q.value = 1.2;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(v, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(musicBus.master);
+        o.start(t); o.stop(t + dur + 0.05);
+        o2.start(t); o2.stop(t + dur + 0.05);
+    }
+
+    function mLead(ctx, t, f, dur, v) {
+        const o = ctx.createOscillator(), o2 = ctx.createOscillator();
+        const g = ctx.createGain(), fl = ctx.createBiquadFilter();
+        o.type = 'triangle'; o.frequency.value = f;
+        o2.type = 'sine'; o2.frequency.value = f; o2.detune.value = 5;
+        fl.type = 'lowpass'; fl.frequency.value = 2400;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(v, t + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(fl); o2.connect(fl); fl.connect(g);
+        g.connect(musicBus.master);
+        g.connect(musicBus.delay);   // echo send
+        o.start(t); o.stop(t + dur + 0.05);
+        o2.start(t); o2.stop(t + dur + 0.05);
+    }
+
+    function mPad(ctx, t, midis, dur, v) {
+        midis.forEach(m => {
+            [-7, 7].forEach(det => {
+                const o = ctx.createOscillator(), g = ctx.createGain(), fl = ctx.createBiquadFilter();
+                o.type = 'sawtooth';
+                o.frequency.value = midiF(m);
+                o.detune.value = det;
+                fl.type = 'lowpass'; fl.frequency.value = 820; fl.Q.value = 0.6;
+                const atk = Math.min(0.5, dur * 0.25);
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(v, t + atk);
+                g.gain.setValueAtTime(v, t + dur - 0.5);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(fl); fl.connect(g); g.connect(musicBus.master);
+                o.start(t); o.stop(t + dur + 0.1);
+            });
+        });
+    }
+
+    // ── MENU track: chill lo-fi — Cmaj7 · Am7 · Fmaj7 · G6 (1 bar each) ──
+    const MENU_CHORDS = [
+        [60, 64, 67, 71],
+        [57, 60, 64, 67],
+        [53, 57, 60, 64],
+        [55, 59, 62, 67]
+    ];
+    const MENU_BASS = [48, 45, 41, 43];
+    const MENU_MELODY = [
+        [72,0,0,0, 76,0,79,0, 81,0,0,0, 79,0,76,0],
+        [74,0,0,0, 72,0,0,0, 69,0,0,0, 72,0,0,0],
+        [72,0,0,0, 76,0,0,0, 79,0,0,0, 84,0,81,0],
+        [79,0,0,0, 76,0,0,0, 74,0,0,0, 71,0,0,0]
+    ];
+
+    // ── GAME track: energetic — Am · F · C · G with drums & riff ──
+    const GAME_ROOTS = [45, 41, 48, 43];
+    const GAME_LEAD = [
+        [69,0,69,0, 72,0,74,0, 76,0,74,0, 72,0,74,0],
+        [72,0,74,0, 76,0,79,0, 76,0,74,0, 72,0,69,0],
+        [72,0,76,0, 79,0,76,0, 74,0,72,0, 74,0,76,0],
+        [74,0,76,0, 79,0,81,0, 79,0,76,0, 74,0,72,0]
+    ];
+
     function startMusicLoop(track) {
         currentMusicTrack = track;
-        if (musicTimer) clearInterval(musicTimer);
+        if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
         if (!musicEnabled) return;
         const ctx = getAudioContext();
         if (!ctx) return;
+        getMusicBus(ctx);
+        musicStep = 0;
+        musicNextTime = ctx.currentTime + 0.12;
+        musicTimer = setInterval(() => musicTick(ctx), 80);
+    }
 
-        let step = 0;
-        if (track === 'menu') {
-            const melody = [261.63, 329.63, 392.00, 440.00, 392.00, 329.63, 293.66, 261.63, 329.63, 392.00, 523.25, 440.00, 392.00];
-            musicTimer = setInterval(() => {
-                if (!musicEnabled || currentMusicTrack !== 'menu') return;
-                const c = getAudioContext();
-                if (!c) return;
-                const now = c.currentTime;
-                const osc = c.createOscillator();
-                const g = c.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(melody[step % melody.length], now);
-                g.gain.setValueAtTime(0.07, now);
-                g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-                osc.connect(g); g.connect(c.destination);
-                osc.start(now); osc.stop(now + 0.4);
-                step++;
-            }, 440);
+    function musicTick(ctx) {
+        if (!musicEnabled) return;
+        if (ctx.state === 'suspended') { musicNextTime = ctx.currentTime + 0.12; return; }
+        const bpm = currentMusicTrack === 'menu' ? 84 : 128;
+        const stepDur = 60 / bpm / 4;               // 16th-note grid
+        while (musicNextTime < ctx.currentTime + 0.25) {
+            scheduleMusicStep(ctx, musicStep, musicNextTime, stepDur);
+            musicNextTime += stepDur;
+            musicStep = (musicStep + 1) % 64;       // 4 bars x 16 steps
+        }
+    }
+
+    function scheduleMusicStep(ctx, step, t, stepDur) {
+        const bar = Math.floor(step / 16);
+        const s16 = step % 16;
+        if (currentMusicTrack === 'menu') {
+            if (s16 === 0) {
+                mPad(ctx, t, MENU_CHORDS[bar], stepDur * 16, 0.028);
+                mBass(ctx, t, midiF(MENU_BASS[bar]), stepDur * 3.4, 0.14);
+            }
+            if (s16 % 4 === 0 && s16 !== 0) mBass(ctx, t, midiF(MENU_BASS[bar]), stepDur * 2.4, 0.10);
+            if (s16 % 2 === 0) mHat(ctx, t, 0.045);
+            const n = MENU_MELODY[bar][s16];
+            if (n) mLead(ctx, t, midiF(n), stepDur * 3.2, 0.15);
         } else {
-            const bass = [110, 110, 130.81, 146.83, 110, 164.81, 146.83, 130.81];
-            musicTimer = setInterval(() => {
-                if (!musicEnabled || currentMusicTrack !== 'game') return;
-                const c = getAudioContext();
-                if (!c) return;
-                const now = c.currentTime;
-                const osc = c.createOscillator();
-                const g = c.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(bass[step % bass.length], now);
-                g.gain.setValueAtTime(0.09, now);
-                g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-                osc.connect(g); g.connect(c.destination);
-                osc.start(now); osc.stop(now + 0.26);
-                step++;
-            }, 340);
+            if (s16 % 4 === 0) mKick(ctx, t, 0.42);
+            if (s16 === 4 || s16 === 12) mSnare(ctx, t, 0.30);
+            if (s16 % 2 === 0) mHat(ctx, t, s16 % 4 === 2 ? 0.075 : 0.05);
+            if (s16 === 0) mPad(ctx, t, [GAME_ROOTS[bar], GAME_ROOTS[bar] + 7, GAME_ROOTS[bar] + 12], stepDur * 16, 0.018);
+            mBass(ctx, t, midiF(GAME_ROOTS[bar]), stepDur * 1.1, s16 % 4 === 0 ? 0.15 : 0.11);
+            const n = GAME_LEAD[bar][s16];
+            if (n) mLead(ctx, t, midiF(n), stepDur * 1.9, 0.13);
         }
     }
 
