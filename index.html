@@ -2717,11 +2717,28 @@ body {
         let deviceLocation = '';
 
         // BUG FIX: turn GPS coordinates into an actual human-readable
-        // address (locality, state, country) via a free no-key reverse
-        // geocoder, so the Admin Panel shows a real place instead of raw
-        // numbers — or the timezone when GPS/geocoding is unavailable.
+        // address, as precise as DISTRICT level. The old single-provider
+        // lookup (and the old timezone fallback, which read "Asia/Kolkata"
+        // for EVERY Indian user — i.e. always "Calcutta", even in Punjab)
+        // could be wildly wrong. Now:
+        //   1) Nominatim (OpenStreetMap) — gives state_district / county,
+        //      city, state — tried FIRST for maximum detail;
+        //   2) BigDataCloud — fallback if Nominatim is unreachable;
+        //   3) coarse/inaccurate GPS fixes are rejected (accuracy > 5km);
+        //   4) if GPS is denied entirely, an IP-based lookup (ipwho.is)
+        //      gives city/state — far better than the timezone guess.
         function reverseGeocodeAddress(lat, lon) {
-            return fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='
+            const nominatim = fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='
+                    + lat + '&lon=' + lon + '&accept-language=en&zoom=14')
+                .then(r => r.json())
+                .then(d => {
+                    const a = (d && d.address) || {};
+                    const district = a.state_district || a.county || a.city || a.town || a.village || a.suburb;
+                    const parts = [district, a.state, a.country].filter(Boolean);
+                    return parts.length >= 2 ? parts.join(', ') : null;
+                })
+                .catch(() => null);
+            const bigdatacloud = fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='
                     + lat + '&longitude=' + lon + '&localityLanguage=en')
                 .then(r => r.json())
                 .then(d => {
@@ -2730,6 +2747,62 @@ body {
                     return parts.length ? parts.join(', ') : null;
                 })
                 .catch(() => null);
+            // Whichever provider answers first with a valid address wins.
+            return Promise.race([nominatim, bigdatacloud])
+                .then(addr => addr || nominatim)   // race can resolve undefined-ish; fall back
+                .catch(() => null);
+        }
+
+        // IP-based approximate location (city/state) for when the user
+        // denies GPS — still far more accurate than the timezone guess.
+        function ipBasedLocation() {
+            return fetch('https://ipwho.is/')
+                .then(r => r.json())
+                .then(d => {
+                    if (!d || d.success === false) return null;
+                    const parts = [d.city, d.region, d.country].filter(Boolean);
+                    return parts.length ? parts.join(', ') + ' (approx.)' : null;
+                })
+                .catch(() => null);
+        }
+
+        function applyGpsLocation(devRef, lat, lon) {
+            deviceLocation = lat.toFixed(4) + ', ' + lon.toFixed(4);
+            saveLocal('rbe_device_last_coords', lat + ',' + lon);
+            update(devRef, { location: deviceLocation }).catch(() => {});
+            reverseGeocodeAddress(lat, lon).then((addr) => {
+                if (!addr) return;
+                deviceLocation = addr + ' (' + lat.toFixed(3) + ', ' + lon.toFixed(3) + ')';
+                saveLocal('rbe_device_location', deviceLocation);
+                update(devRef, { location: deviceLocation }).catch(() => {});
+            });
+        }
+
+        function useIpLocation(devRef) {
+            const saved = loadLocal('rbe_device_last_coords', '');
+            const trySavedCoords = saved ? (() => {
+                const parts = saved.split(',');
+                return reverseGeocodeAddress(parseFloat(parts[0]), parseFloat(parts[1]))
+                    .then((addr) => {
+                        if (!addr) return null;
+                        deviceLocation = addr + ' (last known)';
+                        saveLocal('rbe_device_location', deviceLocation);
+                        update(devRef, { location: deviceLocation }).catch(() => {});
+                        return true;
+                    });
+            })() : Promise.resolve(null);
+            trySavedCoords.then((done) => {
+                if (done) return;
+                ipBasedLocation().then((loc) => {
+                    if (loc) {
+                        deviceLocation = loc;
+                        saveLocal('rbe_device_location', deviceLocation);
+                    } else {
+                        deviceLocation = deviceLocation || fallbackLocation();
+                    }
+                    update(devRef, { location: deviceLocation }).catch(() => {});
+                });
+            });
         }
 
         function registerDevice() {
@@ -2771,34 +2844,27 @@ body {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
                         const lat = pos.coords.latitude, lon = pos.coords.longitude;
-                        deviceLocation = lat.toFixed(4) + ', ' + lon.toFixed(4);
-                        saveLocal('rbe_device_last_coords', lat + ',' + lon);
-                        update(devRef, { location: deviceLocation }).catch(() => {});
-                        reverseGeocodeAddress(lat, lon).then((addr) => {
-                            if (!addr) return;
-                            deviceLocation = addr + ' (' + lat.toFixed(3) + ', ' + lon.toFixed(3) + ')';
-                            saveLocal('rbe_device_location', deviceLocation);
-                            update(devRef, { location: deviceLocation }).catch(() => {});
-                        });
-                    },
-                    () => {
-                        // GPS denied/unavailable — try geocoding the last
-                        // known coords if we have any, else keep timezone.
-                        const saved = loadLocal('rbe_device_last_coords', '');
-                        if (saved) {
-                            const parts = saved.split(',');
-                            reverseGeocodeAddress(parseFloat(parts[0]), parseFloat(parts[1])).then((addr) => {
-                                if (addr) {
-                                    deviceLocation = addr;
-                                    saveLocal('rbe_device_location', deviceLocation);
-                                    update(devRef, { location: deviceLocation }).catch(() => {});
-                                }
-                            });
+                        const acc = pos.coords.accuracy || 99999;
+                        if (acc > 5000) {
+                            // Coarse cell-tower fix — geocoding THIS would
+                            // put the player in the wrong city entirely.
+                            // Try one precise re-fix, else fall through to
+                            // the last known / IP-based location below.
+                            navigator.geolocation.getCurrentPosition(
+                                (p2) => {
+                                    const la = p2.coords.latitude, lo = p2.coords.longitude;
+                                    if ((p2.coords.accuracy || 99999) > 5000) { useIpLocation(devRef); return; }
+                                    applyGpsLocation(devRef, la, lo);
+                                },
+                                () => useIpLocation(devRef),
+                                { enableHighAccuracy: true, timeout: 10000 }
+                            );
+                            return;
                         }
-                        deviceLocation = deviceLocation || fallbackLocation();
-                        update(devRef, { location: deviceLocation }).catch(() => {});
+                        applyGpsLocation(devRef, lat, lon);
                     },
-                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 600000 }
+                    () => useIpLocation(devRef),
+                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }
                 );
             }
         }
