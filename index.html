@@ -2792,6 +2792,13 @@ body {
                 <div class="diff-pill" id="mod-barrier" onclick="window.LudoEngine.setMatchMod('barrier', this)">🚧 Barrier</div>
                 <div class="diff-pill" id="mod-partner" onclick="window.LudoEngine.setMatchMod('partner', this)">🤝 Partner</div>
             </div>
+            <!-- ADDED: Partner Mode sub-option — once a player's 4 gotis are
+                 all Home, hand their dice turn over to their Partner instead
+                 of just skipping it. Only takes effect when Partner is on. -->
+            <div class="diff-pill-row" style="margin-top: 10px;">
+                <div class="diff-pill" id="mod-handoff" onclick="window.LudoEngine.setMatchMod('handoff', this)">🔁 Dice Pass to Partner</div>
+            </div>
+            <div class="mode-sub" style="margin-top: 6px;">After a player finishes (all 4 Home) in Partner Mode, their Partner takes over that turn's dice roll.</div>
         </div>
 
         <div class="dash-card">
@@ -3185,8 +3192,10 @@ body {
     // ── ADDED: Barrier Mode / Partner Mode / Coin Economy state ──────────
     let barrierModeSetting = 'off';   // menu choice: 'off' | 'on'
     let partnerModeSetting = 'off';   // menu choice: 'off' | 'on'
+    let handoffModeSetting = 'off';   // menu choice: 'off' | 'on' — Partner Mode sub-option: once a player finishes, their partner takes over that seat's dice
     let activeBarrierMode = 'off';    // effective value for the running match
     let activePartnerMode = 'off';    // effective value for the running match (forced off unless 4 players)
+    let activeHandoffMode = 'off';    // effective value for the running match (only ever 'on' when Partner Mode is also 'on')
     let pendingBarrierDecision = null; // holds {decision, roll, cp} while the Barrier decision popup is open
     let currentMovableTokens = [];    // the exact list of tokens the player may tap right now
     const PARTNER_OF = { Red: 'Yellow', Yellow: 'Red', Green: 'Blue', Blue: 'Green' };
@@ -5433,9 +5442,10 @@ body {
             ];
         }
 
-        // ADDED: lock in this match's Barrier/Partner mode from the menu settings
+        // ADDED: lock in this match's Barrier/Partner/Dice-Pass mode from the menu settings
         activeBarrierMode = (barrierModeSetting === 'on') ? 'on' : 'off';
         activePartnerMode = (partnerModeSetting === 'on' && players.length === 4) ? 'on' : 'off';
+        activeHandoffMode = (handoffModeSetting === 'on' && activePartnerMode === 'on') ? 'on' : 'off';
         pendingBarrierDecision = null;
 
         // Random first turn!
@@ -5782,45 +5792,55 @@ body {
     // another Barrier.
     // ============================================================
     // ADDED: Barrier Mod and Partner Mod can now be switched on TOGETHER —
-    // "Off" resets both, but tapping "Barrier" or "Partner" now toggles
-    // just that one on/off independently, so a match can run Partner Mode
-    // with Barrier Mode layered on top of it.
+    // "Off" resets both (and the Dice Pass sub-option), but tapping
+    // "Barrier" or "Partner" now toggles just that one on/off
+    // independently, so a match can run Partner Mode with Barrier Mode
+    // layered on top of it. "Dice Pass to Partner" is a Partner Mode
+    // sub-option: it can be toggled any time, but only actually does
+    // anything in a match once Partner Mode itself is also on.
     function setMatchMod(mod, el) {
         if (mod === 'off') {
             barrierModeSetting = 'off';
             partnerModeSetting = 'off';
+            handoffModeSetting = 'off';
         } else if (mod === 'barrier') {
             barrierModeSetting = (barrierModeSetting === 'on') ? 'off' : 'on';
         } else if (mod === 'partner') {
             partnerModeSetting = (partnerModeSetting === 'on') ? 'off' : 'on';
+        } else if (mod === 'handoff') {
+            handoffModeSetting = (handoffModeSetting === 'on') ? 'off' : 'on';
         }
-        const anyOn = (barrierModeSetting === 'on' || partnerModeSetting === 'on');
+        const anyOn = (barrierModeSetting === 'on' || partnerModeSetting === 'on' || handoffModeSetting === 'on');
         const offPill = document.getElementById('mod-off');
         const barrierPill = document.getElementById('mod-barrier');
         const partnerPill = document.getElementById('mod-partner');
+        const handoffPill = document.getElementById('mod-handoff');
         if (offPill) offPill.classList.toggle('active', !anyOn);
         if (barrierPill) barrierPill.classList.toggle('active', barrierModeSetting === 'on');
         if (partnerPill) partnerPill.classList.toggle('active', partnerModeSetting === 'on');
+        if (handoffPill) handoffPill.classList.toggle('active', handoffModeSetting === 'on');
     }
 
     function getPartnerColorOf(color) { return PARTNER_OF[color] || null; }
     function posKey(t) { return `${t.pos[0]}-${t.pos[1]}`; }
 
     // ============================================================
-    // ADDED: PARTNER MODE — hand-off on finish
-    // Once a player's all 4 gotis reach Home, their seat in the turn order
-    // is no longer skipped outright — instead their partner (Red<->Yellow,
+    // ADDED: PARTNER MODE — Dice Pass sub-option, on finish
+    // Once a player's all 4 gotis reach Home, and the "Dice Pass to
+    // Partner" sub-option is switched on, their seat in the turn order is
+    // no longer skipped outright — instead their partner (Red<->Yellow,
     // Green<->Blue) takes over that seat's dice roll for the rest of the
     // match, using their OWN colour's dice/base and moving their OWN
-    // gotis with whatever number comes up. isSlotExhausted() decides
-    // whether a seat still has anyone able to act (only truly "done" once
-    // both partners are finished, or there's no Partner Mode to hand off
-    // to); getEffectiveCurrentPlayer() resolves the seat at
-    // currentPlayerIndex to whichever player should actually be rolling.
+    // gotis with whatever number comes up. With the sub-option left off,
+    // a finished player's seat is skipped exactly as before. isSlotExhausted()
+    // decides whether a seat still has anyone able to act (only truly
+    // "done" once both partners are finished, or Dice Pass isn't on);
+    // getEffectiveCurrentPlayer() resolves the seat at currentPlayerIndex
+    // to whichever player should actually be rolling.
     // ============================================================
     function isSlotExhausted(p) {
         if (!p || !winnersList.includes(p.color)) return false;
-        if (activePartnerMode === 'on' && players.length === 4) {
+        if (activeHandoffMode === 'on' && activePartnerMode === 'on' && players.length === 4) {
             const partnerColor = getPartnerColorOf(p.color);
             const partnerPlayer = partnerColor ? players.find(pl => pl.color === partnerColor) : null;
             if (partnerPlayer && !winnersList.includes(partnerPlayer.color)) return false;
@@ -5831,7 +5851,7 @@ body {
     function getEffectiveCurrentPlayer() {
         const raw = players[currentPlayerIndex];
         if (!raw) return raw;
-        if (activePartnerMode === 'on' && players.length === 4 && winnersList.includes(raw.color)) {
+        if (activeHandoffMode === 'on' && activePartnerMode === 'on' && players.length === 4 && winnersList.includes(raw.color)) {
             const partnerColor = getPartnerColorOf(raw.color);
             const partnerPlayer = partnerColor ? players.find(pl => pl.color === partnerColor) : null;
             if (partnerPlayer && !winnersList.includes(partnerPlayer.color)) return partnerPlayer;
