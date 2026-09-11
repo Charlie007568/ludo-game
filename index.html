@@ -2534,7 +2534,7 @@ body {
 .diff-pill-row { display: flex; gap: 6px; margin-top: 6px; }
 .settings-hint { font-size: 0.62rem; color: var(--ivory-dim); margin-top: 8px; line-height: 1.5; }
 
-#coins-modal, #adwatch-overlay, #barrier-decision-modal, #bug-report-modal, #capture-choice-modal {
+#coins-modal, #adwatch-overlay, #barrier-decision-modal, #bug-report-modal, #capture-choice-modal, #move-choice-modal {
     display: none; position: fixed; inset: 0; background: rgba(2,6,23,0.92); backdrop-filter: blur(10px);
     z-index: 400; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
 }
@@ -3336,6 +3336,17 @@ body {
                 <p class="coins-modal-title">⚔️ Which goti to cut?</p>
                 <p class="coins-modal-sub" id="capture-choice-sub"></p>
                 <div id="capture-choice-buttons"></div>
+            </div>
+        </div>
+
+        <!-- ADDED: Partner-Mode move choice popup — when teammates of
+             different colours stand together on one cell and both can
+             move, the player picks WHICH goti walks. -->
+        <div id="move-choice-modal">
+            <div class="glass-panel">
+                <p class="coins-modal-title">🤝 Which goti to move?</p>
+                <p class="coins-modal-sub" id="move-choice-sub"></p>
+                <div id="move-choice-buttons"></div>
             </div>
         </div>
 
@@ -5148,13 +5159,19 @@ body {
 
             cellEl.onclick = (e) => {
                 if (gameState !== 'AWAITING_MOVE') return;
-                const cp = getEffectiveCurrentPlayer();
-                if (!cp) return;
-                const movable = getMovableTokens(cp.color, currentRoll);
-                const target = movable.find(m => group.some(gt => gt.id === m.id));
-                if (target) {
-                    e.stopPropagation();
-                    handleTokenClick(target);
+                // Use the already-computed movable list (it respects
+                // Barrier eligibility and Partner pooling).
+                const inCell = currentMovableTokens.filter(m => group.some(gt => gt.id === m.id));
+                if (!inCell.length) return;
+                e.stopPropagation();
+                const cellColors = [...new Set(inCell.map(t => t.color))];
+                if (cellColors.length > 1) {
+                    // BUG FIX: teammates of different colours share this
+                    // cell and more than one can walk — previously the
+                    // FIRST one silently moved. Now the player picks.
+                    showMoveChoice(inCell, (chosen) => handleTokenClick(chosen));
+                } else {
+                    handleTokenClick(inCell[0]);
                 }
             };
         });
@@ -5892,6 +5909,39 @@ body {
             wrap.appendChild(b);
         });
         const modal = document.getElementById('capture-choice-modal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    // ─── ADDED: Partner-Mode move choice ────────────────────────────
+    // When a tapped cell holds movable gotis of MORE THAN ONE colour
+    // (teammates standing together), the player decides which one walks.
+    let pendingMoveChoice = null;
+    function showMoveChoice(pickList, onPick) {
+        pendingMoveChoice = { onPick };
+        const sub = document.getElementById('move-choice-sub');
+        if (sub) sub.textContent = 'Teammates are standing together here — which goti should move ' + currentRoll + ' step' + (currentRoll === 1 ? '' : 's') + '?';
+        const wrap = document.getElementById('move-choice-buttons');
+        if (!wrap) return;
+        wrap.innerHTML = '';
+        const colors = [...new Set(pickList.map(t => t.color))];
+        colors.forEach(c => {
+            const p = players.find(pl => pl.color === c);
+            const tok = pickList.find(x => x.color === c);
+            const b = document.createElement('button');
+            b.className = 'coin-claim-btn';
+            b.style.background = 'linear-gradient(135deg,' + (p ? p.hex : '#64748b') + ',#0f172a)';
+            b.style.color = '#ffffff';
+            b.style.border = '1.5px solid rgba(255,255,255,0.45)';
+            b.innerHTML = '🎲 Move the ' + c + ' goti' + (p ? ' (' + p.name + ')' : '');
+            b.onclick = () => {
+                document.getElementById('move-choice-modal').style.display = 'none';
+                const cb = pendingMoveChoice && pendingMoveChoice.onPick;
+                pendingMoveChoice = null;
+                if (cb) cb(tok);
+            };
+            wrap.appendChild(b);
+        });
+        const modal = document.getElementById('move-choice-modal');
         if (modal) modal.style.display = 'flex';
     }
 
