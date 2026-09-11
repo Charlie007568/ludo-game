@@ -5685,6 +5685,8 @@ body {
                 }
                 hasBonus = false; // Player finished, no more turns for them
             }
+            // note: winner ke case me renderScoreboard displayBaseRankCrown /
+            // winnersList push ke baad already chuki hai
 
             // USER RULE: match first winner pe KHATAM nahi hota!
             // 1st aaye -> uska dice hide, baaki players khelte rahen.
@@ -5748,6 +5750,12 @@ body {
                 }
                 gameState = 'IDLE';
                 renderTokens();
+                // CRITICAL FIX: running game me customizer se skin/trail change
+                // karne pe renderScoreboard() mid-MOVE dice element rebuild kar
+                // deta hai (active-roll class chali jati). Bonus roll pe yahan
+                // renderScoreboard() chalana zaroori hai taaki current player ka
+                // dice wapas active ho jaye — warna game freeze ho jata tha.
+                renderScoreboard();
                 const cpForBonus = getEffectiveCurrentPlayer();
                 if (cpForBonus && cpForBonus.isBot) {
                     botMoveTimeoutId = setTimeout(() => onDiceClick(cpForBonus.color), 650);
