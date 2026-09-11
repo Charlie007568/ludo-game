@@ -483,7 +483,7 @@ body {
     overflow: visible !important;
 }
 .board-column {
-    width: min(100%, 880px, calc(100dvh - 64px)); /* BOARD SIZE: enlarged per user request */
+    width: min(100%, 880px, calc(100dvh - 122px)); /* BOARD SIZE: corner rows removed, board even bigger */
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -503,18 +503,21 @@ body {
     z-index: 10;
 }
 
-#tag-Red { margin-right: auto; align-self: center; }
-#tag-Green { margin-left: auto; align-self: center; }
-#tag-Blue { margin-right: auto; align-self: center; }
-#tag-Yellow { margin-left: auto; align-self: center; }
+/* FIX: dice ab har base ke CENTER me — corner edge pe nahi, tap karna aasan */
+#tag-Red { left: 21%; top: 21%; }
+#tag-Green { left: 79%; top: 21%; }
+#tag-Blue { left: 21%; top: 79%; }
+#tag-Yellow { left: 79%; top: 79%; }
 
 .player-tag {
-    position: relative;
+    position: absolute;
+    transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 58px;
-    height: 58px;
+    width: 72px;
+    height: 72px;
+    z-index: 60;
     padding: 4px;
     border-radius: 14px;
     background: rgba(30, 41, 59, 0.92);
@@ -536,7 +539,7 @@ body {
 .player-tag.active {
     border-color: var(--tag-accent, var(--yellow));
     box-shadow: 0 0 18px var(--tag-accent, var(--yellow)), 0 4px 16px rgba(0, 0, 0, 0.6);
-    transform: scale(1.08);
+    transform: translate(-50%, -50%) scale(1.08);
 }
 
 .dice-box-tag {
@@ -546,7 +549,7 @@ body {
     justify-content: center;
     align-items: center;
     cursor: default;
-    perspective: 520px;
+    perspective: 600px;
     opacity: 0.75;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
     transition: all 0.25s ease;
@@ -566,8 +569,8 @@ body {
 
 .dice3d {
     position: relative;
-    width: 52px;
-    height: 52px;
+    width: 60px;
+    height: 60px;
     transform-style: preserve-3d;
     transform: rotateX(0deg) rotateY(0deg);
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.25, 1);
@@ -583,8 +586,8 @@ body {
 .dice-face {
     position: absolute;
     inset: 0;
-    width: 52px;
-    height: 52px;
+    width: 60px;
+    height: 60px;
     border-radius: 9px;
     background: linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #e2e8f0 100%);
     border: 1.8px solid rgba(203, 213, 225, 0.95);
@@ -596,12 +599,12 @@ body {
     backface-visibility: hidden;
     box-sizing: border-box;
 }
-.dice-face-front  { transform: rotateY(0deg) translateZ(26px); }
-.dice-face-back   { transform: rotateY(180deg) translateZ(26px); }
-.dice-face-right  { transform: rotateY(90deg) translateZ(26px); }
-.dice-face-left   { transform: rotateY(-90deg) translateZ(26px); }
-.dice-face-top    { transform: rotateX(90deg) translateZ(26px); }
-.dice-face-bottom { transform: rotateX(-90deg) translateZ(26px); }
+.dice-face-front  { transform: rotateY(0deg) translateZ(30px); }
+.dice-face-back   { transform: rotateY(180deg) translateZ(30px); }
+.dice-face-right  { transform: rotateY(90deg) translateZ(30px); }
+.dice-face-left   { transform: rotateY(-90deg) translateZ(30px); }
+.dice-face-top    { transform: rotateX(90deg) translateZ(30px); }
+.dice-face-bottom { transform: rotateX(-90deg) translateZ(30px); }
 
 .dice-pip-grid {
     display: grid;
@@ -614,8 +617,8 @@ body {
 .dice-pip {
     display: block;
     border-radius: 50%;
-    width: 10px;
-    height: 10px;
+    width: 11px;
+    height: 11px;
     margin: auto;
     background: radial-gradient(circle at 35% 30%, #334155 0%, #090d16 90%);
     opacity: 0;
@@ -623,7 +626,7 @@ body {
 }
 .dice-pip.on { opacity: 1; transform: scale(1); }
 .dice-pip.on.red-pip { background: radial-gradient(circle at 35% 30%, #ef4444 0%, #991b1b 90%); }
-.dice-pip.on.center-ace { width: 14px; height: 14px; }
+.dice-pip.on.center-ace { width: 15px; height: 15px; }
 
 .board-dice-stage {
     position: absolute;
@@ -647,17 +650,17 @@ body {
 }
 .board-dice-cube {
     position: absolute;
-    width: 52px;
-    height: 52px;
+    width: 60px;
+    height: 60px;
     transform-style: preserve-3d;
-    transform-origin: 26px 26px 0px;
+    transform-origin: 30px 30px 0px;
 }
-.board-dice-cube .dice-face-front  { transform: rotateY(0deg) translateZ(26px); }
-.board-dice-cube .dice-face-back   { transform: rotateY(180deg) translateZ(26px); }
-.board-dice-cube .dice-face-right  { transform: rotateY(90deg) translateZ(26px); }
-.board-dice-cube .dice-face-left   { transform: rotateY(-90deg) translateZ(26px); }
-.board-dice-cube .dice-face-top    { transform: rotateX(90deg) translateZ(26px); }
-.board-dice-cube .dice-face-bottom { transform: rotateX(-90deg) translateZ(26px); }
+.board-dice-cube .dice-face-front  { transform: rotateY(0deg) translateZ(30px); }
+.board-dice-cube .dice-face-back   { transform: rotateY(180deg) translateZ(30px); }
+.board-dice-cube .dice-face-right  { transform: rotateY(90deg) translateZ(30px); }
+.board-dice-cube .dice-face-left   { transform: rotateY(-90deg) translateZ(30px); }
+.board-dice-cube .dice-face-top    { transform: rotateX(90deg) translateZ(30px); }
+.board-dice-cube .dice-face-bottom { transform: rotateX(-90deg) translateZ(30px); }
 
 .board-dice-settle-glow {
     position: absolute;
@@ -793,7 +796,7 @@ body {
     grid-template-rows: repeat(15, minmax(0, 1fr));
     border: 3px solid transparent; /* BORDER: removed — replaced with a transparent border */
     position: relative;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35); /* BLACK BORDER: inset dark edge removed */
     overflow: visible !important;
     box-sizing: border-box;
 }
@@ -807,6 +810,8 @@ body {
     padding: 4.5%;
     box-sizing: border-box;
     transition: box-shadow 0.3s ease;
+    /* PREMIUM LOOK: colors gehre dikhen — soft inner shadow + top sheen */
+    box-shadow: inset 0 3px 10px rgba(255, 255, 255, 0.28), inset 0 -6px 16px rgba(0, 0, 0, 0.38);
 }
 .base-active-turn {
     box-shadow: inset 0 0 22px rgba(255, 255, 255, 0.45), 0 0 14px rgba(255, 255, 255, 0.2);
@@ -837,33 +842,33 @@ body {
 .base-quadrant-red {
     grid-row: 1 / 7;
     grid-column: 1 / 7;
-    background: linear-gradient(135deg, var(--red-light), var(--red) 55%, var(--red-dark));
-    border-right: 2.5px solid #0f172a;
-    border-bottom: 2.5px solid #0f172a;
+    background: radial-gradient(circle at 28% 22%, #ff8a8a 0%, #f11212 38%, #b30000 72%, #6e0000 100%);
+    border-right: 2.5px solid transparent;
+    border-bottom: 2.5px solid transparent;
     border-top-left-radius: 12px;
 }
 .base-quadrant-green {
     grid-row: 1 / 7;
     grid-column: 10 / 16;
-    background: linear-gradient(135deg, var(--green-light), var(--green) 55%, var(--green-dark));
-    border-left: 2.5px solid #0f172a;
-    border-bottom: 2.5px solid #0f172a;
+    background: radial-gradient(circle at 28% 22%, #6cf7a3 0%, #00b83e 38%, #007a29 72%, #004d1a 100%);
+    border-left: 2.5px solid transparent;
+    border-bottom: 2.5px solid transparent;
     border-top-right-radius: 12px;
 }
 .base-quadrant-blue {
     grid-row: 10 / 16;
     grid-column: 1 / 7;
-    background: linear-gradient(135deg, var(--blue-light), var(--blue) 55%, var(--blue-dark));
-    border-right: 2.5px solid #0f172a;
-    border-top: 2.5px solid #0f172a;
+    background: radial-gradient(circle at 28% 22%, #7ab5ff 0%, #1257e8 38%, #0a37a0 72%, #062363 100%);
+    border-right: 2.5px solid transparent;
+    border-top: 2.5px solid transparent;
     border-bottom-left-radius: 12px;
 }
 .base-quadrant-yellow {
     grid-row: 10 / 16;
     grid-column: 10 / 16;
-    background: linear-gradient(135deg, var(--yellow-light), var(--yellow) 55%, var(--yellow-dark));
-    border-left: 2.5px solid #0f172a;
-    border-top: 2.5px solid #0f172a;
+    background: radial-gradient(circle at 28% 22%, #ffe566 0%, #f5b800 38%, #b07e00 72%, #6e4c00 100%);
+    border-left: 2.5px solid transparent;
+    border-top: 2.5px solid transparent;
     border-bottom-right-radius: 12px;
 }
 
@@ -931,19 +936,19 @@ body {
     box-sizing: border-box;
 }
 .cell-red-path    { 
-    background: linear-gradient(135deg, var(--red-light), var(--red)) !important;
+    background: linear-gradient(135deg, #ff6b6b, #d30d0d 60%, #8f0000) !important;
     border: 0.6px solid #7f1d1d !important;
 }
 .cell-green-path  { 
-    background: linear-gradient(135deg, var(--green-light), var(--green)) !important;
+    background: linear-gradient(135deg, #4ade80, #009e36 60%, #005c20) !important;
     border: 0.6px solid #14532d !important;
 }
 .cell-yellow-path { 
-    background: linear-gradient(135deg, var(--yellow-light), var(--yellow)) !important;
+    background: linear-gradient(135deg, #fde047, #eab308 60%, #8a6100) !important;
     border: 0.6px solid #713f12 !important;
 }
 .cell-blue-path   { 
-    background: linear-gradient(135deg, var(--blue-light), var(--blue)) !important;
+    background: linear-gradient(135deg, #60a5fa, #1d4ed8 60%, #0b2a8f) !important;
     border: 0.6px solid #1e3a8a !important;
 }
 
@@ -966,6 +971,7 @@ body {
     height: 82%;
     display: block;
 }
+/* (star shrink rule removed per user request — star hamesha same size rahe) */
 /* BUG FIX: a goti sitting on a star used to fully hide the star icon
    underneath with no other cue. This ring makes "this cell is a safe
    star spot" obvious even while it's occupied. */
@@ -986,6 +992,12 @@ body {
     color: rgba(71, 85, 105, 0.65);
     pointer-events: none;
     z-index: 2;
+}
+
+/* FIX: 60Hz smooth rendering — GPU layer hints on everything that moves */
+.token, .dice3d, .player-tag, .dice-box-tag, .token-smooth-tail, .token-trail-ghost, .token-flying-return {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
 }
 
 /* Tokens */
@@ -1094,16 +1106,29 @@ body {
     }
 }
 
+/* FIX: chaal aane pe movable goti BADI ho jaye (tap karna aasan) */
+.token-movable.token-pin-overflow {
+    --tok-scale: 1.25 !important;
+}
+
+/* FIX: star pe jo goti khadi ho wo CHHOTI ho jaye (star same size rahe) */
+.token-on-star {
+    --tok-scale: 0.72 !important;
+}
+.token-on-star.token-movable {
+    --tok-scale: 1.02 !important;
+}
+
 /* Base Token Movable Pulse */
 .token-in-base.token-movable {
     animation: tokenBaseHopPulse 1.05s infinite alternate cubic-bezier(0.42, 0, 0.58, 1) !important;
 }
 @keyframes tokenBaseHopPulse {
     0% {
-        transform: translate(-50%, -85.7%) scale(1);
+        transform: translate(-50%, -85.7%) scale(1.12);
     }
     100% {
-        transform: translate(-50%, calc(-85.7% - 7px)) scale(1.08);
+        transform: translate(-50%, calc(-85.7% - 8px)) scale(1.30);
     }
 }
 
@@ -3222,12 +3247,11 @@ body {
 
             <div class="board-stage">
                 <div class="board-column">
-                    <div class="corner-row" id="corner-row-top">
+                    <div class="board-wrapper">
                         <div class="player-tag" id="tag-Red" style="--tag-accent: var(--red);"></div>
                         <div class="player-tag" id="tag-Green" style="--tag-accent: var(--green);"></div>
-                    </div>
-
-                    <div class="board-wrapper">
+                        <div class="player-tag" id="tag-Blue" style="--tag-accent: var(--blue);"></div>
+                        <div class="player-tag" id="tag-Yellow" style="--tag-accent: var(--yellow);"></div>
                         <div class="ludo-board" id="board"></div>
                         <div id="board-dice-stage" class="board-dice-stage">
                             <div id="board-dice-shadow" class="board-dice-shadow"></div>
@@ -3235,10 +3259,6 @@ body {
                         </div>
                     </div>
 
-                    <div class="corner-row" id="corner-row-bottom">
-                        <div class="player-tag" id="tag-Blue" style="--tag-accent: var(--blue);"></div>
-                        <div class="player-tag" id="tag-Yellow" style="--tag-accent: var(--yellow);"></div>
-                    </div>
                 </div>
             </div>
 
@@ -3533,6 +3553,20 @@ body {
     let winnersList = [];
     let gameState = 'IDLE';
     let botMoveTimeoutId = null;
+    // FIX: koi bhi scheduled auto-move timeout sirf current roll ke liye valid hai.
+    // Naya roll / naya turn / manual tap isko turant cancel kar deta hai.
+    let autoMoveTimeoutId = null;
+    function clearAutoMove() {
+        if (autoMoveTimeoutId) { clearTimeout(autoMoveTimeoutId); autoMoveTimeoutId = null; }
+    }
+    function scheduleAutoMove(choice, delayMs) {
+        clearAutoMove();
+        autoMoveTimeoutId = setTimeout(() => {
+            autoMoveTimeoutId = null;
+            hideBoardRollingDice();
+            initiateMove(choice, currentRoll);
+        }, delayMs);
+    }
     let currentRoll = 0;
     let consecutiveSixes = 0;
 
@@ -4900,20 +4934,20 @@ body {
             <svg class="center-home-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <defs>
                     <linearGradient id="ch-green" x1="50%" y1="0%" x2="50%" y2="100%">
-                        <stop offset="0%" stop-color="#4ade80"/>
-                        <stop offset="100%" stop-color="#15803d"/>
+                        <stop offset="0%" stop-color="#34d399"/>
+                        <stop offset="100%" stop-color="#065f26"/>
                     </linearGradient>
                     <linearGradient id="ch-yellow" x1="100%" y1="50%" x2="0%" y2="50%">
                         <stop offset="0%" stop-color="#fde047"/>
-                        <stop offset="100%" stop-color="#a16207"/>
+                        <stop offset="100%" stop-color="#7c5803"/>
                     </linearGradient>
                     <linearGradient id="ch-blue" x1="50%" y1="100%" x2="50%" y2="0%">
                         <stop offset="0%" stop-color="#60a5fa"/>
-                        <stop offset="100%" stop-color="#1d4ed8"/>
+                        <stop offset="100%" stop-color="#0a2f96"/>
                     </linearGradient>
                     <linearGradient id="ch-red" x1="0%" y1="50%" x2="100%" y2="50%">
                         <stop offset="0%" stop-color="#f87171"/>
-                        <stop offset="100%" stop-color="#b91c1c"/>
+                        <stop offset="100%" stop-color="#7f0000"/>
                     </linearGradient>
                     <radialGradient id="ch-gold" cx="40%" cy="35%" r="65%">
                         <stop offset="0%" stop-color="#fffbeb"/>
@@ -5016,7 +5050,7 @@ body {
                         const isMovable = movableIds.includes(t.id);
                         tEl.className = `token token-${t.color.toLowerCase()} token-in-base${isMovable ? ' token-movable' : ''}`;
                         tEl.innerHTML = pawnSVG_mappin(t.color);
-                        tEl.onclick = (e) => { e.stopPropagation(); handleTokenClick(t); };
+                        tEl.onpointerdown = (e) => { e.stopPropagation(); e.preventDefault(); handleTokenClick(t); };
                         slot.appendChild(tEl);
                     }
                 }
@@ -5077,9 +5111,10 @@ body {
 
                 const isThisMoving = (activeMove && activeMove.tokenId === t.id);
                 const isMovable = movableIds.includes(t.id);
+                const onStar = safeSpots.includes(key); // FIX: star pe goti chhoti
                 const tEl = document.createElement('div');
                 tEl.id = `t-${t.id}`;
-                tEl.className = `token token-${t.color.toLowerCase()} token-pin-overflow${isMovable ? ' token-movable' : ''}${isThisMoving ? ' token-active-moving' : ''}${t.barrier ? ' token-barrier' : ''}`;
+                tEl.className = `token token-${t.color.toLowerCase()} token-pin-overflow${isMovable ? ' token-movable' : ''}${isThisMoving ? ' token-active-moving' : ''}${t.barrier ? ' token-barrier' : ''}${onStar ? ' token-on-star' : ''}`;
                 tEl.style.setProperty('--tok-tx', offsetConfig.tx);
                 tEl.style.setProperty('--tok-ty', offsetConfig.ty);
                 tEl.style.setProperty('--tok-scale', offsetConfig.scale);
@@ -5152,7 +5187,7 @@ body {
                 }
             });
 
-            cellEl.onclick = (e) => {
+            cellEl.onpointerdown = (e) => {
                 if (gameState !== 'AWAITING_MOVE') return;
                 // Use the already-computed movable list (it respects
                 // Barrier eligibility and Partner pooling).
@@ -5222,19 +5257,32 @@ body {
                 tag.style.display = 'flex';
                 tag.style.visibility = 'visible';
                 tag.style.opacity = '1';
-                tag.style.pointerEvents = 'auto';
-                tag.innerHTML = `<div class="dice-box-tag" id="dice-${c.name}" onclick="window.LudoEngine.onDiceClick('${c.name}')">${dice3dHTML()}</div>`;
+                const isFinished = winnersList.includes(c.name);
                 if (baseLabel) baseLabel.innerHTML = `${p.name}`;
 
-                const isFinished = winnersList.includes(c.name);
-                const diceEl = document.getElementById(`dice-${c.name}`);
-                const isActiveTurn = !isFinished && cpNow && cpNow.color === c.name && gameState === 'IDLE';
-                tag.classList.toggle('active', isActiveTurn);
-                if (diceEl) {
-                    diceEl.classList.toggle('active-roll', isActiveTurn);
-                    diceEl.style.pointerEvents = isActiveTurn ? 'auto' : 'none';
+                if (isFinished) {
+                    // FIX: winner ka dice POORA hide — sirf rank badge dikhta hai
+                    tag.style.pointerEvents = 'none';
+                    tag.classList.remove('active');
+                    tag.innerHTML = '';
+                    const rank = winnersList.indexOf(c.name) + 1;
+                    const miniBadge = document.createElement('div');
+                    miniBadge.className = `tag-rank-badge tag-rank-${rank}`;
+                    miniBadge.innerHTML = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '4';
+                    tag.appendChild(miniBadge);
+                    baseQuad?.classList.remove('base-active-turn');
+                } else {
+                    tag.style.pointerEvents = 'auto';
+                    tag.innerHTML = `<div class="dice-box-tag" id="dice-${c.name}" onpointerdown="window.LudoEngine.onDiceClick('${c.name}')">${dice3dHTML()}</div>`;
+                    const diceEl = document.getElementById(`dice-${c.name}`);
+                    const isActiveTurn = cpNow && cpNow.color === c.name && gameState === 'IDLE';
+                    tag.classList.toggle('active', isActiveTurn);
+                    if (diceEl) {
+                        diceEl.classList.toggle('active-roll', isActiveTurn);
+                        diceEl.style.pointerEvents = isActiveTurn ? 'auto' : 'none';
+                    }
+                    baseQuad?.classList.toggle('base-active-turn', isActiveTurn);
                 }
-                baseQuad?.classList.toggle('base-active-turn', isActiveTurn);
             } else {
                 tag.style.display = 'flex';
                 tag.style.visibility = 'hidden';
@@ -5366,7 +5414,7 @@ body {
     function onDiceClick(color) {
         const cp = getEffectiveCurrentPlayer();
         if (!cp || cp.color !== color || gameState !== 'IDLE') return;
-
+        clearAutoMove(); // purane roll ka koi pending auto-move cancel
         gameState = 'ROLLING';
         currentRoll = rollDiceNumber(color);
         if (currentRoll === 6) consecutiveSixes++; else consecutiveSixes = 0;
@@ -5428,16 +5476,10 @@ body {
 
         if (movable.length === 1 || allBase || onlyOneActive) {
             const choice = movable.find(t => t.status === 'BASE') || movable[0];
-            setTimeout(() => {
-                hideBoardRollingDice();
-                initiateMove(choice, currentRoll);
-            }, (cp.isBot ? 600 : 500));
+            scheduleAutoMove(choice, (cp.isBot ? 600 : 500));
         } else if (cp.isBot) {
-            setTimeout(() => {
-                const choice = movable.find(t => t.status === 'BASE') || movable[0];
-                hideBoardRollingDice();
-                initiateMove(choice, currentRoll);
-            }, 600);
+            const choice = movable.find(t => t.status === 'BASE') || movable[0];
+            scheduleAutoMove(choice, 600);
         } else if (teamActive.length > 1) {
             document.getElementById('msg-log').innerText = `Rolled ${currentRoll}! Tap any of your team's gotis to move. 🤝`;
         } else {
@@ -5490,6 +5532,7 @@ body {
 
     function handleTokenClick(token) {
         if (gameState !== 'AWAITING_MOVE') return;
+        clearAutoMove(); // player ne khud tap kiya — auto-move cancel
         const cp = getEffectiveCurrentPlayer();
         if (cp.isBot) return;
         // currentMovableTokens is already correctly scoped (own colour, or
@@ -5501,13 +5544,15 @@ body {
     }
 
     function initiateMove(token, roll) {
-        // BUG FIX: several code paths schedule initiateMove via setTimeout
-        // (auto-move for a single option, bot moves, Barrier decisions). If
-        // the player manually taps the token in that brief window before the
-        // scheduled call fires, both would run and move the token twice
-        // (e.g. rolling a 2 but actually travelling 4). A move already in
-        // progress must never be started again.
-        if (gameState === 'MOVING') return;
+        // CRITICAL FIX: turn tab tak agle player pe shift NAHI hota jab tak
+        // current player apni goti nahi chala deta. Move sirf tabhi start ho
+        // sakta hai jab gameState 'AWAITING_MOVE' ho (yaani dice roll ho
+        // chuka hai aur goti chalne ka intezaar hai). Purana sirf-'MOVING'
+        // guard kaafi nahi tha: ek purana scheduled auto-move timeout bonus
+        // roll ke baad 'IDLE' state me phir se fire ho jata tha — goti
+        // double-move hoti ya turn bina chaale dusre player pe shift ho jata.
+        if (gameState !== 'AWAITING_MOVE') return;
+        clearAutoMove();
         gameState = 'MOVING';
         // ADDED: if this token is Barrier-locked with a partner, that partner
         // always shares the same step count, so it moves in perfect lockstep.
@@ -5594,22 +5639,27 @@ body {
                     const rankLabels = { 1: '1st Place 🥇', 2: '2nd Place 🥈', 3: '3rd Place 🥉' };
                     const rankText = rankLabels[rank] || `${rank}th Place`;
                     document.getElementById('msg-log').innerText = `🏆 ${pName} secured ${rankText}!`;
+                    renderScoreboard(); // FIX: winner ke dice turant hide, game aage chale
                 }
                 hasBonus = false; // Player finished, no more turns for them
             }
 
-            // Check if game is completely finished (all but one player finished, or 1v1 match completed)
+            // USER RULE: match first winner pe KHATAM nahi hota!
+            // 1st aaye -> uska dice hide, baaki players khelte rahen.
+            // 2nd aaye -> uske base pe '2nd' + dice hide, baaki khelte rahen.
+            // 3rd aaye -> base pe '3rd' + dice hide, ab sirf 1 bacha ->
+            // usse last rank milte hi GAME OVER.
             const remainingPlayers = players.filter(p => !winnersList.includes(p.color));
-            if (remainingPlayers.length <= 1) {
-                // Assign last position to the remaining player if more than 1 player in game
-                if (remainingPlayers.length === 1 && players.length > 1) {
-                    const lastColor = remainingPlayers[0].color;
-                    if (!winnersList.includes(lastColor)) {
-                        winnersList.push(lastColor);
-                        const finalRank = winnersList.length;
-                        displayBaseRankCrown(lastColor, finalRank);
-                    }
-                }
+            if (remainingPlayers.length === 1 && players.length > 1) {
+                // Aakhri bache player ko last rank mila -> game over
+                const lastColor = remainingPlayers[0].color;
+                winnersList.push(lastColor);
+                const finalRank = winnersList.length;
+                displayBaseRankCrown(lastColor, finalRank);
+                const lastObj = players.find(p => p.color === lastColor);
+                document.getElementById('msg-log').innerText =
+                    `🏁 ${lastObj ? lastObj.name : lastColor} finished ${finalRank}${finalRank === 1 ? 'st' : finalRank === 2 ? 'nd' : finalRank === 3 ? 'rd' : 'th'} — Game Over!`;
+                renderScoreboard(); // aakhri player ka dice bhi hide
 
                 // Render final leaderboard modal
                 const lb = document.getElementById('leaderboard-list');
@@ -5929,6 +5979,7 @@ body {
     }
 
     function nextTurn() {
+        clearAutoMove();
         consecutiveSixes = 0;
         const activePlayers = players.filter(p => !winnersList.includes(p.color));
         if (activePlayers.length <= 1) return;
@@ -6069,6 +6120,7 @@ body {
     }
 
     function goToMenu() {
+        clearAutoMove();
         if (botMoveTimeoutId) clearTimeout(botMoveTimeoutId);
         hideBoardRollingDice();
         document.getElementById('game-screen').style.display = 'none';
@@ -6586,10 +6638,7 @@ body {
             currentMovableTokens = [mover];
             gameState = 'AWAITING_MOVE';
             renderTokens();
-            setTimeout(() => {
-                hideBoardRollingDice();
-                initiateMove(mover, roll);
-            }, cp.isBot ? 600 : 400);
+            scheduleAutoMove(mover, cp.isBot ? 600 : 400);
             return;
         }
 
@@ -6603,10 +6652,7 @@ body {
             currentMovableTokens = [mover];
             gameState = 'AWAITING_MOVE';
             renderTokens();
-            setTimeout(() => {
-                hideBoardRollingDice();
-                initiateMove(mover, roll);
-            }, cp.isBot ? 600 : 400);
+            scheduleAutoMove(mover, cp.isBot ? 600 : 400);
             return;
         }
 
