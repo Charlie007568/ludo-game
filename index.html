@@ -3649,29 +3649,31 @@ body {
         o.start(t); o.stop(t + 0.1);
     }
 
-    // 🎲 A real die tumbling across the wooden board: a burst of fast,
-    // irregular plastic clicks whose spacing stretches out as the die
-    // decelerates, ending in a firm woody landing thud with a low body.
+    // 🎲 A real die rolling across the wooden board: a handful of clean,
+    // punchy impacts — each one a sharp click layered over a lower resonant
+    // body — spaced like a decelerating bounce, ending in a settled thud.
     function playDiceRattleSound(ctx, now) {
-        let t = now;
-        const ticks = 16;
-        for (let i = 0; i < ticks; i++) {
-            const p = i / ticks;
-            const gap = 0.024 + (1 - p) * 0.045 + Math.random() * 0.015;
-            const f = 2400 - p * 1200 + Math.random() * 500;
-            playNoiseKnock(ctx, t, f, 3.2, 0.045, 0.30 * (1 - p * 0.45));
-            t += gap;
+        let t = now + 0.02;
+        const impacts = 5 + Math.floor(Math.random() * 3);   // 5-7 bounces
+        for (let i = 0; i < impacts; i++) {
+            const p = i / impacts;
+            const vol = 0.38 * (1 - p * 0.55);
+            // sharp click — very short high-passed noise
+            playNoiseKnock(ctx, t, 3800 + Math.random() * 1200, 1.1, 0.018, vol);
+            // resonant body — warmer band-passed noise underneath
+            playNoiseKnock(ctx, t, 900 + Math.random() * 300, 2.2, 0.05, vol * 0.8);
+            t += 0.055 + (1 - p) * 0.06 + Math.random() * 0.03;
         }
-        playWoodTap(ctx, t + 0.01, 0.5);
-        playNoiseKnock(ctx, t + 0.01, 260, 1.1, 0.12, 0.4);
+        // final settle: woody tap + low thud
+        playWoodTap(ctx, t, 0.5);
         const o = ctx.createOscillator(), g = ctx.createGain();
         o.type = 'sine';
-        o.frequency.setValueAtTime(95, t + 0.01);
-        o.frequency.exponentialRampToValueAtTime(55, t + 0.16);
-        g.gain.setValueAtTime(0.35, t + 0.01);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        o.frequency.setValueAtTime(110, t);
+        o.frequency.exponentialRampToValueAtTime(55, t + 0.15);
+        g.gain.setValueAtTime(0.32, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
         o.connect(g); g.connect(ctx.destination);
-        o.start(t + 0.01); o.stop(t + 0.22);
+        o.start(t); o.stop(t + 0.25);
     }
 
     // ♟️ Goti walking the board — a light wooden tap per step.
@@ -5798,14 +5800,17 @@ body {
             return;
         }
 
-        // RULES FIX: group the victims by colour. NORMAL LUDO: a stack of
-        // same-colour gotis on one cell must ALL be cut and sent back to
-        // base together — previously only one was removed, leaving a goti
-        // stranded on the enemy's cell. PARTNER MODE: teammates of
-        // different colours can share a cell, and then only ONE goti may
-        // be cut — so when several colours are present, the attacker picks
-        // which colour goes home from a popup (bots pick randomly). This
-        // popup also applies when Barrier Mode is layered on top.
+        // RULES:
+        // • NORMAL LUDO — same-colour stack on one cell: the enemy may only
+        //   cut ONE of them — the one that has travelled FURTHEST (highest
+        //   step count) goes home first. The other stays on the cell.
+        // • BARRIER MODE — a locked Barrier is ONE unit: cutting it sends
+        //   BOTH of its gotis back to base together.
+        // • PARTNER MODE — teammates of different colours can share a cell;
+        //   the attacker first picks WHICH COLOUR from a popup, then the
+        //   normal/Barrier rule above applies to that colour's goti(s).
+        const pickOne = (list) => list.reduce((a, b) => ((b.step || 0) > (a.step || 0) ? b : a));
+        const cutSet = (list) => (list[0].barrier ? list : [pickOne(list)]);   // barrier pair = both; otherwise one
         const colorGroups = {};
         victims.forEach(v => { (colorGroups[v.color] = colorGroups[v.color] || []).push(v); });
         const involvedColors = Object.keys(colorGroups);
@@ -5815,14 +5820,12 @@ body {
         const doCapture = (chosen) => {
             playSound('cut');
             gameState = 'MOVING';
-            triggerGotiCutAnimation(token, chosen, () => {
-                chosen.forEach(ot => {
-                    ot.status = 'BASE';
-                    ot.step = -1;
-                    ot.pos = [0, 0];
-                    ot.barrier = false;      // ADDED: cutting a Barrier breaks it
-                    ot.barrierWith = null;
-                });
+            triggerGotiCutAnimation(token, [chosen], () => {
+                chosen.status = 'BASE';
+                chosen.step = -1;
+                chosen.pos = [0, 0];
+                chosen.barrier = false;      // ADDED: cutting a Barrier breaks it
+                chosen.barrierWith = null;
                 renderTokens();
                 onComplete(true);
             });
@@ -5830,15 +5833,16 @@ body {
 
         if (involvedColors.length > 1) {
             if (attacker && attacker.isBot) {
-                doCapture(colorGroups[involvedColors[Math.floor(Math.random() * involvedColors.length)]]);
+                const rc = involvedColors[Math.floor(Math.random() * involvedColors.length)];
+                doCapture(cutSet(colorGroups[rc]));
             } else {
                 gameState = 'CHOICE';
                 showCaptureChoice(involvedColors, attackerName, (chosenColor) => {
-                    doCapture(colorGroups[chosenColor]);
+                    doCapture(cutSet(colorGroups[chosenColor]));
                 });
             }
         } else {
-            doCapture(victims);
+            doCapture(cutSet(victims));
         }
     }
 
