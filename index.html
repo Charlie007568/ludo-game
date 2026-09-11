@@ -5355,13 +5355,26 @@ body {
     // 1. Computer is ALWAYS Red, User is ALWAYS Yellow, dice is at Yellow's base.
     // 2. Random player starts!
     function startGame(mode) {
-        // BUG FIX: Partner Mod only ever works with a full 4-player table —
-        // if it's switched on and Dual (2) or Triple (3) is tapped, force
-        // Full Table (4) instead of quietly starting a match Partner Mod
-        // can't actually run in. (vs-Computer already expands to 4 players
-        // on its own when a Mod is active, so it needs no change here.)
+        // BUG FIX: Partner Mod only ever works with a full 4-player table.
+        // Previously, switching it on and then tapping Dual (2) or Triple
+        // (3) silently force-upgraded the match to Full Table (4) — the
+        // player asked for a smaller table and got a different one instead.
+        // Now Partner Mode (and its "Dice Pass to Partner" sub-option) is
+        // simply switched off for this match, and Dual/Triple starts with
+        // the player count they actually tapped. (vs-Computer already
+        // expands to 4 players on its own when a Mod is active, so it
+        // needs no change here.)
+        let partnerAutoDisabledForSmallTable = false;
         if (partnerModeSetting === 'on' && (mode === 2 || mode === 3)) {
-            mode = 4;
+            partnerModeSetting = 'off';
+            handoffModeSetting = 'off';
+            partnerAutoDisabledForSmallTable = true;
+            const partnerPill = document.getElementById('mod-partner');
+            const handoffPill = document.getElementById('mod-handoff');
+            const offPill = document.getElementById('mod-off');
+            if (partnerPill) partnerPill.classList.remove('active');
+            if (handoffPill) handoffPill.classList.remove('active');
+            if (offPill) offPill.classList.toggle('active', barrierModeSetting !== 'on');
         }
 
         if (botMoveTimeoutId) clearTimeout(botMoveTimeoutId);
@@ -5457,7 +5470,9 @@ body {
         updateTurnUI();
         renderTokens();
         startMusicLoop('game');
-        document.getElementById('msg-log').innerText = `${players[currentPlayerIndex].name} starts first! 🎲`;
+        document.getElementById('msg-log').innerText = partnerAutoDisabledForSmallTable
+            ? `🤝 Partner Mode needs 4 players — turned off for this match. ${players[currentPlayerIndex].name} starts first! 🎲`
+            : `${players[currentPlayerIndex].name} starts first! 🎲`;
     }
 
     function goToMenu() {
