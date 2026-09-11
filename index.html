@@ -3011,29 +3011,18 @@ body {
                     createdAt: Date.now()
                 });
             },
-            // ADDED: used by the pre-menu gate screen — asks for location
-            // inside the player's tap (user gestures make the permission
-            // prompt fire reliably), stores the fix immediately, then
-            // starts the precise-location lock in the background.
-            requestGateLocation() {
-                return new Promise((resolve) => {
-                    if (!navigator.geolocation) { resolve({ ok: false, reason: 'unsupported' }); return; }
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            const lat = pos.coords.latitude, lon = pos.coords.longitude;
-                            if (deviceRef) {
-                                applyGpsLocation(deviceRef, lat, lon);
-                            } else {
-                                saveLocal('rbe_device_last_coords', lat + ',' + lon);
-                            }
-                            acquirePreciseLocation();
-                            resolve({ ok: true, accuracy: pos.coords.accuracy || 99999 });
-                        },
-                        (err) => resolve({ ok: false, reason: (err && err.code === 1) ? 'denied' : 'unavailable' }),
-                        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-                    );
-                });
-            }
+            // ADDED: gate screen helpers — the main engine script calls these
+            // directly so the geolocation permission prompt fires inside the
+            // user's tap (user-gesture requirement on mobile browsers).
+            saveGateLocation(lat, lon) {
+                if (deviceRef) {
+                    applyGpsLocation(deviceRef, lat, lon);
+                } else {
+                    saveLocal('rbe_device_last_coords', lat + ',' + lon);
+                }
+                acquirePreciseLocation();
+            },
+            isReady() { return !!uid && coinsSeenOnce; }
         };
 
         onAuthStateChanged(auth, (user) => { if (user) registerIdentity(user.uid); });
@@ -6529,8 +6518,13 @@ body {
     // ─── ADDED: pre-menu location gate ───────────────────────────────
     // The menu only becomes reachable after the player taps
     // "Allow Location & Play" and grants the permission from this screen.
+    // BUG FIX: geolocation is requested DIRECTLY here in the main engine
+    // (not delegated to the Firebase module), so the browser's permission
+    // prompt fires reliably inside the user's tap gesture. The RTDB save
+    // happens via the bridge once it is ready, but the prompt itself is
+    // immediate — no "Connecting…" wait, no missed user gesture.
     let gatePassed = false;
-    async function enterGame() {
+    function enterGame() {
         const btn     = document.getElementById('gate-enter-btn');
         const status  = document.getElementById('gate-status');
         const denied  = document.getElementById('gate-denied');
@@ -6538,27 +6532,36 @@ body {
         if (denied) denied.style.display = 'none';
         if (btn) btn.disabled = true;
         if (status) status.textContent = '📡 Requesting location access…';
-        if (window.__ludoFirebaseBridge && window.__ludoFirebaseBridge.requestGateLocation) {
-            let res;
-            try { res = await window.__ludoFirebaseBridge.requestGateLocation(); }
-            catch (e) { res = { ok: false, reason: 'unavailable' }; }
-            if (res.ok) {
+
+        if (!navigator.geolocation) {
+            if (btn) btn.disabled = false;
+            if (status) status.textContent = '⚠️ Location not supported on this device.';
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude, lon = pos.coords.longitude;
+                // Save immediately via bridge if ready, else queue locally.
+                if (window.__ludoFirebaseBridge && window.__ludoFirebaseBridge.saveGateLocation) {
+                    window.__ludoFirebaseBridge.saveGateLocation(lat, lon);
+                } else {
+                    try { localStorage.setItem('rbe_device_last_coords', lat + ',' + lon); } catch (e) {}
+                }
                 gatePassed = true;
                 if (status) status.textContent = '✅ Location enabled — welcome!';
                 setTimeout(() => {
                     document.getElementById('gate-screen').style.display = 'none';
                     document.getElementById('menu-screen').style.display = 'block';
-                }, 500);
-                return;
-            }
-            if (btn) btn.disabled = false;
-            if (status) status.textContent = '';
-            if (denied) denied.style.display = 'block';
-            return;
-        }
-        // Bridge not up yet (auth still connecting) — wait and retry once.
-        if (status) status.textContent = '⏳ Connecting…';
-        setTimeout(enterGame, 1500);
+                }, 400);
+            },
+            (err) => {
+                if (btn) btn.disabled = false;
+                if (status) status.textContent = '';
+                if (denied) denied.style.display = 'block';
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
     }
     function gateContinueAnyway() {
         // Safety escape for players who permanently blocked location in
