@@ -2449,6 +2449,31 @@ body {
   100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
 }
 
+/* ADDED: Partner-Mode-auto-off toast — fixed positioning so it stays
+   visible even as the menu screen is swapped out for the game screen
+   right after the player taps Duel/Triple. */
+.partner-off-toast {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+  border: 1.5px solid #fde047;
+  color: #ffffff;
+  padding: 9px 18px;
+  border-radius: 9999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 16px rgba(254, 224, 71, 0.4);
+  pointer-events: none;
+  animation: toastPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 9999;
+  text-align: center;
+}
+
 /* ============================================================
    ADDED: Coin Economy + Barrier Mode + Partner Mode + Ads
    (Purely additive — does not alter any existing rule above)
@@ -2713,6 +2738,10 @@ body {
         <p style="font-size:0.72rem; color:#94a3b8; margin-top:18px;">Starting game…</p>
     </div>
 
+    <!-- ADDED: Partner-Mode-auto-off toast, shown the instant a 2/3
+         player match is started while Partner Mode was ON. -->
+    <div id="partner-off-toast" class="partner-off-toast" style="display:none;"></div>
+
     <div id="menu-screen" class="glass-panel">
         <div class="menu-topbar">
             <!-- Left: Name input option -->
@@ -2762,22 +2791,18 @@ body {
                 <div class="mode-tile mode-blue" onclick="window.LudoEngine.startGame('computer')">
                     <span class="mode-icon-badge">🤖</span>
                     <span class="mode-name">Vs Computer</span>
-                    <span class="mode-sub">Random Base (Red/Yellow or Green/Blue)</span>
                 </div>
                 <div class="mode-tile mode-green" onclick="window.LudoEngine.startGame(2)">
                     <span class="mode-icon-badge">🎲</span>
                     <span class="mode-name">Duel Match</span>
-                    <span class="mode-sub">Random 2 Players Match</span>
                 </div>
                 <div class="mode-tile mode-yellow" onclick="window.LudoEngine.startGame(3)">
                     <span class="mode-icon-badge">🎯</span>
                     <span class="mode-name">Triple Table</span>
-                    <span class="mode-sub">3 Players Match</span>
                 </div>
                 <div class="mode-tile mode-red" onclick="window.LudoEngine.startGame(4)">
                     <span class="mode-icon-badge">🏆</span>
                     <span class="mode-name">Full Table</span>
-                    <span class="mode-sub">4 Players Match</span>
                 </div>
             </div>
         </div>
@@ -2798,7 +2823,6 @@ body {
             <div class="diff-pill-row" style="margin-top: 10px;">
                 <div class="diff-pill" id="mod-handoff" onclick="window.LudoEngine.setMatchMod('handoff', this)">🔁 Dice Pass to Partner</div>
             </div>
-            <div class="mode-sub" style="margin-top: 6px;">After a player finishes (all 4 Home) in Partner Mode, their Partner takes over that turn's dice roll.</div>
         </div>
 
         <div class="dash-card">
@@ -4053,6 +4077,22 @@ body {
         setTimeout(() => {
             toast.style.display = 'none';
         }, 1800);
+    }
+
+    // ADDED: fixed-position toast used to tell the player, right at the
+    // moment they start a match, that Partner Mode got auto-disabled
+    // because they picked a 2 or 3 player table. Stays visible through
+    // the menu-screen -> game-screen transition since it's position:fixed.
+    let partnerOffToastTimeoutId = null;
+    function showPartnerOffToast(msg) {
+        const toast = document.getElementById('partner-off-toast');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.style.display = 'flex';
+        if (partnerOffToastTimeoutId) clearTimeout(partnerOffToastTimeoutId);
+        partnerOffToastTimeoutId = setTimeout(() => {
+            toast.style.display = 'none';
+        }, 2800);
     }
 
     function renderCustomizerShowcase() {
@@ -5374,6 +5414,9 @@ body {
             const offPill = document.getElementById('mod-off');
             if (partnerPill) partnerPill.classList.remove('active');
             if (handoffPill) handoffPill.classList.remove('active');
+            // ADDED: tell the player right now, at the moment of starting
+            // the match, rather than only in the small msg-log line later.
+            showPartnerOffToast('🤝 Partner Mode needs 4 players — turned OFF for this match');
             if (offPill) offPill.classList.toggle('active', barrierModeSetting !== 'on');
         }
 
