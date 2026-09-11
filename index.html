@@ -2534,7 +2534,7 @@ body {
 .diff-pill-row { display: flex; gap: 6px; margin-top: 6px; }
 .settings-hint { font-size: 0.62rem; color: var(--ivory-dim); margin-top: 8px; line-height: 1.5; }
 
-#coins-modal, #adwatch-overlay, #barrier-decision-modal, #bug-report-modal {
+#coins-modal, #adwatch-overlay, #barrier-decision-modal, #bug-report-modal, #capture-choice-modal {
     display: none; position: fixed; inset: 0; background: rgba(2,6,23,0.92); backdrop-filter: blur(10px);
     z-index: 400; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
 }
@@ -3324,6 +3324,18 @@ body {
                 <p class="coins-modal-sub" id="barrier-decision-sub"></p>
                 <button class="coin-claim-btn" onclick="window.LudoEngine.chooseBarrierOption(true)">🚧 Use Barrier</button>
                 <button class="coin-claim-btn coin-ad-btn" onclick="window.LudoEngine.chooseBarrierOption(false)">🎯 Move Single Goti</button>
+            </div>
+        </div>
+
+        <!-- ADDED: Partner-Mode capture choice popup — when the attacker
+             lands on a cell shared by teammates of DIFFERENT colours, only
+             ONE goti may be cut, so the attacker picks which colour goes
+             home. (Works combined with Barrier Mode too.) -->
+        <div id="capture-choice-modal">
+            <div class="glass-panel">
+                <p class="coins-modal-title">⚔️ Which goti to cut?</p>
+                <p class="coins-modal-sub" id="capture-choice-sub"></p>
+                <div id="capture-choice-buttons"></div>
             </div>
         </div>
 
@@ -5786,18 +5798,82 @@ body {
             return;
         }
 
-        playSound('cut');
-        triggerGotiCutAnimation(token, victims, () => {
-            victims.forEach(ot => {
-                ot.status = 'BASE';
-                ot.step = -1;
-                ot.pos = [0, 0];
-                ot.barrier = false;      // ADDED: cutting a Barrier breaks it
-                ot.barrierWith = null;
+        // RULES FIX: group the victims by colour. NORMAL LUDO: a stack of
+        // same-colour gotis on one cell must ALL be cut and sent back to
+        // base together — previously only one was removed, leaving a goti
+        // stranded on the enemy's cell. PARTNER MODE: teammates of
+        // different colours can share a cell, and then only ONE goti may
+        // be cut — so when several colours are present, the attacker picks
+        // which colour goes home from a popup (bots pick randomly). This
+        // popup also applies when Barrier Mode is layered on top.
+        const colorGroups = {};
+        victims.forEach(v => { (colorGroups[v.color] = colorGroups[v.color] || []).push(v); });
+        const involvedColors = Object.keys(colorGroups);
+        const attacker = players.find(p => p.color === token.color);
+        const attackerName = attacker ? attacker.name : token.color;
+
+        const doCapture = (chosen) => {
+            playSound('cut');
+            gameState = 'MOVING';
+            triggerGotiCutAnimation(token, chosen, () => {
+                chosen.forEach(ot => {
+                    ot.status = 'BASE';
+                    ot.step = -1;
+                    ot.pos = [0, 0];
+                    ot.barrier = false;      // ADDED: cutting a Barrier breaks it
+                    ot.barrierWith = null;
+                });
+                renderTokens();
+                onComplete(true);
             });
-            renderTokens();
-            onComplete(true);
+        };
+
+        if (involvedColors.length > 1) {
+            if (attacker && attacker.isBot) {
+                doCapture(colorGroups[involvedColors[Math.floor(Math.random() * involvedColors.length)]]);
+            } else {
+                gameState = 'CHOICE';
+                showCaptureChoice(involvedColors, attackerName, (chosenColor) => {
+                    doCapture(colorGroups[chosenColor]);
+                });
+            }
+        } else {
+            doCapture(victims);
+        }
+    }
+
+    // ─── ADDED: Partner-Mode capture choice ─────────────────────────
+    // When the attacker's goti lands on a cell shared by teammates of
+    // different colours (e.g. a Red and a Yellow goti together), only ONE
+    // goti may be cut — the attacker picks its colour here. Bots choose
+    // randomly. gameState becomes 'CHOICE' while the popup is open so the
+    // stuck-state watchdog never fires during a human's decision.
+    let pendingCaptureChoice = null;
+    function showCaptureChoice(colors, attackerName, onPick) {
+        pendingCaptureChoice = { onPick };
+        const sub = document.getElementById('capture-choice-sub');
+        if (sub) sub.textContent = attackerName + ' cut this spot — teammates are standing together here. Only one goti can be cut: which one goes home?';
+        const wrap = document.getElementById('capture-choice-buttons');
+        if (!wrap) return;
+        wrap.innerHTML = '';
+        colors.forEach(c => {
+            const p = players.find(pl => pl.color === c);
+            const b = document.createElement('button');
+            b.className = 'coin-claim-btn';
+            b.style.background = 'linear-gradient(135deg,' + (p ? p.hex : '#64748b') + ',#0f172a)';
+            b.style.color = '#ffffff';
+            b.style.border = '1.5px solid rgba(255,255,255,0.45)';
+            b.innerHTML = '✂️ Cut the ' + c + ' goti' + (p ? ' (' + p.name + ')' : '');
+            b.onclick = () => {
+                document.getElementById('capture-choice-modal').style.display = 'none';
+                const cb = pendingCaptureChoice && pendingCaptureChoice.onPick;
+                pendingCaptureChoice = null;
+                if (cb) cb(c);
+            };
+            wrap.appendChild(b);
         });
+        const modal = document.getElementById('capture-choice-modal');
+        if (modal) modal.style.display = 'flex';
     }
 
     function triggerGotiCutAnimation(attacker, victims, onFinished) {
