@@ -836,10 +836,15 @@ body {
     transform: translateX(-50%) rotate(180deg);
 }
 
+/* FIX: pehle har base-color ka apna alag lightness/saturation formula tha
+   (red aur blue thode dull/dark, green aur yellow zyada bright) — isliye
+   kahi color zyada gehra/vivid dikhta tha, kahi kam. Ab chaaro base
+   quadrants EXACT same saturation/lightness stops use karte hain (sirf
+   hue alag hai), taaki sabka color intensity bilkul EQUAL dikhe. */
 .base-quadrant-red {
     grid-row: 1 / 7;
     grid-column: 1 / 7;
-    background: radial-gradient(circle at 28% 22%, #ff8a8a 0%, #f11212 38%, #b30000 72%, #6e0000 100%);
+    background: radial-gradient(circle at 28% 22%, hsl(0, 90%, 75%) 0%, hsl(0, 92%, 48%) 38%, hsl(0, 85%, 30%) 72%, hsl(0, 75%, 16%) 100%);
     border-right: 2.5px solid transparent;
     border-bottom: 2.5px solid transparent;
     border-top-left-radius: 12px;
@@ -847,7 +852,7 @@ body {
 .base-quadrant-green {
     grid-row: 1 / 7;
     grid-column: 10 / 16;
-    background: radial-gradient(circle at 28% 22%, #6cf7a3 0%, #00b83e 38%, #007a29 72%, #004d1a 100%);
+    background: radial-gradient(circle at 28% 22%, hsl(140, 90%, 75%) 0%, hsl(140, 92%, 48%) 38%, hsl(140, 85%, 30%) 72%, hsl(140, 75%, 16%) 100%);
     border-left: 2.5px solid transparent;
     border-bottom: 2.5px solid transparent;
     border-top-right-radius: 12px;
@@ -855,7 +860,7 @@ body {
 .base-quadrant-blue {
     grid-row: 10 / 16;
     grid-column: 1 / 7;
-    background: radial-gradient(circle at 28% 22%, #7ab5ff 0%, #1257e8 38%, #0a37a0 72%, #062363 100%);
+    background: radial-gradient(circle at 28% 22%, hsl(220, 90%, 75%) 0%, hsl(220, 92%, 48%) 38%, hsl(220, 85%, 30%) 72%, hsl(220, 75%, 16%) 100%);
     border-right: 2.5px solid transparent;
     border-top: 2.5px solid transparent;
     border-bottom-left-radius: 12px;
@@ -863,7 +868,7 @@ body {
 .base-quadrant-yellow {
     grid-row: 10 / 16;
     grid-column: 10 / 16;
-    background: radial-gradient(circle at 28% 22%, #ffe566 0%, #f5b800 38%, #b07e00 72%, #6e4c00 100%);
+    background: radial-gradient(circle at 28% 22%, hsl(45, 90%, 75%) 0%, hsl(45, 92%, 48%) 38%, hsl(45, 85%, 30%) 72%, hsl(45, 75%, 16%) 100%);
     border-left: 2.5px solid transparent;
     border-top: 2.5px solid transparent;
     border-bottom-right-radius: 12px;
@@ -969,19 +974,8 @@ body {
     display: block;
 }
 /* (star shrink rule removed per user request — star hamesha same size rahe) */
-/* BUG FIX: a goti sitting on a star used to fully hide the star icon
-   underneath with no other cue. This ring makes "this cell is a safe
-   star spot" obvious even while it's occupied. */
-.occupied-star-cell::after {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 6px;
-    border: 2.5px solid #fde047;
-    box-shadow: 0 0 10px 2px rgba(253, 224, 71, 0.85), inset 0 0 8px rgba(253, 224, 71, 0.5);
-    pointer-events: none;
-    z-index: 33;
-}
+/* (yellow ring around occupied-star-cell REMOVED per user request — goti
+   khud hi star pe dikh jaati hai, extra circle ki zaroorat nahi) */
 .arrow-indicator {
     position: absolute;
     font-size: 13px;
@@ -1059,11 +1053,14 @@ body {
 .token.token-pin-overflow {
     /* FIX: path goti bahut badi/oversized thi, jisse woh neighbouring
        cells ko dhak leti thi aur exact cell pehchanna mushkil hota tha.
-       Size ko chota kiya gaya taaki goti apne cell ke andar hi saaf dikhe. */
-    width: 116%;
-    height: 164%;
-    max-width: 82px;
-    max-height: 115px;
+       Size aur bhi chota kiya gaya (pehle 116%/164% tha) taaki goti apne
+       cell ke andar hi rahe aur upar wale/agle cell ki goti ko overlap na
+       kare — warna galat goti par tap lagne ka wahi glitch ban jaata jisme
+       ek goti ko tap karne par doosri (upar/aage wali) goti chal jaati thi. */
+    width: 100%;
+    height: 132%;
+    max-width: 70px;
+    max-height: 93px;
     left: 50%;
     top: 50%;
     transform: translate(var(--tok-tx, -50%), var(--tok-ty, -85.7%)) scale(var(--tok-scale, 1));
@@ -3498,7 +3495,7 @@ body {
                                 <div class="dice3d showcase-dice-rotate" id="showcase-dice-display"></div>
                             </div>
                             <div class="showcase-item-info">
-                                <span class="showcase-item-title" id="showcase-dice-title">Polished Ivory</span>
+                                <span class="showcase-item-title" id="showcase-dice-title">Obsidian Neon</span>
                                 <span class="showcase-item-sub">Selected 3D Dice</span>
                             </div>
                         </div>
@@ -4204,8 +4201,8 @@ body {
     ];
 
     const DEFAULT_CUSTOMIZATION = {
-        "tokenSkin": "golden_spire",
-        "diceSkin": "cyber_matrix",
+        "tokenSkin": "classic_pin",
+        "diceSkin": "obsidian_neon",
         "trailEffect": "thunder_plasma"
 };
 
