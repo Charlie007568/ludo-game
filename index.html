@@ -1018,10 +1018,12 @@ body {
 }
 
 .token.token-in-base {
-    width: 132%;
-    height: 185%;
-    max-width: 96px;
-    max-height: 136px;
+    /* FIX: goti pehle bahut badi thi jisse cell overlap ho jata tha aur
+       goti kis cell pe hai pata nahi chalta tha — size ghata di gayi hai. */
+    width: 108%;
+    height: 151%;
+    max-width: 78px;
+    max-height: 111px;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -85.7%);
@@ -1055,10 +1057,13 @@ body {
 }
 
 .token.token-pin-overflow {
-    width: 140%;
-    height: 198%;
-    max-width: 104px;
-    max-height: 146px;
+    /* FIX: path goti bahut badi/oversized thi, jisse woh neighbouring
+       cells ko dhak leti thi aur exact cell pehchanna mushkil hota tha.
+       Size ko chota kiya gaya taaki goti apne cell ke andar hi saaf dikhe. */
+    width: 116%;
+    height: 164%;
+    max-width: 82px;
+    max-height: 115px;
     left: 50%;
     top: 50%;
     transform: translate(var(--tok-tx, -50%), var(--tok-ty, -85.7%)) scale(var(--tok-scale, 1));
@@ -1111,12 +1116,13 @@ body {
     --tok-scale: 1.25 !important;
 }
 
-/* FIX: star pe jo goti khadi ho wo CHHOTI ho jaye (star same size rahe) */
+/* FIX: star pe jo goti khadi ho wo aur CHHOTI ho jaye (star clearly dikhe,
+   goti star ke design ko poori tarah dhake nahi) */
 .token-on-star {
-    --tok-scale: 0.72 !important;
+    --tok-scale: 0.55 !important;
 }
 .token-on-star.token-movable {
-    --tok-scale: 1.02 !important;
+    --tok-scale: 0.78 !important;
 }
 
 /* FIX: movable goti ka tap area uske charo taraf bada (invisible catcher) —
@@ -5350,38 +5356,12 @@ body {
     const turnsWithoutSix = { Red: 0, Green: 0, Yellow: 0, Blue: 0 };
 
     function rollDiceNumber(color) {
-        const pTokens = tokens[color] || [];
-        const allInBase = pTokens.length > 0 && pTokens.every(t => t.status === 'BASE');
-        const hasAnyInBase = pTokens.some(t => t.status === 'BASE');
-        const turnsWithout = turnsWithoutSix[color] || 0;
-
-        if (consecutiveSixes >= 2) {
-            turnsWithoutSix[color] = turnsWithout + 1;
-            if (Math.random() < 0.10) return 6;
-            return Math.floor(Math.random() * 5) + 1;
-        }
-
-        let sixProb = 0.32;
-        if (allInBase) {
-            if (turnsWithout >= 2) sixProb = 1.0;
-            else if (turnsWithout === 1) sixProb = 0.72;
-            else sixProb = 0.45;
-        } else if (hasAnyInBase) {
-            if (turnsWithout >= 3) sixProb = 0.85;
-            else if (turnsWithout >= 2) sixProb = 0.55;
-            else sixProb = 0.38;
-        } else {
-            if (turnsWithout >= 4) sixProb = 1.0;
-            else if (turnsWithout >= 2) sixProb = 0.50;
-        }
-
-        if (Math.random() < sixProb) {
-            turnsWithoutSix[color] = 0;
-            return 6;
-        }
-
-        turnsWithoutSix[color] = turnsWithout + 1;
-        return Math.floor(Math.random() * 5) + 1;
+        // USER REQUEST: dice ab poori tarah fair/random hai — 6 samet har
+        // number (1-6) ki equal (1/6) chance hai, koi extra boost/weight
+        // nahi diya jaata kisi bhi state (base me goti, turnsWithout, etc.)
+        // ke hisaab se. Sirf lagatar 3 sixes wala rule upar onDiceClick me
+        // already handle hota hai, isse yahan koi lena dena nahi.
+        return Math.floor(Math.random() * 6) + 1;
     }
 
     function animateBoardDiceRoll(color, finalValue, onDone) {
