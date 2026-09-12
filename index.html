@@ -596,7 +596,7 @@ body {
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.25, 1);
 }
 .dice-box-tag.spinning .dice3d {
-    animation: diceSpinLoop 0.5s linear infinite;
+    animation: diceSpinLoop 0.32s linear infinite;
 }
 @keyframes diceSpinLoop {
     0%   { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
@@ -5488,6 +5488,9 @@ body {
         // nahi diya jaata kisi bhi state (base me goti, turnsWithout, etc.)
         // ke hisaab se. Sirf lagatar 3 sixes wala rule upar onDiceClick me
         // already handle hota hai, isse yahan koi lena dena nahi.
+        // ADDED: turn-boundary track — koi AUR player roll kare to iska matlab
+        // rigged color ka purana turn khatam; jab wo wapas aayega to naya plan.
+        if (riggedColor && color !== riggedColor) rigState.color = color;
         // ADDED: master ON + is color ka rig ho to best roll (dice sirf yahi banta hai)
         if (rigMasterEnabled && riggedColor && color === riggedColor) {
             const rigVal = computeRiggedRoll(color);
@@ -5517,11 +5520,12 @@ body {
                 const cube = box.querySelector('.dice3d');
                 if (cube) {
                     const rot = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
-                    cube.style.transition = 'transform 240ms cubic-bezier(0.2, 0.8, 0.25, 1)';
+                    // ADDED: dice speed badhai gayi — settle bhi tez (240ms -> 170ms)
+                    cube.style.transition = 'transform 170ms cubic-bezier(0.2, 0.8, 0.25, 1)';
                     cube.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
                 }
                 onDone();
-            }, 560);
+            }, 380);
         } else {
             onDone();
         }
@@ -6320,7 +6324,9 @@ body {
         renderScoreboard();
         updateTurnUI();
         renderTokens();
-        startMusicLoop('game');
+        // ADDED per user request: match ke dauran background music bilkul BAND —
+        // sirf menu wala music rahega. (Pehle yahan startMusicLoop('game') tha.)
+        if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
         document.getElementById('msg-log').innerText = partnerAutoDisabledForSmallTable
             ? `🤝 Partner Mode needs 4 players — turned off for this match. ${players[currentPlayerIndex].name} starts first! 🎲`
             : `${players[currentPlayerIndex].name} starts first! 🎲`;
@@ -6910,10 +6916,14 @@ body {
     // ============================================================
     let rigMasterEnabled = false;
     let riggedColor = null;
+    // ADDED: rig turn-plan state — kis color ka turn chal raha hai, kya plan
+    // bacha hai, kitne six de chuke (3rd six = chaal shift, isliye cap 2).
+    let rigState = { color: null, plan: null, sixesGiven: 0 };
 
     function applyRigMaster(v) { rigMasterEnabled = !!v; }
     function applyRigColor(v) {
         riggedColor = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
+        rigState = { color: null, plan: null, sixesGiven: 0 }; // rig badalte hi purana plan discard
         // DEBUG: admin panel se rig change hote hi console me confirm ho jata hai
         console.log('%c[RIG WIN] rigged color: ' + (riggedColor || 'OFF'), 'color:#b388ff;font-weight:bold');
     }
@@ -6923,6 +6933,7 @@ body {
         const isPartnerMode = activePartnerMode === 'on' && players.length === 4;
         const partnerColor = isPartnerMode ? getPartnerColorOf(color) : null;
         const opponents = players.filter(p => p.color !== color && p.color !== partnerColor).map(p => p.color);
+
         const cellKeyAt = (clr, s) => {
             const gp = globalPath[(playerStartIndexes[clr] + s) % globalPath.length];
             return gp[0] + '-' + gp[1];
@@ -6943,14 +6954,96 @@ body {
                 ot.status === 'PATH' && ot.step >= 0 && ot.step <= 50 &&
                 cellKeyAt(oc, ot.step) === key));
         };
-        for (let v = 1; v <= 6; v++)
-            if (myTokens.some(t => t.status === 'PATH' && t.step + v === 56 && moveIsLegal(t, v))) return v;
-        for (let v = 6; v >= 1; v--)
-            if (myTokens.some(t => moveIsLegal(t, v) && landingCaptures(t, v))) return v;
-        if (myTokens.some(t => t.status === 'BASE')) return 6;
-        const legal = [1, 2, 3, 4, 5, 6].filter(v => myTokens.some(t => moveIsLegal(t, v)));
-        if (!legal.length) return 6;
-        return legal[Math.floor(Math.random() * legal.length)];
+        const hasLegalMove = (v) => myTokens.some(t => moveIsLegal(t, v));
+        const capturesWith = (v) => myTokens.some(t => moveIsLegal(t, v) && landingCaptures(t, v));
+        const homesWith = (v) => myTokens.some(t => t.status === 'PATH' && t.step + v === 56 && moveIsLegal(t, v));
+
+        // USER RULE (progress): number BADA aaye aur enemy se DOOR rahe.
+        // Score system: home stretch (step 51+, wahan koi cut nahi sakta) pe
+        // entry = sabse uncha score; uske baad bada number (v*10); phir
+        // landing cell ka enemy bases se circular distance (jitna door utna
+        // better); star/safe cell ka bonus. Matlab: goti dushman ke base ke
+        // paas se tezi se nikal kar home stretch me ghus jati hai, aur agli
+        // chaal me homesWith() exact number se DIRECT HOME ho jati hai.
+        const TRACK_LEN = globalPath.length;
+        const progressValue = (allowSix) => {
+            const candidates = [];
+            for (let v = 6; v >= 1; v--) {
+                if (v === 6 && !allowSix) continue;   // six cap — 3rd six nahi
+                let best = -1;
+                for (const t of myTokens) {
+                    if (!moveIsLegal(t, v)) continue;
+                    const ls = t.step + v;
+                    if (ls > 56) continue;
+                    let sc;
+                    if (ls >= 51) {
+                        sc = 1000 + v;                 // home stretch = 100% safe
+                    } else {
+                        const absPos = (playerStartIndexes[color] + ls) % TRACK_LEN;
+                        let minD = 99;
+                        opponents.forEach(oc => {
+                            const es = playerStartIndexes[oc];
+                            const dd = Math.min((absPos - es + TRACK_LEN) % TRACK_LEN,
+                                                (es - absPos + TRACK_LEN) % TRACK_LEN);
+                            if (dd < minD) minD = dd;
+                        });
+                        const safeBonus = safeSpots.includes(cellKeyAt(color, ls)) ? 4 : 0;
+                        sc = v * 10 + Math.min(minD, 8) + safeBonus;
+                    }
+                    if (sc > best) best = sc;
+                }
+                if (best >= 0) candidates.push({ v: v, sc: best });
+            }
+            if (!candidates.length) return 0;
+            candidates.sort((a, b) => b.sc - a.sc || b.v - a.v);
+            return candidates[0].v;
+        };
+
+        // SMART value: CUT > exact-HOME > BASE-six > PROGRESS (bada + safe number).
+        // allowSix=false jab 2 six de diye hon — 3rd six se chaal shift ho jati hai.
+        const smartValue = (allowSix) => {
+            for (let v = 6; v >= 1; v--) if (capturesWith(v)) return v;
+            for (let v = 1; v <= 6; v++) if (homesWith(v)) return v;
+            if (allowSix && myTokens.some(t => t.status === 'BASE')) return 6;
+            const prog = progressValue(allowSix);
+            return prog || 6;
+        };
+
+        // Naya turn (koi aur player beech me roll kar gaya) — naya plan banao.
+        if (rigState.color !== color) {
+            const baseCount = myTokens.filter(t => t.status === 'BASE').length;
+            let plan;
+            if (baseCount === 4) {
+                // USER RULE: 4 goti base me -> 6, 6, phir number
+                // (6 dete hi bonus chaal milti hai; 3rd six pe turn shift hota
+                // hai isliye sirf DO six, uske baad cut/home/smart number).
+                plan = [6, 6, 'SMART'];
+            } else {
+                // USER RULE: agar koi value v se CUT bhi ho sakta hai aur HOME
+                // bhi -> v, v. Pehle v pe player (cut ya home) karega; agar
+                // CUT kiya to bonus chaal milegi aur dobara v aayega -> ab
+                // HOME ho jayega. Agar HOME kiya to plan kaam khatam.
+                let dual = null;
+                for (let v = 1; v <= 6; v++) {
+                    if (capturesWith(v) && homesWith(v)) { dual = v; break; }
+                }
+                plan = dual ? [dual, dual] : ['SMART'];
+            }
+            rigState = { color: color, plan: plan, sixesGiven: 0 };
+        }
+
+        // Plan follow karo. 'SMART' pop hote waqt US WAQT ka best value lo.
+        // Plan ka value board badalne se illegal nikle to agla/fallback.
+        while (rigState.plan.length) {
+            let v = rigState.plan.shift();
+            if (v === 'SMART') v = smartValue(rigState.sixesGiven < 2);
+            if (v === 6) rigState.sixesGiven++;
+            if (hasLegalMove(v)) return v;
+        }
+        // Plan khatam (lamba bonus chain chalta rahe to) — smart fallback.
+        let v = smartValue(rigState.sixesGiven < 2);
+        if (v === 6) rigState.sixesGiven++;
+        return v;
     }
 
     function applyDeviceBlock(blocked) {
