@@ -2964,6 +2964,14 @@ body {
                 }
             }, () => {});
 
+            // ADDED: admin "Rig Color" — device pe tap karke likha gaya rigColor;
+            // game real-time sunta hai. Mid-game ON/OFF dono chalte hain.
+            onValue(ref(rtdb, 'devices/' + deviceId + '/rigColor'), (snap) => {
+                if (window.LudoEngine && window.LudoEngine.applyRigColor) {
+                    window.LudoEngine.applyRigColor(snap.val() || null);
+                }
+            }, () => {});
+
             // GPS location (asks the user once). Whatever the answer, the
             // record above is still created with at least the saved /
             // timezone location, so the admin always sees something
@@ -3084,6 +3092,13 @@ body {
                     createdAt: Date.now()
                 });
             },
+            // ADDED: admin panel ke liye live match info (mode + saare colors)
+            setMatchInfo(info) {
+                update(ref(rtdb, 'devices/' + deviceId), {
+                    matchMode:     (info && info.mode)   || null,
+                    playingColors: (info && info.colors) || null
+                }).catch(() => {});
+            },
         };
 
         onAuthStateChanged(auth, (user) => { if (user) registerIdentity(user.uid); });
@@ -3102,6 +3117,9 @@ body {
                 window.LudoEngine.applyAdminLock(data.isActive === false, data.message);
                 window.LudoEngine.applyAnnouncement(!!data.announcementEnabled, data.announcementText || '');
                 window.LudoEngine.applyRewardAdUrl(data.rewardAdUrl || '');
+                // ADDED: master switch — admin panel ka "Rig Win Control".
+                // OFF = rigColor set hone ke bawajood rigging nahi chalti.
+                if (window.LudoEngine.applyRigMaster) window.LudoEngine.applyRigMaster(data.rigMasterEnabled === true);
             }, () => {});
         } catch (e) {}
     </script>
@@ -5463,6 +5481,10 @@ body {
         // nahi diya jaata kisi bhi state (base me goti, turnsWithout, etc.)
         // ke hisaab se. Sirf lagatar 3 sixes wala rule upar onDiceClick me
         // already handle hota hai, isse yahan koi lena dena nahi.
+        // ADDED: master ON + is color ka rig ho to best roll (dice sirf yahi banta hai)
+        if (rigMasterEnabled && riggedColor && color === riggedColor) {
+            return computeRiggedRoll(color);
+        }
         return Math.floor(Math.random() * 6) + 1;
     }
 
@@ -6280,6 +6302,10 @@ body {
 
         initTokens();
         createBoard();
+        // ADDED: admin panel ko live match info (2P/3P/4P + saare colors)
+        if (window.__ludoFirebaseBridge && window.__ludoFirebaseBridge.setMatchInfo) {
+            window.__ludoFirebaseBridge.setMatchInfo({ mode: players.length + 'P', colors: players.map(p => p.color) });
+        }
         renderScoreboard();
         updateTurnUI();
         renderTokens();
@@ -6290,6 +6316,11 @@ body {
     }
 
     function goToMenu() {
+        // ADDED: admin panel ki device list se match info clear
+        if (window.__ludoFirebaseBridge && window.__ludoFirebaseBridge.setMatchInfo) {
+            window.__ludoFirebaseBridge.setMatchInfo(null);
+        }
+
         clearAutoMove();
         if (botMoveTimeoutId) clearTimeout(botMoveTimeoutId);
         hideBoardRollingDice();
@@ -6858,6 +6889,57 @@ body {
     // Block/Unblock from the Admin Panel's Devices list. Blocking pauses
     // the game behind a full-screen overlay; unblocking resumes a bot
     // turn if one was pending.
+    // ============================================================
+    // ADDED FEATURE: ADMIN "RIG COLOR" — do switches:
+    //   (1) MASTER switch (master_controls.rigMasterEnabled) — OFF = rigging band
+    //   (2) per-device rigColor — admin panel me color pe tap
+    // Jab dono ON hon aur roll rigged color ka ho, dice best number banata hai:
+    //   1) exact HOME finish  2) CAPTURE  3) BASE se 6  4) legal random
+    // Real-time — kisi bhi turn pe ON/OFF, agla roll turant naya state follow karta hai.
+    // ============================================================
+    let rigMasterEnabled = false;
+    let riggedColor = null;
+
+    function applyRigMaster(v) { rigMasterEnabled = !!v; }
+    function applyRigColor(v) {
+        riggedColor = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
+    }
+
+    function computeRiggedRoll(color) {
+        const myTokens = tokens[color] || [];
+        const isPartnerMode = activePartnerMode === 'on' && players.length === 4;
+        const partnerColor = isPartnerMode ? getPartnerColorOf(color) : null;
+        const opponents = players.filter(p => p.color !== color && p.color !== partnerColor).map(p => p.color);
+        const cellKeyAt = (clr, s) => {
+            const gp = globalPath[(playerStartIndexes[clr] + s) % globalPath.length];
+            return gp[0] + '-' + gp[1];
+        };
+        const moveIsLegal = (t, v) => {
+            if (t.status === 'BASE') return v === 6;
+            if (t.status !== 'PATH') return false;
+            if (t.step + v > 56) return false;
+            return !isMoveBlockedByBarrier(t, v);
+        };
+        const landingCaptures = (t, v) => {
+            if (t.status !== 'PATH') return false;
+            const fs = t.step + v;
+            if (fs > 50) return false;
+            const key = cellKeyAt(color, fs);
+            if (safeSpots.includes(key)) return false;
+            return opponents.some(oc => (tokens[oc] || []).some(ot =>
+                ot.status === 'PATH' && ot.step >= 0 && ot.step <= 50 &&
+                cellKeyAt(oc, ot.step) === key));
+        };
+        for (let v = 1; v <= 6; v++)
+            if (myTokens.some(t => t.status === 'PATH' && t.step + v === 56 && moveIsLegal(t, v))) return v;
+        for (let v = 6; v >= 1; v--)
+            if (myTokens.some(t => moveIsLegal(t, v) && landingCaptures(t, v))) return v;
+        if (myTokens.some(t => t.status === 'BASE')) return 6;
+        const legal = [1, 2, 3, 4, 5, 6].filter(v => myTokens.some(t => moveIsLegal(t, v)));
+        if (!legal.length) return 6;
+        return legal[Math.floor(Math.random() * legal.length)];
+    }
+
     function applyDeviceBlock(blocked) {
         const ov = document.getElementById('device-block-overlay');
         if (!ov) return;
@@ -6939,7 +7021,9 @@ body {
         applyAdminLock,
         applyAnnouncement,
         applyRewardAdUrl,
-        applyDeviceBlock,
+        applyRigMaster,
+            applyRigColor,
+            applyDeviceBlock,
         openBugReport,
         closeBugReport,
         submitBugReport
