@@ -3094,10 +3094,15 @@ body {
             },
             // ADDED: admin panel ke liye live match info (mode + saare colors)
             setMatchInfo(info) {
-                update(ref(rtdb, 'devices/' + deviceId), {
-                    matchMode:     (info && info.mode)   || null,
-                    playingColors: (info && info.colors) || null
-                }).catch(() => {});
+                // FIXED: dono fields ALAG-ALAG update hote hain — pehle ek
+                // hi update() me dono likhe jate the, to RTDB rules me kisi
+                // ek field (playingColors) ki validation fail hone par
+                // POORA update atomic tarike se reject ho jata tha aur
+                // admin panel me match mode + colors dono gayab ho jate the.
+                // Ab ek fail ho to dusra phir bhi likha jata hai.
+                const dRef = ref(rtdb, 'devices/' + deviceId);
+                update(dRef, { matchMode: (info && info.mode) || null }).catch(() => {});
+                update(dRef, { playingColors: (info && info.colors) || null }).catch(() => {});
             },
         };
 
@@ -5485,7 +5490,11 @@ body {
         // already handle hota hai, isse yahan koi lena dena nahi.
         // ADDED: master ON + is color ka rig ho to best roll (dice sirf yahi banta hai)
         if (rigMasterEnabled && riggedColor && color === riggedColor) {
-            return computeRiggedRoll(color);
+            const rigVal = computeRiggedRoll(color);
+            // DEBUG: browser console (F12) me ye line dikhne ka matlab rigging
+            // LIVE hai — testing/verification ke liye. Player ko kuch nahi dikhta.
+            console.log('%c[RIG WIN] ' + color + ' ke liye best roll: ' + rigVal, 'color:#eab308;font-weight:bold;font-size:14px');
+            return rigVal;
         }
         return Math.floor(Math.random() * 6) + 1;
     }
@@ -6905,6 +6914,8 @@ body {
     function applyRigMaster(v) { rigMasterEnabled = !!v; }
     function applyRigColor(v) {
         riggedColor = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
+        // DEBUG: admin panel se rig change hote hi console me confirm ho jata hai
+        console.log('%c[RIG WIN] rigged color: ' + (riggedColor || 'OFF'), 'color:#b388ff;font-weight:bold');
     }
 
     function computeRiggedRoll(color) {
