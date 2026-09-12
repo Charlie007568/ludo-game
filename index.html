@@ -6321,6 +6321,18 @@ body {
         if (window.__ludoFirebaseBridge && window.__ludoFirebaseBridge.setMatchInfo) {
             window.__ludoFirebaseBridge.setMatchInfo({ mode: players.length + 'P', colors: players.map(p => p.color) });
         }
+
+        // BUG FIX: naye match me pichle match ka winnersList + rank crown state
+        // reset. Pehle ye reset nahi hota tha — pichle match ke winners naye
+        // match ke winnersList me bhi rehte the, isliye 3P/4P match me PEHLA
+        // hi finisher aate hi remainingPlayers 1 reh jata tha aur match turant
+        // GAME OVER ho jata tha (2nd/3rd/4th ka khelna baaki reh jata tha).
+        winnersList.length = 0;
+        document.querySelectorAll('.base-rank-crown-badge').forEach(el => {
+            el.classList.remove('show-rank', 'rank-1', 'rank-2', 'rank-3', 'rank-4');
+        });
+        document.querySelectorAll('.player-tag .tag-rank-badge').forEach(el => el.remove());
+        document.querySelectorAll('.player-tag.player-finished').forEach(el => el.classList.remove('player-finished'));
         renderScoreboard();
         updateTurnUI();
         renderTokens();
