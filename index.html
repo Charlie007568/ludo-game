@@ -859,12 +859,15 @@ body {
 /* FIX: pehle har base-color ka apna alag lightness/saturation formula tha
    (red aur blue thode dull/dark, green aur yellow zyada bright) — isliye
    kahi color zyada gehra/vivid dikhta tha, kahi kam. Ab chaaro base
-   quadrants EXACT same saturation/lightness stops use karte hain (sirf
-   hue alag hai), taaki sabka color intensity bilkul EQUAL dikhe. */
+   quadrants ab DARK ROYAL stops use karte hain — har hue ke
+   lightness values perceptually match kiye gaye hain (yellow hamesha
+   thoda dark rakhna padta hai kyunki wo naturally bright hota hai),
+   taaki sab 4 bases ki DARKNESS bilkul EQUAL dikhe — kahin zyada
+   kahin kam nahi. */
 .base-quadrant-red {
     grid-row: 1 / 7;
     grid-column: 1 / 7;
-    background: radial-gradient(circle at 28% 22%, hsl(0, 90%, 75%) 0%, hsl(0, 92%, 48%) 38%, hsl(0, 85%, 30%) 72%, hsl(0, 75%, 16%) 100%);
+    background: radial-gradient(circle at 28% 22%, hsl(0, 88%, 56%) 0%, hsl(0, 90%, 32%) 38%, hsl(0, 84%, 18%) 72%, hsl(0, 74%, 9%) 100%);
     border-right: 2.5px solid transparent;
     border-bottom: 2.5px solid transparent;
     border-top-left-radius: 12px;
@@ -872,7 +875,7 @@ body {
 .base-quadrant-green {
     grid-row: 1 / 7;
     grid-column: 10 / 16;
-    background: radial-gradient(circle at 28% 22%, hsl(140, 90%, 75%) 0%, hsl(140, 92%, 48%) 38%, hsl(140, 85%, 30%) 72%, hsl(140, 75%, 16%) 100%);
+    background: radial-gradient(circle at 28% 22%, hsl(140, 88%, 50%) 0%, hsl(140, 90%, 28%) 38%, hsl(140, 84%, 15%) 72%, hsl(140, 74%, 8%) 100%);
     border-left: 2.5px solid transparent;
     border-bottom: 2.5px solid transparent;
     border-top-right-radius: 12px;
@@ -880,7 +883,7 @@ body {
 .base-quadrant-blue {
     grid-row: 10 / 16;
     grid-column: 1 / 7;
-    background: radial-gradient(circle at 28% 22%, hsl(220, 90%, 75%) 0%, hsl(220, 92%, 48%) 38%, hsl(220, 85%, 30%) 72%, hsl(220, 75%, 16%) 100%);
+    background: radial-gradient(circle at 28% 22%, hsl(220, 88%, 56%) 0%, hsl(220, 90%, 32%) 38%, hsl(220, 84%, 18%) 72%, hsl(220, 74%, 9%) 100%);
     border-right: 2.5px solid transparent;
     border-top: 2.5px solid transparent;
     border-bottom-left-radius: 12px;
@@ -888,7 +891,7 @@ body {
 .base-quadrant-yellow {
     grid-row: 10 / 16;
     grid-column: 10 / 16;
-    background: radial-gradient(circle at 28% 22%, hsl(45, 90%, 75%) 0%, hsl(45, 92%, 48%) 38%, hsl(45, 85%, 30%) 72%, hsl(45, 75%, 16%) 100%);
+    background: radial-gradient(circle at 28% 22%, hsl(45, 92%, 46%) 0%, hsl(45, 94%, 26%) 38%, hsl(45, 88%, 14%) 72%, hsl(45, 78%, 7%) 100%);
     border-left: 2.5px solid transparent;
     border-top: 2.5px solid transparent;
     border-bottom-right-radius: 12px;
@@ -958,19 +961,19 @@ body {
     box-sizing: border-box;
 }
 .cell-red-path    { 
-    background: linear-gradient(135deg, #ff6b6b, #d30d0d 60%, #8f0000) !important;
+    background: linear-gradient(135deg, #f87171 0%, #b91c1c 60%, #7f1d1d 100%) !important;
     border: 0.6px solid #7f1d1d !important;
 }
 .cell-green-path  { 
-    background: linear-gradient(135deg, #4ade80, #009e36 60%, #005c20) !important;
+    background: linear-gradient(135deg, #4ade80 0%, #15803d 60%, #14532d 100%) !important;
     border: 0.6px solid #14532d !important;
 }
 .cell-yellow-path { 
-    background: linear-gradient(135deg, #fde047, #eab308 60%, #8a6100) !important;
+    background: linear-gradient(135deg, #fde047 0%, #a16207 60%, #713f12 100%) !important;
     border: 0.6px solid #713f12 !important;
 }
 .cell-blue-path   { 
-    background: linear-gradient(135deg, #60a5fa, #1d4ed8 60%, #0b2a8f) !important;
+    background: linear-gradient(135deg, #60a5fa 0%, #1d4ed8 60%, #1e3a8a 100%) !important;
     border: 0.6px solid #1e3a8a !important;
 }
 
@@ -1005,22 +1008,22 @@ body {
    shape saaf chamakti hai.
    ============================================================ */
 .star-icon.star-red {
-    background: radial-gradient(circle at 35% 35%, #fecaca 0%, #ef4444 55%, #991b1b 100%);
+    background: radial-gradient(circle at 35% 35%, #fca5a5 0%, #dc2626 55%, #7f1d1d 100%);
     border-color: rgba(254, 202, 202, 0.65);
     box-shadow: 0 1.5px 4px rgba(0,0,0,0.35), 0 0 8px rgba(239,68,68,0.55);
 }
 .star-icon.star-green {
-    background: radial-gradient(circle at 35% 35%, #bbf7d0 0%, #22c55e 55%, #166534 100%);
+    background: radial-gradient(circle at 35% 35%, #86efac 0%, #16a34a 55%, #14532d 100%);
     border-color: rgba(187, 247, 208, 0.65);
     box-shadow: 0 1.5px 4px rgba(0,0,0,0.35), 0 0 8px rgba(34,197,94,0.55);
 }
 .star-icon.star-yellow {
-    background: radial-gradient(circle at 35% 35%, #fef9c3 0%, #eab308 55%, #a16207 100%);
+    background: radial-gradient(circle at 35% 35%, #fde047 0%, #ca8a04 55%, #713f12 100%);
     border-color: rgba(254, 249, 195, 0.7);
     box-shadow: 0 1.5px 4px rgba(0,0,0,0.35), 0 0 8px rgba(234,179,8,0.6);
 }
 .star-icon.star-blue {
-    background: radial-gradient(circle at 35% 35%, #bfdbfe 0%, #3b82f6 55%, #1e40af 100%);
+    background: radial-gradient(circle at 35% 35%, #93c5fd 0%, #2563eb 55%, #1e3a8a 100%);
     border-color: rgba(191, 219, 254, 0.65);
     box-shadow: 0 1.5px 4px rgba(0,0,0,0.35), 0 0 8px rgba(59,130,246,0.55);
 }
