@@ -1116,13 +1116,17 @@ body {
     --tok-scale: 1.25 !important;
 }
 
-/* FIX: star pe jo goti khadi ho wo aur CHHOTI ho jaye (star clearly dikhe,
-   goti star ke design ko poori tarah dhake nahi) */
+/* FIX: star pe jo goti KHADI (non-movable) ho wo CHHOTI ho jaye (star
+   clearly dikhe, goti star ke design ko poori tarah dhake nahi). Lekin
+   jaise hi dice chal ke us goti ki turn/move ka mauka aaye (token-movable),
+   goti wapas NORMAL/BADI size me aa jaye + glow kare — taaki saaf pata
+   chale ki goti kahan hai aur tap karna aasan ho. Isliye .token-movable
+   yahan star ke chhote scale ko poori tarah override karta hai. */
 .token-on-star {
     --tok-scale: 0.55 !important;
 }
 .token-on-star.token-movable {
-    --tok-scale: 0.78 !important;
+    --tok-scale: 1.25 !important;
 }
 
 /* FIX: movable goti ka tap area uske charo taraf bada (invisible catcher) —
@@ -5222,9 +5226,25 @@ body {
                     // cell and more than one can walk — previously the
                     // FIRST one silently moved. Now the player picks.
                     showMoveChoice(inCell, (chosen) => handleTokenClick(chosen));
-                } else {
-                    handleTokenClick(inCell[0]);
+                    return;
                 }
+                // TOUCH FIX: pehle yahan hamesha inCell[0] (list ki pehli
+                // goti) move ho jaati thi — bhale hi user ne usi cell me
+                // baithi doosri (same-colour) goti ko tap kiya ho. Cell ka
+                // pointerdown, goti ke apne click se PEHLE fire hota hai,
+                // isliye galat goti turant move ho jaati thi aur sahi goti
+                // ka apna click handler baad me no-op ho jaata tha (turn
+                // already 'MOVING' me shift ho chuka hota tha).
+                // Ab hum pehle check karte hain ki tap asal me kaunsi
+                // .token element ke upar hua — agar wo tapped goti khud
+                // movable list me hai, to WAHI move hogi, koi aur nahi.
+                let tappedToken = null;
+                const tokenEl = e.target && e.target.closest ? e.target.closest('.token') : null;
+                if (tokenEl && tokenEl.id) {
+                    const tappedId = tokenEl.id.replace(/^t-/, '');
+                    tappedToken = inCell.find(t => String(t.id) === tappedId) || null;
+                }
+                handleTokenClick(tappedToken || inCell[0]);
             };
         });
 
@@ -5527,8 +5547,11 @@ body {
     }
 
     // FIX: board pe kahin bhi tap ho, us point ke hisaab se SAHI movable goti
-    // dhundo (animated bounding box + 14px tolerance + nearest-center). Isse
+    // dhundo (animated bounding box + tolerance + nearest-center). Isse
     // goti ke sir pe tap karne pe bhi wahi goti move hoti hai — dusri nahi.
+    // Tolerance thodi badhai gayi hai (14px -> 20px) taaki chhote-size goti
+    // par bhi tap aasani se lage, without affecting which goti gets picked
+    // (nearest-center hamesha sabse paas wali hi chunta hai).
     function boardTapFallback(e) {
         if (gameState !== 'AWAITING_MOVE' || !currentMovableTokens.length) return;
         const cp = getEffectiveCurrentPlayer();
@@ -5539,7 +5562,7 @@ body {
             const el = document.getElementById(`t-${t.id}`);
             if (!el) continue;
             const r = el.getBoundingClientRect(); // animation ka live position
-            const pad = 14;
+            const pad = 20;
             if (x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad) {
                 const d = Math.hypot(x - (r.left + r.width / 2), y - (r.top + r.height / 2));
                 if (d < bestDist) { bestDist = d; best = t; }
