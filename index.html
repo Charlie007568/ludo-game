@@ -5543,12 +5543,27 @@ body {
         });
     }
 
-    // FIX: board pe kahin bhi tap ho, us point ke hisaab se SAHI movable goti
-    // dhundo (animated bounding box + tolerance + nearest-center). Isse
-    // goti ke sir pe tap karne pe bhi wahi goti move hoti hai — dusri nahi.
-    // Tolerance thodi badhai gayi hai (14px -> 20px) taaki chhote-size goti
-    // par bhi tap aasani se lage, without affecting which goti gets picked
-    // (nearest-center hamesha sabse paas wali hi chunta hai).
+    // FIX (v2 — real root cause): the per-token/per-cell tap handlers
+    // (tEl.onclick, cellEl.onpointerdown) use the browser's native
+    // hit-test — "whichever DOM element/pseudo-element is physically on
+    // top at this pixel". When two same-colour movable gotis sit close to
+    // each other, their pins (and the invisible tap-catcher area around
+    // each) can visually overlap, so the browser's hit-test sometimes
+    // resolves to the NEIGHBOURING goti even though the user's finger was
+    // clearly on the intended one. Those handlers fire in the normal
+    // bubble/target phase, which happens BEFORE this function ever got a
+    // chance to run (it was only ever reached as a last-resort fallback
+    // when a tap hit truly empty space) — so this geometry check almost
+    // never got to override a bad hit-test result.
+    //
+    // Fix: this is now registered in the CAPTURE phase (see addEventListener
+    // below) so it runs FIRST, before any of those per-element handlers.
+    // It ignores raw hit-testing entirely and instead measures the actual
+    // on-screen distance from the tap point to the center of every
+    // currently-movable goti's own rendered position, then moves whichever
+    // one is geometrically closest to where the finger actually landed —
+    // exactly "the goti you tapped, not a nearby one" — and stops the
+    // event right there so the old, less reliable handlers never run.
     function boardTapFallback(e) {
         if (gameState !== 'AWAITING_MOVE' || !currentMovableTokens.length) return;
         const cp = getEffectiveCurrentPlayer();
@@ -5565,9 +5580,22 @@ body {
                 if (d < bestDist) { bestDist = d; best = t; }
             }
         }
-        if (best) {
-            e.stopPropagation();
-            e.preventDefault();
+        if (!best) return;
+        e.stopPropagation();
+        e.preventDefault();
+        // Different-colour teammates (Partner Mode) sharing the exact same
+        // true cell still get the existing "which one?" picker — geometry
+        // can't disambiguate two gotis standing on the identical spot, so
+        // that case is intentionally left to the player's explicit choice.
+        const samePos = currentMovableTokens.filter(t => {
+            if (t.status !== best.status) return false;
+            if (best.status === 'BASE') return false; // base slots are never shared
+            return t.pos && best.pos && t.pos[0] === best.pos[0] && t.pos[1] === best.pos[1];
+        });
+        const distinctColors = [...new Set(samePos.map(t => t.color))];
+        if (distinctColors.length > 1) {
+            showMoveChoice(samePos, (chosen) => handleTokenClick(chosen));
+        } else {
             handleTokenClick(best);
         }
     }
@@ -6828,7 +6856,7 @@ body {
     // goti-tap fallback: board-stage pe bubble-phase listener (cells/tokens
     // pehle handle karte hain; ye sirf miss hone wale taps pakadta hai)
     const boardStageEl = document.querySelector('.board-stage');
-    if (boardStageEl) boardStageEl.addEventListener('pointerdown', boardTapFallback);
+    if (boardStageEl) boardStageEl.addEventListener('pointerdown', boardTapFallback, true);
 
     loadCoinsFromStorage();
     updateCoinDisplays();
