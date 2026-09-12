@@ -3866,7 +3866,7 @@ body {
         o2.start(now + 0.07); o2.stop(now + 0.26);
     }
 
-    function playSound(type) {
+    function playSound(type, arg) {
         if (!soundEnabled) return;
         const ctx = getAudioContext();
         if (!ctx) return;
