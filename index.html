@@ -993,6 +993,37 @@ body {
     height: 82%;
     display: block;
 }
+
+/* ============================================================
+   ADDED FEATURE: ROYAL BASE-COLORED STAR MEDALLIONS
+   Board ke safe-spot stars ab generic golden badge ki jagah apne
+   base ke color ke ROYAL medallion ban gaye hain — har star ka
+   background us base color ka rich gradient hai (base quadrant ke
+   color jaisa) + halka golden rim, taaki safe-spot premium lage
+   aur player ko turant apne color ka star pehchanne me aasan ho.
+   Star ka polygon ab ivory/cream hai jisse colored badge par star
+   shape saaf chamakti hai.
+   ============================================================ */
+.star-icon.star-red {
+    background: radial-gradient(circle at 35% 35%, #fecaca 0%, #ef4444 55%, #991b1b 100%);
+    border-color: rgba(254, 202, 202, 0.65);
+    box-shadow: 0 1.5px 4px rgba(0,0,0,0.35), 0 0 8px rgba(239,68,68,0.55);
+}
+.star-icon.star-green {
+    background: radial-gradient(circle at 35% 35%, #bbf7d0 0%, #22c55e 55%, #166534 100%);
+    border-color: rgba(187, 247, 208, 0.65);
+    box-shadow: 0 1.5px 4px rgba(0,0,0,0.35), 0 0 8px rgba(34,197,94,0.55);
+}
+.star-icon.star-yellow {
+    background: radial-gradient(circle at 35% 35%, #fef9c3 0%, #eab308 55%, #a16207 100%);
+    border-color: rgba(254, 249, 195, 0.7);
+    box-shadow: 0 1.5px 4px rgba(0,0,0,0.35), 0 0 8px rgba(234,179,8,0.6);
+}
+.star-icon.star-blue {
+    background: radial-gradient(circle at 35% 35%, #bfdbfe 0%, #3b82f6 55%, #1e40af 100%);
+    border-color: rgba(191, 219, 254, 0.65);
+    box-shadow: 0 1.5px 4px rgba(0,0,0,0.35), 0 0 8px rgba(59,130,246,0.55);
+}
 /* (star shrink rule removed per user request — star hamesha same size rahe) */
 /* (yellow ring around occupied-star-cell REMOVED per user request — goti
    khud hi star pe dikh jaati hai, extra circle ki zaroorat nahi) */
@@ -4587,7 +4618,13 @@ body {
     }
 
     function createStarSVG(color) {
-        return `<svg viewBox="0 0 24 24" class="star-svg"><polygon points="12,1.5 14.8,8.5 22.2,8.8 16.6,13.5 18.3,21.0 12,16.8 5.7,21.0 7.4,13.5 1.8,8.8 9.2,8.5" fill="${color === 'Red' ? '#ef4444' : color === 'Green' ? '#22c55e' : color === 'Yellow' ? '#eab308' : '#3b82f6'}" stroke="#0f172a" stroke-width="1.2"/></svg>`;
+        // ADDED: royal look — ivory star with deep base-color outline, so the
+        // star shape pops on top of its base-colored medallion badge.
+        const royal = color === 'Red'    ? { fill: '#fff5f5', stroke: '#7f1d1d' }
+                    : color === 'Green'  ? { fill: '#f0fdf4', stroke: '#14532d' }
+                    : color === 'Yellow' ? { fill: '#fefce8', stroke: '#713f12' }
+                    :                      { fill: '#eff6ff', stroke: '#1e3a8a' };
+        return `<svg viewBox="0 0 24 24" class="star-svg"><polygon points="12,1.5 14.8,8.5 22.2,8.8 16.6,13.5 18.3,21.0 12,16.8 5.7,21.0 7.4,13.5 1.8,8.8 9.2,8.5" fill="${royal.fill}" stroke="${royal.stroke}" stroke-width="1.2"/></svg>`;
     }
 
     function pipGrid(value, skinId) {
@@ -5052,8 +5089,11 @@ body {
                 const key = `${r}-${c}`;
                 if (safeSpots.includes(key)) {
                     const star = document.createElement('span');
-                    star.className = 'star-icon';
-                    star.innerHTML = createStarSVG(r <= 7 && c <= 7 ? 'Red' : r <= 7 ? 'Green' : c <= 7 ? 'Blue' : 'Yellow');
+                    // ADDED: star apne base color ka royal medallion banata hai
+                    // (color wahi purana quadrant rule — bas look royal hai ab)
+                    const starColor = r <= 7 && c <= 7 ? 'Red' : r <= 7 ? 'Green' : c <= 7 ? 'Blue' : 'Yellow';
+                    star.className = 'star-icon star-icon-' + starColor.toLowerCase();
+                    star.innerHTML = createStarSVG(starColor);
                     cell.appendChild(star);
                 }
                 board.appendChild(cell);
