@@ -3119,7 +3119,9 @@ body {
                 window.LudoEngine.applyRewardAdUrl(data.rewardAdUrl || '');
                 // ADDED: master switch — admin panel ka "Rig Win Control".
                 // OFF = rigColor set hone ke bawajood rigging nahi chalti.
-                if (window.LudoEngine.applyRigMaster) window.LudoEngine.applyRigMaster(data.rigMasterEnabled === true);
+                // FIXED: default ON — admin ne kabhi touch nahi kiya to bhi rigging chalti hai;
+                // sirf EXPLICIT false (master switch OFF + Update) hi rigging band karta hai.
+                if (window.LudoEngine.applyRigMaster) window.LudoEngine.applyRigMaster(data.rigMasterEnabled !== false);
             }, () => {});
         } catch (e) {}
     </script>
