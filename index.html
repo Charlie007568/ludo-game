@@ -1046,12 +1046,13 @@ body {
 }
 
 .token.token-in-base {
-    /* FIX: goti pehle bahut badi thi jisse cell overlap ho jata tha aur
-       goti kis cell pe hai pata nahi chalta tha — size ghata di gayi hai. */
-    width: 108%;
-    height: 151%;
-    max-width: 78px;
-    max-height: 111px;
+    /* FIX (user request): base me khadi goti dekhne me bahut badi lagti
+       thi, size aur ghata di gayi hai taaki base tray me sahi proportion
+       me fit ho. */
+    width: 82%;
+    height: 114%;
+    max-width: 58px;
+    max-height: 84px;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -85.7%);
@@ -1147,17 +1148,16 @@ body {
     --tok-scale: 1.25 !important;
 }
 
-/* FIX: star pe jo goti KHADI (non-movable) ho wo CHHOTI ho jaye (star
-   clearly dikhe, goti star ke design ko poori tarah dhake nahi). Lekin
-   jaise hi dice chal ke us goti ki turn/move ka mauka aaye (token-movable),
-   goti wapas NORMAL/BADI size me aa jaye + glow kare — taaki saaf pata
-   chale ki goti kahan hai aur tap karna aasan ho. Isliye .token-movable
-   yahan star ke chhote scale ko poori tarah override karta hai. */
+/* FIX (user request): star pe khadi (non-movable) goti ab CHHOTI nahi,
+   balki THODI BADI dikhegi (star ka safe-spot clearly highlight ho).
+   Jaise hi dice chal ke us goti ki turn/move ka mauka aaye
+   (token-movable), goti aur bhi bada scale + glow le leti hai — taaki
+   saaf pata chale ki goti kahan hai aur tap karna aasan ho. */
 .token-on-star {
-    --tok-scale: 0.55 !important;
+    --tok-scale: 1.18 !important;
 }
 .token-on-star.token-movable {
-    --tok-scale: 1.25 !important;
+    --tok-scale: 1.3 !important;
 }
 
 /* FIX: movable goti ka tap area uske charo taraf bada (invisible catcher) —
