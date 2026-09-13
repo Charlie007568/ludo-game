@@ -3814,24 +3814,7 @@ body {
             playDiceClickTick(ctx, t, vol);
             t += 0.028 + (1 - p) * 0.035 + Math.random() * 0.018;
         }
-        // Phase 2 — landing: a clean, pleasant pluck (no deep wood thud)
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = 'triangle';
-        o.frequency.setValueAtTime(700, t);
-        o.frequency.exponentialRampToValueAtTime(420, t + 0.09);
-        g.gain.setValueAtTime(0.32, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
-        o.connect(g); g.connect(ctx.destination);
-        o.start(t); o.stop(t + 0.18);
-        // a tiny bright sparkle right after, like a satisfying "ding" of completion
-        const s = ctx.createOscillator(), gs = ctx.createGain();
-        s.type = 'sine';
-        s.frequency.setValueAtTime(1760, t + 0.03);
-        gs.gain.setValueAtTime(0.0001, t + 0.03);
-        gs.gain.exponentialRampToValueAtTime(0.14, t + 0.045);
-        gs.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-        s.connect(gs); gs.connect(ctx.destination);
-        s.start(t + 0.03); s.stop(t + 0.24);
+        // Landing sound removed per user request — tumble clicks only.
     }
 
     // ♟️ Goti walking the board (re-designed — no more wooden knock) —
