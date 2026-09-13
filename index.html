@@ -5678,6 +5678,14 @@ body {
             console.log('%c[RIG WIN] ' + color + ' ke liye best roll: ' + rigVal, 'color:#eab308;font-weight:bold;font-size:14px');
             return rigVal;
         }
+        // ADDED (user request): HAR mod (Duel/Triple/Full/Vs Computer) me —
+        // jab player ki koi bhi goti BASE me ho (yaani bahar aane ka intezaar
+        // kar rahi ho), to dice 6 aane ki probability 10% boost hoti hai
+        // (Math.random() < 0.10 => seedha 6). Rig Win wale rules pehle hi
+        // upar return kar chuke hain, isliye ye boost SIRF normal fair rolls
+        // pe lagta hai aur rigging ko kuch nahi badalta. 90% waqt dice bilkul
+        // fair/random hi rehta hai.
+        if ((tokens[color] || []).some(t => t.status === 'BASE') && Math.random() < 0.10) return 6;
         return Math.floor(Math.random() * 6) + 1;
     }
 
