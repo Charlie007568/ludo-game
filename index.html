@@ -385,7 +385,16 @@ body {
     width: 100vw;
     height: 100vh;
     padding: max(30px, calc(6px + env(safe-area-inset-top))) 4px max(14px, calc(6px + env(safe-area-inset-bottom)));
-    background: radial-gradient(circle at 50% 45%, #1976d2 0%, #1565c0 30%, #0d47a1 60%, #062356 85%, #020e24 100%);
+    /* FIX (user request): pehle ye gradient bahut extreme tha — beech me
+       bright saturated blue (#1976d2) se lekar edges par near-black
+       (#020e24) tak, jisse center bahut zyada roshan aur sides/corners
+       bahut zyada andhere dikhte the (uneven brightness), aur color bhi
+       ek "neon/web blue" jaisa laga, real gaming-table jaisa nahi.
+       Ab hue same (blue) rakha hai lekin ek hi consistent, muted "felt
+       table" tone use kiya hai jiski lightness center se edge tak sirf
+       thodi si kam hoti hai — isse pura background barabar roshan dikhta
+       hai aur color bhi zyada realistic/premium lagta hai. */
+    background: radial-gradient(circle at 50% 42%, #2f5f92 0%, #244a74 32%, #1a3454 62%, #10233b 100%);
     overflow: hidden;
     z-index: 10;
 }
@@ -400,8 +409,14 @@ body {
 .ludo-wallpaper-svg {
     width: 100%;
     height: 100%;
-    opacity: 0.65;
+    /* FIX (user request): pehle iski apni radial glow (neeche defined
+       #arena-center-glow) bhi center-bright/edge-dark thi, aur is layer
+       ki opacity (0.65) ke saath mil kar background ki unevenness aur
+       badha deti thi. Opacity halki kar di gayi hai taaki neeche wala
+       naya, zyada barabar-roshan base color hi asal me dikhe. */
+    opacity: 0.5;
 }
+
 .shell-inner {
     width: 100%;
     max-width: min(98vw, 880px); /* BOARD SIZE: enlarged per user request */
@@ -1095,22 +1110,22 @@ body {
 }
 
 .token.token-pin-overflow {
-    /* FIX: path goti bahut badi/oversized thi, jisse woh neighbouring
-       cells ko dhak leti thi aur exact cell pehchanna mushkil hota tha.
-       Size aur bhi chota kiya gaya (pehle 116%/164% tha) taaki goti apne
-       cell ke andar hi rahe aur upar wale/agle cell ki goti ko overlap na
-       kare — warna galat goti par tap lagne ka wahi glitch ban jaata jisme
-       ek goti ko tap karne par doosri (upar/aage wali) goti chal jaati thi. */
-    width: 100%;
-    height: 132%;
-    max-width: 70px;
-    max-height: 93px;
+    /* FIX (user request): track/star goti ka size ab EXACTLY base-tray
+       (.token-in-base) goti jaisa hi rakha gaya hai — same width/height/
+       max-size — taaki poore board me goti ek hi consistent size ki
+       dikhein, chahe wo base me ho ya track/star pe. */
+    width: 82%;
+    height: 114%;
+    max-width: 58px;
+    max-height: 84px;
     left: 50%;
     top: 50%;
-    /* --star-boost multiplies the JS-computed group scale (--tok-scale)
-       instead of replacing it, so stacked tokens on one star still fan
-       out and stay individually visible — see .token-on-star below. */
-    transform: translate(var(--tok-tx, -50%), var(--tok-ty, -85.7%)) scale(calc(var(--tok-scale, 1) * var(--star-boost, 1)));
+    /* --move-boost multiplies the JS-computed group/fan scale (--tok-scale)
+       instead of replacing it, so a movable goti sitting inside a multi-goti
+       stack still grows a little to show "yeh chal sakti hai", WITHOUT
+       losing its fanned-out position or covering/hiding the other players'
+       goti that share the same cell/star — see .token-movable below. */
+    transform: translate(var(--tok-tx, -50%), var(--tok-ty, -85.7%)) scale(calc(var(--tok-scale, 1) * var(--move-boost, 1)));
     transform-origin: 50% 85.7%;
     z-index: 38;
     filter: drop-shadow(0 9px 8px rgba(0, 0, 0, 0.5));
@@ -1148,34 +1163,26 @@ body {
 
 @keyframes tokenPinHopPulse {
     0% {
-        transform: translate(var(--tok-tx, -50%), var(--tok-ty, -85.7%)) scale(calc(var(--tok-scale, 1) * var(--star-boost, 1)));
+        transform: translate(var(--tok-tx, -50%), var(--tok-ty, -85.7%)) scale(calc(var(--tok-scale, 1) * var(--move-boost, 1)));
     }
     100% {
-        transform: translate(var(--tok-tx, -50%), calc(var(--tok-ty, -85.7%) - 6.5px)) scale(calc(var(--tok-scale, 1) * var(--star-boost, 1) * 1.07));
+        transform: translate(var(--tok-tx, -50%), calc(var(--tok-ty, -85.7%) - 6.5px)) scale(calc(var(--tok-scale, 1) * var(--move-boost, 1) * 1.07));
     }
 }
 
-/* FIX: chaal aane pe movable goti BADI ho jaye (tap karna aasan) */
+/* FIX (user request): chaal aane pe movable goti thodi BADI ho jaye (tap
+   karna aasan) — lekin ye ab JS ke group/fan scale (--tok-scale, jo kisi
+   star/cell par kayi goti stacked hone par unhe chhota karke fit karta
+   hai) ko poori tarah OVERRIDE nahi karta, balki use sirf multiply
+   (boost) karta hai. Isliye agar 4 players ki goti ek hi star par hon
+   aur ek player ki baari aaye, to sirf uski goti thodi badi/glow hoti
+   hai apni fanned-out jagah par hi — baaki teeno players ki goti apni
+   jagah par usi size me saaf dikhti rehti hain, unhe peeche dhakela ya
+   chhupaya nahi jaata. Akeli (na-stacked) goti ke liye --tok-scale
+   pehle se hi 1 hota hai, isliye wahan result pehle jaisa hi (1.25x)
+   rehta hai. */
 .token-movable.token-pin-overflow {
-    --tok-scale: 1.25 !important;
-}
-
-/* FIX (user request): star pe khadi (non-movable) goti ka maksad ye tha
-   ki agar ek hi star pe kayi goti aa jayen to SABKI dikhein — isliye ab
-   ye JS ke group-wise scale (jo stacking ke liye already calculate hota
-   hai) ko poori tarah replace nahi karta, balki use halka sa BOOST
-   (multiply) karta hai — ek akeli goti thodi badi dikhegi, aur jab
-   kayi goti ek star pe stacked hon to har goti apne chhote fanned-out
-   scale ke hisaab se hi thodi badi hogi, isliye sab dikhti rahengi.
-   Jaise hi us goti ki chalne ki baari (movable) aaye, boost hat jata
-   hai taaki wo EXACTLY normal track-movable goti jitni hi size le —
-   taaki tap karna waisa hi aasan ho jaisa kisi bhi normal chalti goti
-   par hota hai. */
-.token-on-star {
-    --star-boost: 1.15;
-}
-.token-on-star.token-movable {
-    --star-boost: 1;
+    --move-boost: 1.25;
 }
 
 /* FIX: movable goti ka tap area uske charo taraf bada (invisible catcher) —
@@ -3334,25 +3341,32 @@ body {
                         <text x="16" y="68" font-size="7" fill="#60a5fa" fill-opacity="0.4" text-anchor="middle">★</text>
                     </pattern>
 
-                    <radialGradient id="arena-center-glow" cx="50%" cy="46%" r="52%">
-                        <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.24"/>
-                        <stop offset="40%" stop-color="#1d4ed8" stop-opacity="0.14"/>
-                        <stop offset="100%" stop-color="#020617" stop-opacity="0.65"/>
+                    <!-- FIX (user request): pehle center glow bahut bright (0.24 opacity
+                         cyan) tha aur edge par 0.65 opacity ka near-black stop bahut
+                         zyada darkening kar deta tha — isi wajah se beech me zyada
+                         brightness aur sides/corners par kaafi kam brightness dikhti
+                         thi. Ab saari opacities kaafi kam kar di gayi hain aur radius
+                         badha diya hai taaki glow zyada FAILE aur ye vignette-jaisa
+                         sharp na lage — poora background barabar roshan dikhega. -->
+                    <radialGradient id="arena-center-glow" cx="50%" cy="46%" r="65%">
+                        <stop offset="0%" stop-color="#5ea8e0" stop-opacity="0.10"/>
+                        <stop offset="45%" stop-color="#2c5a8c" stop-opacity="0.06"/>
+                        <stop offset="100%" stop-color="#0a1626" stop-opacity="0.22"/>
                     </radialGradient>
                     <radialGradient id="corner-glow-red" cx="12%" cy="12%" r="38%">
-                        <stop offset="0%" stop-color="#ef4444" stop-opacity="0.16"/>
+                        <stop offset="0%" stop-color="#ef4444" stop-opacity="0.09"/>
                         <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
                     </radialGradient>
                     <radialGradient id="corner-glow-green" cx="88%" cy="12%" r="38%">
-                        <stop offset="0%" stop-color="#22c55e" stop-opacity="0.16"/>
+                        <stop offset="0%" stop-color="#22c55e" stop-opacity="0.09"/>
                         <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
                     </radialGradient>
                     <radialGradient id="corner-glow-yellow" cx="88%" cy="88%" r="38%">
-                        <stop offset="0%" stop-color="#eab308" stop-opacity="0.16"/>
+                        <stop offset="0%" stop-color="#eab308" stop-opacity="0.09"/>
                         <stop offset="100%" stop-color="#eab308" stop-opacity="0"/>
                     </radialGradient>
                     <radialGradient id="corner-glow-blue" cx="12%" cy="88%" r="38%">
-                        <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.16"/>
+                        <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.09"/>
                         <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
                     </radialGradient>
                 </defs>
@@ -5403,23 +5417,33 @@ body {
             cellEl.classList.toggle('occupied-star-cell', safeSpots.includes(key));
 
             group.forEach((t, i) => {
+                // FIX (user request): jab ek hi star/cell par kayi players ki
+                // goti stacked hon, to har goti ka size ab base-tray goti ke
+                // jitna hi (ya us ke kaafi kareeb) rakha gaya hai — pehle
+                // yahan scale bahut chhota (0.74-0.88) kar diya jaata tha
+                // jisse goti bahut chhoti/dabi hui dikhti thi aur samajh
+                // nahi aata tha ki wahan kis-kis player ki goti hai. Saath
+                // hi fan-out spread (dx/dy) bhi thoda badhaya gaya hai
+                // taaki bade size ke bawajood goti ek-doosre par poori
+                // tarah overlap na karein aur har player ki goti alag se
+                // pehchani ja sake.
                 let offsetConfig = { tx: '-50%', ty: '-85.7%', scale: '1' };
                 if (group.length === 2) {
-                    const dx = isBarrierPair ? (i === 0 ? -5 : 5) : (i === 0 ? -14 : 14);
-                    offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: isBarrierPair ? '0.86' : '0.88' };
+                    const dx = isBarrierPair ? (i === 0 ? -5 : 5) : (i === 0 ? -16 : 16);
+                    offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: isBarrierPair ? '0.90' : '0.92' };
                 } else if (group.length === 3) {
-                    const offsets = [{ dx: 0, dy: -12 }, { dx: -15, dy: 12 }, { dx: 15, dy: 12 }];
+                    const offsets = [{ dx: 0, dy: -14 }, { dx: -18, dy: 13 }, { dx: 18, dy: 13 }];
                     const off = offsets[i] || offsets[0];
-                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.80' };
+                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.90' };
                 } else if (group.length >= 4) {
-                    const offsets = [{ dx: -15, dy: -12 }, { dx: 15, dy: -12 }, { dx: -15, dy: 12 }, { dx: 15, dy: 12 }];
+                    const offsets = [{ dx: -18, dy: -14 }, { dx: 18, dy: -14 }, { dx: -18, dy: 14 }, { dx: 18, dy: 14 }];
                     const off = offsets[i % 4];
-                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.74' };
+                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.90' };
                 }
 
                 const isThisMoving = (activeMove && activeMove.tokenId === t.id);
                 const isMovable = movableIds.includes(t.id);
-                const onStar = safeSpots.includes(key); // FIX: star pe goti chhoti
+                const onStar = safeSpots.includes(key); // star-cell marker (styling hook only)
                 const tEl = document.createElement('div');
                 tEl.id = `t-${t.id}`;
                 tEl.className = `token token-${t.color.toLowerCase()} token-pin-overflow${isMovable ? ' token-movable' : ''}${isThisMoving ? ' token-active-moving' : ''}${t.barrier ? ' token-barrier' : ''}${onStar ? ' token-on-star' : ''}`;
