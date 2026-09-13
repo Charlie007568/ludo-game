@@ -832,7 +832,7 @@ body {
 .ludo-board {
     width: 100%;
     height: 100%;
-    background: #ffffff; /* FLAT LOOK (image-1 match): plain white board, no parchment dots */
+    background: #e9e7e0; /* FIX (user request): board ka bahut bright/white background thoda dim kiya gaya taaki base quadrants ke color uske saamne behtar/saaf dikhein */
     border-radius: 6px;
     display: grid;
     grid-template-columns: repeat(15, minmax(0, 1fr));
@@ -969,7 +969,7 @@ body {
 
 /* Track Cells - FLAT LOOK (image-1 match): plain flat colors, no gradients */
 .cell {
-    background-color: #ffffff;
+    background-color: #e9e7e0; /* FIX (user request): thoda dim kiya taaki poore board ki brightness ek jaisi/kam lage */
     border: 0.6px solid #1e293b;
     display: flex;
     justify-content: center;
@@ -998,8 +998,8 @@ body {
 
 .star-icon {
     position: absolute;
-    width: 88%;
-    height: 88%;
+    width: 78%;
+    height: 78%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1011,8 +1011,8 @@ body {
     z-index: 2;
 }
 .star-icon svg {
-    width: 82%;
-    height: 82%;
+    width: 88%;
+    height: 88%;
     display: block;
 }
 
@@ -1109,14 +1109,13 @@ body {
 }
 
 .token.token-pin-overflow {
-    /* FIX (user request): track/star goti ka size ab EXACTLY base-tray
-       (.token-in-base) goti jaisa hi rakha gaya hai — same width/height/
-       max-size — taaki poore board me goti ek hi consistent size ki
-       dikhein, chahe wo base me ho ya track/star pe. */
-    width: 82%;
-    height: 114%;
-    max-width: 58px;
-    max-height: 84px;
+    /* FIX (user request): track/star par chal rahi goti ka size base-tray
+       goti se THODA BADA rakha gaya hai taaki wo track/cell/star par
+       zyada saaf aur prominent dikhe (pehle dono same size the). */
+    width: 98%;
+    height: 137%;
+    max-width: 70px;
+    max-height: 101px;
     left: 50%;
     top: 50%;
     /* --move-boost multiplies the JS-computed group/fan scale (--tok-scale)
@@ -4883,10 +4882,18 @@ body {
     }
 
     function createStarSVG(color) {
-        // FLAT LOOK (image-1 match): plain cream star with a thin dark
-        // outline, sitting directly on the white cell — same for every
-        // quadrant, no colored medallion badge behind it anymore.
-        return `<svg viewBox="0 0 24 24" class="star-svg"><polygon points="12,1.5 14.8,8.5 22.2,8.8 16.6,13.5 18.3,21.0 12,16.8 5.7,21.0 7.4,13.5 1.8,8.8 9.2,8.5" fill="#fefce8" stroke="#1e293b" stroke-width="1"/></svg>`;
+        // FIX (user request): star ab uske quadrant ke base color se match
+        // karta hai (jaise us taraf ka base tray/quadrant hai), plain cream
+        // color ki jagah — taaki star cell ke background ke saath achhe se
+        // blend/match ho.
+        const STAR_BASE_FILL = {
+            Red: '#e5322d',
+            Green: '#2fa84f',
+            Blue: '#1f6feb',
+            Yellow: '#f2a90e'
+        };
+        const fill = STAR_BASE_FILL[color] || '#fefce8';
+        return `<svg viewBox="0 0 24 24" class="star-svg"><polygon points="12,1.5 14.8,8.5 22.2,8.8 16.6,13.5 18.3,21.0 12,16.8 5.7,21.0 7.4,13.5 1.8,8.8 9.2,8.5" fill="${fill}" stroke="#1e293b" stroke-width="1"/></svg>`;
     }
 
     function pipGrid(value, skinId) {
