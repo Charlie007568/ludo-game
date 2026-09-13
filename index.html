@@ -391,7 +391,14 @@ body {
        gaye hain (vivid, punchy blue — jaisa premium Ludo apps me hota
        hai), na ki halka/dull tone. Lightness range center-se-edge phir
        bhi kaafi kam hai taaki brightness barabar rahe. */
-    background: radial-gradient(circle at 50% 42%, #4a94e0 0%, #3a7cc8 32%, #2a63a8 62%, #1d4c85 100%);
+    /* FIX (user request): premium look — halka warm gold ambient glow
+       board ke peeche add kiya (studio-lighting jaisa), aur edges ko
+       pehle se zyada gehra/vignette kiya gaya hai taaki poora screen
+       ek flat single-tone blue ki jagah ek rich, depth-wala premium
+       backdrop lage. */
+    background:
+        radial-gradient(circle at 50% 40%, rgba(253, 224, 71, 0.14), transparent 52%),
+        radial-gradient(circle at 50% 42%, #5aa3ec 0%, #3d82cc 30%, #2760a0 58%, #163c6e 82%, #0c2547 100%);
     overflow: hidden;
     z-index: 10;
 }
@@ -832,14 +839,24 @@ body {
 .ludo-board {
     width: 100%;
     height: 100%;
-    background: #e9e7e0; /* FIX (user request): board ka bahut bright/white background thoda dim kiya gaya taaki base quadrants ke color uske saamne behtar/saaf dikhein */
+    /* FIX (user request): premium look — flat dull off-white ki jagah ab
+       ek soft warm ivory/parchment gradient hai (halki depth ke saath),
+       jisse base quadrant colors bhi behtar contrast ke saath dikhte
+       hain. */
+    background: radial-gradient(circle at 28% 18%, #f7f4ec 0%, #ece6d6 42%, #ddd4bd 100%);
     border-radius: 6px;
     display: grid;
     grid-template-columns: repeat(15, minmax(0, 1fr));
     grid-template-rows: repeat(15, minmax(0, 1fr));
-    border: 2px solid #1e293b; /* FLAT LOOK: simple dark outer border like image-1 */
+    border: 2px solid #1e293b;
     position: relative;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28); /* FLAT LOOK: plain drop shadow, no gold glow */
+    /* FIX (user request): premium look — dark drop shadow ke saath ab ek
+       thin gold trim ring bhi add kiya gaya hai (jaisa premium wooden/
+       gold-inlay ludo boards me hota hai), aur andar halka vignette. */
+    box-shadow:
+        0 10px 22px rgba(0, 0, 0, 0.32),
+        0 0 0 3px rgba(212, 175, 55, 0.45),
+        inset 0 0 26px rgba(15, 23, 42, 0.10);
     overflow: visible !important;
     box-sizing: border-box;
 }
@@ -969,7 +986,7 @@ body {
 
 /* Track Cells - FLAT LOOK (image-1 match): plain flat colors, no gradients */
 .cell {
-    background-color: #e9e7e0; /* FIX (user request): thoda dim kiya taaki poore board ki brightness ek jaisi/kam lage */
+    background-color: #ece6d6; /* FIX (user request): board ke naye warm ivory premium look se match karta hua shade */
     border: 0.6px solid #1e293b;
     display: flex;
     justify-content: center;
@@ -1011,9 +1028,10 @@ body {
     z-index: 2;
 }
 .star-icon svg {
-    width: 88%;
-    height: 88%;
+    width: 94%;
+    height: 94%;
     display: block;
+    overflow: visible;
 }
 
 /* ============================================================
@@ -1109,13 +1127,16 @@ body {
 }
 
 .token.token-pin-overflow {
-    /* FIX (user request): track/star par chal rahi goti ka size base-tray
-       goti se THODA BADA rakha gaya hai taaki wo track/cell/star par
-       zyada saaf aur prominent dikhe (pehle dono same size the). */
-    width: 98%;
-    height: 137%;
-    max-width: 70px;
-    max-height: 101px;
+    /* FIX (user request, round 2): pehle wali badhotri chhote mobile
+       screens par mushkil se dikhti thi kyunki size % (cell ke relative)
+       me thi, aur chhoti cell par yeh farak bahut kam pixel ka tha. Ab
+       size aur bhi zyada (base-tray goti se lagbhag 1.6x) rakha gaya hai
+       taaki track/star par goti har screen size par saaf-saaf badi
+       dikhe. */
+    width: 132%;
+    height: 184%;
+    max-width: 80px;
+    max-height: 116px;
     left: 50%;
     top: 50%;
     /* --move-boost multiplies the JS-computed group/fan scale (--tok-scale)
@@ -1159,6 +1180,47 @@ body {
     filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(254, 240, 138, 0.85)) drop-shadow(0 0 8px rgba(59, 130, 246, 0.65)) !important;
 }
 
+/* FIX (user request): jab 2/3/4 alag-alag players ki goti ek hi
+   cell/star share karti hain, to sirf spacing/scale kaafi nahi thi —
+   har goti ko uske apne color ka halka glow bhi diya gaya hai (yahan
+   tak ki jo is waqt movable NAHI hai unhe bhi), taaki thoda overlap
+   hone par bhi ek doosre se rang ke halo se pehchani ja sakein aur
+   koi bhi player ki goti "gayab" na lage. */
+.token-fan-group.token-red {
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 6px rgba(239, 68, 68, 0.85));
+}
+.token-fan-group.token-green {
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 6px rgba(34, 197, 94, 0.85));
+}
+.token-fan-group.token-yellow {
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 6px rgba(234, 179, 8, 0.85));
+}
+.token-fan-group.token-blue {
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 6px rgba(59, 130, 246, 0.85));
+}
+/* movable goti apna already-defined (zyada strong) glow rakhegi — us
+   par yeh halka fan-group glow lagne ki zaroorat nahi. */
+.token-fan-group.token-movable {
+    filter: unset;
+}
+.token-fan-group.token-movable.token-red { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(254, 240, 138, 0.85)) drop-shadow(0 0 8px rgba(239, 68, 68, 0.65)) !important; }
+.token-fan-group.token-movable.token-green { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(254, 240, 138, 0.85)) drop-shadow(0 0 8px rgba(34, 197, 94, 0.65)) !important; }
+.token-fan-group.token-movable.token-yellow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 8px rgba(234, 179, 8, 0.70)) !important; }
+.token-fan-group.token-movable.token-blue { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(254, 240, 138, 0.85)) drop-shadow(0 0 8px rgba(59, 130, 246, 0.65)) !important; }
+
+/* FIX (user request): jab ek hi star/cell par 4 alag players ki goti
+   ho jaayein, to poore cell ko ek soft white pulsing glow diya gaya
+   hai — isse cell khud roshan ho jaata hai aur us par baithi sabhi
+   goti (chahe thodi overlap bhi ho) saaf pehchani ja sakti hain. */
+.cell.stack-count-4 {
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55), 0 0 14px 3px rgba(255, 255, 255, 0.55);
+    animation: cellQuadGlow 1.4s ease-in-out infinite alternate;
+}
+@keyframes cellQuadGlow {
+    0% { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35), 0 0 10px 2px rgba(255, 255, 255, 0.35); }
+    100% { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.75), 0 0 18px 5px rgba(255, 255, 255, 0.75); }
+}
+
 @keyframes tokenPinHopPulse {
     0% {
         transform: translate(var(--tok-tx, -50%), var(--tok-ty, -85.7%)) scale(calc(var(--tok-scale, 1) * var(--move-boost, 1)));
@@ -1182,16 +1244,16 @@ body {
      + bigger resting scale) ke saath milakar ab poore group ki sabhi
      goti hamesha alag-alag pehchani ja sakengi. */
 .token-movable.token-pin-overflow {
-    --move-boost: 1.25;
+    --move-boost: 1.18;
 }
 .token-fan-group.token-movable.token-pin-overflow {
-    --move-boost: 1.15;
+    --move-boost: 1.10;
 }
 /* FIX (user request): track par actively chal rahi (gliding) goti ka
    size bhi thoda bada kiya gaya hai taaki move karte waqt wo aur zyada
    saaf/prominent dikhe. */
 .token-active-moving.token-pin-overflow {
-    --move-boost: 1.15;
+    --move-boost: 1.10;
 }
 
 /* FIX: movable goti ka tap area uske charo taraf bada (invisible catcher) —
@@ -4589,18 +4651,31 @@ body {
         const c = PAWN_PALETTE[color] || PAWN_PALETTE.Red;
         const uid = 'p' + (pawnSvgUid++);
 
+        // FIX (user request): shadow ka footprint pehle bahut chaura tha
+        // (rx 27/26, almost pura pin jitna wide) jiski wajah se jab kayi
+        // goti ek hi cell/star par hoti thi to unke shadows/rings ek
+        // doosre se takra kar "overlap" jaisa lagta tha. Ab ek simple,
+        // TIGHT black circle-shadow (map-pin ke bilkul neeche, seedhi
+        // point ke around) use kiya gaya hai — halka aur chota, taaki
+        // paas-paas khadi goti ka footprint kam ho aur overlap ka chance
+        // ghate.
         const groundShadow = `
-            <ellipse cx="40" cy="99" rx="27" ry="7" fill="url(#${uid}sh)"/>
-            <ellipse cx="42" cy="100" rx="26" ry="6.5" fill="rgba(0,0,0,0.28)" filter="url(#${uid}ds)"/>
+            <ellipse cx="40" cy="98.5" rx="13" ry="4.2" fill="rgba(0,0,0,0.42)"/>
         `;
 
         const defsCommon = `
             <defs>
                 <radialGradient id="${uid}body" cx="34%" cy="26%" r="76%">
+                    <!-- FIX (user request): pin ka pura body/balloon ab
+                         white/grey ki jagah us player ke apne color se
+                         bharwaya gaya hai (halka white glint upar-left
+                         me, real color beech me, gehra shade neeche) —
+                         side ka white highlight streak (neeche) waisa
+                         hi rakha gaya hai. -->
                     <stop offset="0%" stop-color="#ffffff"/>
-                    <stop offset="42%" stop-color="#f4f4f5"/>
-                    <stop offset="78%" stop-color="#d4d4d8"/>
-                    <stop offset="100%" stop-color="#8b8b93"/>
+                    <stop offset="20%" stop-color="${c.light}"/>
+                    <stop offset="58%" stop-color="${c.mid}"/>
+                    <stop offset="100%" stop-color="${c.dark}"/>
                 </radialGradient>
                 <linearGradient id="${uid}edge" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stop-color="#9ca3af"/>
@@ -4636,39 +4711,16 @@ body {
         `;
 
         if (skinId === 'classic_pin') {
-            const gears = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(deg => `
-                <rect x="-3" y="-27.5" width="6" height="5.5" rx="1.2" fill="url(#${uid}goldRing)" stroke="#3b1300" stroke-width="0.9" transform="rotate(${deg})"/>
-                <rect x="-2" y="-26.5" width="4" height="1.6" rx="0.5" fill="#ffffff" opacity="0.8" transform="rotate(${deg})"/>
-            `).join('');
-            const innerDots = [0, 60, 120, 180, 240, 300].map(deg => `
-                <circle cx="0" cy="-12" r="3.4" fill="url(#${uid}goldSide)" stroke="#1a0800" stroke-width="0.8" transform="rotate(${deg})"/>
-                <circle cx="0" cy="-12" r="2.2" fill="#120500" transform="rotate(${deg})"/>
-            `).join('');
-            const outerDots = [30, 90, 150, 210, 270, 330].map(deg => `
-                <circle cx="0" cy="-12" r="1.4" fill="#fef08a" stroke="#713f12" stroke-width="0.5" transform="rotate(${deg})"/>
-                <circle cx="0" cy="-12.3" r="0.6" fill="#ffffff" opacity="0.9" transform="rotate(${deg})"/>
-            `).join('');
-
+            // FIX (user request): pehle pin ke neeche ek chaudi, ghumti
+            // hui gold cogwheel "ring" thi — jab kayi goti ek hi
+            // cell/star par hoti thi, to unke ye chaudi rings ek doosre
+            // se takra kar overlap jaisa dikhti thi. Us poori gear-ring
+            // ko hata kar sirf ek simple black shadow-circle (upar
+            // groundShadow me define kiya gaya) rakha gaya hai — isse
+            // har goti ka footprint bahut chota ho gaya hai.
             return `<svg viewBox="0 0 80 112" preserveAspectRatio="xMidYMax meet" class="token-svg-root skin-classic_pin">
                 ${defsCommon}
                 ${groundShadow}
-                <g transform="translate(40, 96) scale(1, 0.42)">
-                    <circle class="token-gear-aura" r="28.5" fill="none" stroke="${c.mid}" stroke-width="2.6" opacity="0.8"/>
-                    <circle class="token-gear-orbit" r="30.5" fill="none" stroke="#fef08a" stroke-width="1.6" stroke-dasharray="8 6" opacity="0.9"/>
-                    <g class="token-gear-spinner">
-                        ${gears}
-                        <circle r="23" fill="url(#${uid}goldRing)" stroke="#3b1300" stroke-width="2.4"/>
-                        <circle r="21" fill="none" stroke="#ffffff" stroke-width="1.3" opacity="0.95"/>
-                        <circle r="18.5" fill="none" stroke="#451a03" stroke-width="1.1" opacity="0.8"/>
-                        <circle r="17.5" fill="#291001"/>
-                        ${innerDots}
-                        ${outerDots}
-                        <circle r="8.2" fill="none" stroke="#fef08a" stroke-width="1.2"/>
-                    </g>
-                    <circle r="7" fill="${c.mid}" stroke="#1c0b02" stroke-width="1.3"/>
-                    <circle r="5" fill="${c.light}" opacity="0.95"/>
-                    <circle cx="-1.5" cy="-1.5" r="2.2" fill="#ffffff" opacity="0.9"/>
-                </g>
                 <g filter="url(#${uid}ds)">
                     <path d="M40 6 C57.5 6 71 20.5 71 38.5 C71 51 62 63.5 49 82 C45.5 87.5 42.4 93.2 40 98 C37.6 93.2 34.5 87.5 31 82 C18 63.5 9 51 9 38.5 C9 20.5 22.5 6 40 6 Z"
                           fill="url(#${uid}body)" stroke="url(#${uid}edge)" stroke-width="1.4" stroke-linejoin="round"/>
@@ -4882,10 +4934,14 @@ body {
     }
 
     function createStarSVG(color) {
-        // FIX (user request): star ab uske quadrant ke base color se match
-        // karta hai (jaise us taraf ka base tray/quadrant hai), plain cream
-        // color ki jagah — taaki star cell ke background ke saath achhe se
-        // blend/match ho.
+        // FIX (user request): star apne quadrant ke base color se match
+        // karta hai. FIX 2: kabhi-kabhi star apni hi rang ki colored path
+        // cell (jaise red star, red-path cell) ke upar baithta tha aur
+        // color match hone ki wajah se cell ke andar hi "gayab" jaisa ho
+        // jaata tha / theek se dikhta nahi tha. Ab ek mota white halo
+        // outline peeche add kiya gaya hai taaki star HAMESHA saaf dikhe,
+        // chahe niche ki cell white/grey ho ya khud star jaise hi color
+        // ki ho.
         const STAR_BASE_FILL = {
             Red: '#e5322d',
             Green: '#2fa84f',
@@ -4893,7 +4949,11 @@ body {
             Yellow: '#f2a90e'
         };
         const fill = STAR_BASE_FILL[color] || '#fefce8';
-        return `<svg viewBox="0 0 24 24" class="star-svg"><polygon points="12,1.5 14.8,8.5 22.2,8.8 16.6,13.5 18.3,21.0 12,16.8 5.7,21.0 7.4,13.5 1.8,8.8 9.2,8.5" fill="${fill}" stroke="#1e293b" stroke-width="1"/></svg>`;
+        const pts = "12,1.5 14.8,8.5 22.2,8.8 16.6,13.5 18.3,21.0 12,16.8 5.7,21.0 7.4,13.5 1.8,8.8 9.2,8.5";
+        return `<svg viewBox="0 0 24 24" class="star-svg">
+            <polygon points="${pts}" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linejoin="round" opacity="0.95"/>
+            <polygon points="${pts}" fill="${fill}" stroke="#1e293b" stroke-width="1"/>
+        </svg>`;
     }
 
     function pipGrid(value, skinId) {
@@ -5405,7 +5465,7 @@ body {
 
         // 2. Track Cells Tokens
         board.querySelectorAll('.cell.has-token').forEach(c => {
-            c.classList.remove('has-token', 'barrier-pair-cell', 'occupied-star-cell');
+            c.classList.remove('has-token', 'barrier-pair-cell', 'occupied-star-cell', 'stack-count-4');
             c.style.zIndex = '';
         });
 
@@ -5439,6 +5499,10 @@ body {
             // on it, so there was no way to tell it was a safe spot. Add a
             // clear glowing ring around the cell itself in that case.
             cellEl.classList.toggle('occupied-star-cell', safeSpots.includes(key));
+            // FIX (user request): jab is cell/star par 4 (sabhi) players
+            // ki goti ek saath ho, poore cell ko glow diya jaata hai
+            // taaki koi bhi goti "dikhna band" na ho jaaye.
+            cellEl.classList.toggle('stack-count-4', group.length >= 4);
 
             group.forEach((t, i) => {
                 // FIX (user request, round 2): pehle bhi ek baar spacing/scale
@@ -5451,18 +5515,27 @@ body {
                 // maanga), aur (b) fan-out spread (dx/dy) bahut zyada wide kar
                 // diya gaya hai taaki har goti ka sar (pin-head) alag se
                 // saaf dikhe, chahe neeche thoda overlap ho bhi.
+                // FIX (user request, round 3): goti ka base size ab pehle se
+                // bahut bada hai, isliye purani spacing/scale ke saath
+                // 2/3/4 goti wale stack ek doosre ko poori tarah dhak
+                // (overlap) dete the aur "kis-kis ki goti hai" pehchanna
+                // mushkil ho jaata tha. Ab (a) fan-out spread pehle se aur
+                // zyada wide kiya gaya hai, aur (b) resting scale thoda
+                // aur chhota kiya gaya hai — taaki bade pin-size ke saath
+                // bhi har goti ka sar (head) alag-alag, bina ek doosre ko
+                // dhake, saaf dikhe.
                 let offsetConfig = { tx: '-50%', ty: '-85.7%', scale: '1' };
                 if (group.length === 2) {
-                    const dx = isBarrierPair ? (i === 0 ? -5 : 5) : (i === 0 ? -30 : 30);
-                    offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: isBarrierPair ? '0.90' : '0.96' };
+                    const dx = isBarrierPair ? (i === 0 ? -6 : 6) : (i === 0 ? -36 : 36);
+                    offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: isBarrierPair ? '0.74' : '0.80' };
                 } else if (group.length === 3) {
-                    const offsets = [{ dx: 0, dy: -24 }, { dx: -34, dy: 15 }, { dx: 34, dy: 15 }];
+                    const offsets = [{ dx: 0, dy: -30 }, { dx: -42, dy: 20 }, { dx: 42, dy: 20 }];
                     const off = offsets[i] || offsets[0];
-                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.94' };
+                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.72' };
                 } else if (group.length >= 4) {
-                    const offsets = [{ dx: -32, dy: -24 }, { dx: 32, dy: -24 }, { dx: -32, dy: 22 }, { dx: 32, dy: 22 }];
+                    const offsets = [{ dx: -40, dy: -30 }, { dx: 40, dy: -30 }, { dx: -40, dy: 27 }, { dx: 40, dy: 27 }];
                     const off = offsets[i % 4];
-                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.90' };
+                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.66' };
                 }
                 const isFanGroup = group.length > 1; // styling hook: dampens the movable-boost so it can't fully hide stack-mates
 
