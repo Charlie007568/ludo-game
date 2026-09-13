@@ -6008,16 +6008,72 @@ body {
 
             if (checkPlayerFinished(token.color)) {
                 if (!winnersList.includes(token.color)) {
-                    winnersList.push(token.color);
-                    const rank = winnersList.length;
-                    const pObj = players.find(p => p.color === token.color);
-                    const pName = pObj ? pObj.name : token.color;
-                    displayBaseRankCrown(token.color, rank);
+                    // FIX (Partner Mode team-finish rule): Partner Mode (4P) me
+                    // — chahe woh "8 goti full team control" wala ho ya "Dice
+                    // Pass to Partner" wala — jab ek partner (jaise Red) apni
+                    // saari 4 goti akela hi home kar leta hai lekin uska Partner
+                    // (Yellow) abhi bhi khel raha hai, to Red ko turant
+                    // winnersList me daal ke uska dice HIDE nahi karna hai.
+                    // Red ka dice ACTIVE hi rehta hai — apni normal baari par
+                    // wo khud apna dice roll karega, aur jo bhi number aayega
+                    // usse uske Partner (Yellow) ki goti chalegi (computeMovableForTurn
+                    // / findPendingBarrierDecision dono already Partner ke
+                    // colour ko winnersList se bahar rehte hi apne-aap pool kar
+                    // lete hain). Team ki "jeet" (rank + dice hide + crown)
+                    // tabhi FINAL hoti hai jab dono partners — Red AUR Yellow —
+                    // apni-apni saari goti home kar chuke hon.
+                    const partnerModeActive4p = (activePartnerMode === 'on' && players.length === 4);
+                    const partnerColor = partnerModeActive4p ? getPartnerColorOf(token.color) : null;
+                    const partnerPlayerObj = partnerColor ? players.find(pl => pl.color === partnerColor) : null;
+                    const partnerStillPlaying = partnerPlayerObj && !checkPlayerFinished(partnerColor);
 
-                    const rankLabels = { 1: '1st Place 🥇', 2: '2nd Place 🥈', 3: '3rd Place 🥉' };
-                    const rankText = rankLabels[rank] || `${rank}th Place`;
-                    document.getElementById('msg-log').innerText = `🏆 ${pName} secured ${rankText}!`;
-                    renderScoreboard(); // FIX: winner ke dice turant hide, game aage chale
+                    if (partnerModeActive4p && partnerPlayerObj && partnerStillPlaying) {
+                        // Akela partner home hua — team abhi incomplete, isliye
+                        // koi push/hide/crown nahi, sirf ek chota status message.
+                        const pObj = players.find(p => p.color === token.color);
+                        const pName = pObj ? pObj.name : token.color;
+                        document.getElementById('msg-log').innerText =
+                            `✅ ${pName}'s all gotis are Home! Dice ab Partner ${partnerPlayerObj.name} ki goti chalayega 🤝`;
+                        renderScoreboard(); // koi hide nahi hoga, bas status refresh
+                    } else {
+                        // Normal finish: (a) Partner Mode hi nahi hai, YA
+                        // (b) is player ka koi partner nahi/exit ho chuka, YA
+                        // (c) Partner Mode hai AUR partner bhi already apni
+                        //     saari goti home kar chuka hai (par abhi tak
+                        //     winnersList me nahi tha kyunki wo akela tha) —
+                        //     is case me team COMPLETE ho gayi hai, isliye
+                        //     partner ko pehle (usne pehle finish kiya tha)
+                        //     aur is token ke color ko turant baad push karo,
+                        //     dono ka rank/crown/hide ab ek saath final hota hai.
+                        const rankLabels = { 1: '1st Place 🥇', 2: '2nd Place 🥈', 3: '3rd Place 🥉' };
+                        let teamJustCompletedMsg = null;
+                        if (partnerModeActive4p && partnerPlayerObj && !partnerStillPlaying && !winnersList.includes(partnerColor)) {
+                            winnersList.push(partnerColor);
+                            const pRank = winnersList.length;
+                            const pObj2 = players.find(p => p.color === partnerColor);
+                            const pName2 = pObj2 ? pObj2.name : partnerColor;
+                            displayBaseRankCrown(partnerColor, pRank);
+                            teamJustCompletedMsg = { partnerName: pName2, partnerRank: pRank };
+                        }
+
+                        winnersList.push(token.color);
+                        const rank = winnersList.length;
+                        const pObj = players.find(p => p.color === token.color);
+                        const pName = pObj ? pObj.name : token.color;
+                        displayBaseRankCrown(token.color, rank);
+
+                        const rankText = rankLabels[rank] || `${rank}th Place`;
+                        if (teamJustCompletedMsg) {
+                            // USER RULE: dono partners ki saari goti home ho gayi
+                            // — team ki jeet/rank ab final hui, ek hi combined message.
+                            const partnerRankText = rankLabels[teamJustCompletedMsg.partnerRank] || `${teamJustCompletedMsg.partnerRank}th Place`;
+                            document.getElementById('msg-log').innerText =
+                                `🏆 Team complete! ${teamJustCompletedMsg.partnerName} (${partnerRankText}) & ${pName} (${rankText}) — both partners' gotis are Home!`;
+                        } else {
+                            document.getElementById('msg-log').innerText = `🏆 ${pName} secured ${rankText}!`;
+                        }
+                        renderScoreboard(); // FIX: winner ka dice turant hide, game aage chale
+                    }
                 }
                 hasBonus = false; // Player finished, no more turns for them
             }
