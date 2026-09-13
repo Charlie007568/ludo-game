@@ -87,6 +87,15 @@
     --blue-dark: #1d4ed8;
     --blue-light: #60a5fa;
     --blue-bg: #dbeafe;
+
+    /* IMPROVED (user request): base quadrant colors pehle washed-out/pale
+       lag rahe the (button-style --red/--green/--blue/--yellow) — ye 4
+       dedicated, zyada vivid/"exact" colors sirf base yard + uske
+       coin-slots ke liye, taaki Red/Green/Blue/Yellow saaf pehchane jayein. */
+    --base-red: #e5322d;
+    --base-green: #2fa84f;
+    --base-blue: #1f6feb;
+    --base-yellow: #f2a90e;
 }
 
 * {
@@ -869,28 +878,28 @@ body {
 .base-quadrant-red {
     grid-row: 1 / 7;
     grid-column: 1 / 7;
-    background: var(--red); /* FLAT LOOK (image-1 match): plain solid color */
+    background: var(--base-red); /* FLAT LOOK (image-1 match): plain solid color */
     border-right: 2px solid #1e293b;
     border-bottom: 2px solid #1e293b;
 }
 .base-quadrant-green {
     grid-row: 1 / 7;
     grid-column: 10 / 16;
-    background: var(--green); /* FLAT LOOK (image-1 match): plain solid color */
+    background: var(--base-green); /* FLAT LOOK (image-1 match): plain solid color */
     border-left: 2px solid #1e293b;
     border-bottom: 2px solid #1e293b;
 }
 .base-quadrant-blue {
     grid-row: 10 / 16;
     grid-column: 1 / 7;
-    background: var(--blue); /* FLAT LOOK (image-1 match): plain solid color */
+    background: var(--base-blue); /* FLAT LOOK (image-1 match): plain solid color */
     border-right: 2px solid #1e293b;
     border-top: 2px solid #1e293b;
 }
 .base-quadrant-yellow {
     grid-row: 10 / 16;
     grid-column: 10 / 16;
-    background: var(--yellow); /* FLAT LOOK (image-1 match): plain solid color */
+    background: var(--base-yellow); /* FLAT LOOK (image-1 match): plain solid color */
     border-left: 2px solid #1e293b;
     border-top: 2px solid #1e293b;
 }
@@ -915,10 +924,10 @@ body {
     position: relative;
     /* FLAT LOOK (image-1 match): removed inset shadow, plain flat circle */
 }
-.slot-red { background: var(--red); border: none; }
-.slot-green { background: var(--green); border: none; }
-.slot-yellow { background: var(--yellow); border: none; }
-.slot-blue { background: var(--blue); border: none; }
+.slot-red { background: var(--base-red); border: none; }
+.slot-green { background: var(--base-green); border: none; }
+.slot-yellow { background: var(--base-yellow); border: none; }
+.slot-blue { background: var(--base-blue); border: none; }
 
 /* Center Home Cell */
 /* CRITICAL FIX 2: overflow: visible so tokens in center home are NOT clipped */
