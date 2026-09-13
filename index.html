@@ -3795,43 +3795,60 @@ body {
         o.start(t); o.stop(t + 0.1);
     }
 
-    // 🎲 PREMIUM REALISTIC DICE ROLL — plastic die tumbling across a wooden
-    // board: a fast series of sharp plastic clicks (high-passed noise, very
-    // short decay) layered over warm wooden knocks (band-passed noise),
-    // spaced like accelerating-then-settling bounces, ending in a deep
-    // table thud + faint rattle ring. Much closer to a real dice recording.
+    // 🎲 PREMIUM DICE ROLL (re-designed — no more wooden knock) — crisp,
+    // clean plastic-dice-in-a-cup feel: bright short ticks that
+    // accelerate then settle, finishing with a light, pleasant
+    // "landed" pluck + a tiny sparkle chime instead of a dull wood thud.
+    function playDiceClickTick(ctx, t, vol) {
+        // bright plasticky tick — short high-passed noise, no low "wood" body
+        playNoiseKnock(ctx, t, 4800 + Math.random() * 2400, 3.2, 0.016, vol);
+    }
+
     function playDiceRattleSound(ctx, now) {
         let t = now + 0.015;
-        // Phase 1 — the tumble: 9-12 quick plastic clicks, tight spacing
+        // Phase 1 — the tumble: quick bright clicks, tightening as it slows
         const clicks = 9 + Math.floor(Math.random() * 4);
         for (let i = 0; i < clicks; i++) {
             const p = i / clicks;
-            const vol = 0.30 * (1 - p * 0.45) + 0.08;
-            // plastic "tik" — short bright high-passed noise
-            playNoiseKnock(ctx, t, 5200 + Math.random() * 1600, 2.2, 0.014, vol);
-            // wooden knock underneath — warm band-passed noise
-            playNoiseKnock(ctx, t, 1500 + Math.random() * 500, 2.6, 0.035, vol * 0.75);
-            // spacing tightens as the die slows down
+            const vol = 0.26 * (1 - p * 0.5) + 0.06;
+            playDiceClickTick(ctx, t, vol);
             t += 0.028 + (1 - p) * 0.035 + Math.random() * 0.018;
         }
-        // Phase 2 — final settle: deep table thud
-        playWoodTap(ctx, t, 0.55);
+        // Phase 2 — landing: a clean, pleasant pluck (no deep wood thud)
         const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = 'sine';
-        o.frequency.setValueAtTime(140, t);
-        o.frequency.exponentialRampToValueAtTime(48, t + 0.14);
-        g.gain.setValueAtTime(0.42, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(700, t);
+        o.frequency.exponentialRampToValueAtTime(420, t + 0.09);
+        g.gain.setValueAtTime(0.32, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
         o.connect(g); g.connect(ctx.destination);
-        o.start(t); o.stop(t + 0.27);
-        // faint rattle ring right after the settle (die wobbling to rest)
-        playNoiseKnock(ctx, t + 0.05, 3400, 3.0, 0.05, 0.10);
-        playNoiseKnock(ctx, t + 0.11, 2900, 3.0, 0.04, 0.06);
+        o.start(t); o.stop(t + 0.18);
+        // a tiny bright sparkle right after, like a satisfying "ding" of completion
+        const s = ctx.createOscillator(), gs = ctx.createGain();
+        s.type = 'sine';
+        s.frequency.setValueAtTime(1760, t + 0.03);
+        gs.gain.setValueAtTime(0.0001, t + 0.03);
+        gs.gain.exponentialRampToValueAtTime(0.14, t + 0.045);
+        gs.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+        s.connect(gs); gs.connect(ctx.destination);
+        s.start(t + 0.03); s.stop(t + 0.24);
     }
 
-    // ♟️ Goti walking the board — a light wooden tap per step.
+    // ♟️ Goti walking the board (re-designed — no more wooden knock) —
+    // a light, pleasant marimba-like "boop" per step: a soft short tone
+    // with a quick downward pitch flick, plus a very faint tap for
+    // tactile feel. Cheerful and clean instead of a dull wood tap.
     function playGotiStepSound(ctx, now) {
-        playWoodTap(ctx, now, 0.28);
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(920 + Math.random() * 80, now);
+        o.frequency.exponentialRampToValueAtTime(560, now + 0.09);
+        g.gain.setValueAtTime(0.22, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now); o.stop(now + 0.13);
+        // faint bright click on top for a crisp tactile edge (no low "wood" body)
+        playNoiseKnock(ctx, now, 5200 + Math.random() * 1200, 3.0, 0.012, 0.06);
     }
 
     // ⚔️ Ninja slash capture: a fast whoosh (sweeping bandpass noise),
@@ -3898,8 +3915,8 @@ body {
             // 🎲 premium dice rattle across the board
             playDiceRattleSound(ctx, now);
         } else if (type === 'bounce') {
-            // woody board tap as the die touches down mid-roll
-            playWoodTap(ctx, now, 0.35);
+            // light plastic bounce as the die touches down mid-roll
+            playDiceClickTick(ctx, now, 0.22);
         } else if (type === 'step') {
             // ♟️ goti tapping along the board
             playGotiStepSound(ctx, now);
