@@ -848,7 +848,7 @@ body {
     display: grid;
     grid-template-columns: repeat(15, minmax(0, 1fr));
     grid-template-rows: repeat(15, minmax(0, 1fr));
-    border: 2px solid #1e293b;
+    border: none; /* outer black board border REMOVED per user request */
     position: relative;
     /* FIX (user request): premium look — dark drop shadow ke saath ab ek
        thin gold trim ring bhi add kiya gaya hai (jaisa premium wooden/
@@ -936,8 +936,8 @@ body {
     width: 82%;
     height: 82%;
     background: #ffffff;
-    border-radius: 10px; /* FLAT LOOK (image-1 match): simpler corner radius */
-    border: 1.5px solid rgba(15, 23, 42, 0.15);
+    border-radius: 0; /* SQUARE (reference image-2): sharp corners, no rounding */
+    border: 2px solid rgba(15, 23, 42, 0.55);
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
@@ -4714,18 +4714,18 @@ body {
             // jaisi goti. Ground par ek simple black shadow.
             return `<svg viewBox="0 0 80 112" preserveAspectRatio="xMidYMax meet" class="token-svg-root skin-classic_pin">
                 ${defsCommon}
-                <ellipse cx="40" cy="102" rx="17" ry="5" fill="rgba(0,0,0,0.35)"/>
-                <circle cx="40" cy="97" r="15" fill="none" stroke="${c.dark}" stroke-width="4.5" opacity="0.9"/>
-                <circle cx="40" cy="97" r="8.5" fill="none" stroke="${c.light}" stroke-width="3"/>
+                <ellipse cx="40" cy="102" rx="19" ry="5.5" fill="rgba(0,0,0,0.35)"/>
+                <circle cx="40" cy="97" r="18" fill="none" stroke="${c.dark}" stroke-width="5" opacity="0.9"/>
+                <circle cx="40" cy="97" r="10" fill="none" stroke="${c.light}" stroke-width="3.5"/>
                 <g filter="url(#${uid}ds)">
                     <path d="M40 5 C58.5 5 72 18.5 72 37 C72 52 63 65 40 91 C17 65 8 52 8 37 C8 18.5 21.5 5 40 5 Z"
                           fill="#ffffff" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>
                     <path d="M40 10 C55.5 10 67 21.5 67 37 C67 50 59.5 61.5 40 84.5 C20.5 61.5 13 50 13 37 C13 21.5 24.5 10 40 10 Z"
                           fill="none" stroke="${c.light}" stroke-width="1.4" opacity="0.6"/>
-                    <circle cx="40" cy="35" r="17.5" fill="${c.dark}"/>
-                    <circle cx="40" cy="35" r="14.5" fill="${c.mid}"/>
-                    <circle cx="40" cy="35" r="14.5" fill="url(#${uid}badge)" opacity="0.5"/>
-                    <ellipse cx="34" cy="29" rx="5.5" ry="4" fill="#ffffff" opacity="0.8" transform="rotate(-20 34 29)"/>
+                    <circle cx="40" cy="35" r="19.5" fill="${c.dark}"/>
+                    <circle cx="40" cy="35" r="16.5" fill="${c.mid}"/>
+                    <circle cx="40" cy="35" r="16.5" fill="url(#${uid}badge)" opacity="0.5"/>
+                    <ellipse cx="33.5" cy="28.5" rx="6" ry="4.2" fill="#ffffff" opacity="0.8" transform="rotate(-20 33.5 28.5)"/>
                 </g>
             </svg>`;
         }
@@ -5521,18 +5521,23 @@ body {
                 // aur chhota kiya gaya hai — taaki bade pin-size ke saath
                 // bhi har goti ka sar (head) alag-alag, bina ek doosre ko
                 // dhake, saaf dikhe.
+                // DYNAMIC IN-CELL STACK (user request): jitni zyada goti ek
+                // cell/star par ho, sab ki size utni chhoti ho kar sab
+                // usi cell ke ANDAR stacked rahen (bina bahar fan-out hue).
+                // Goti kam hote hi size wapas badi hoti hai — akeli goti
+                // hamesha apni original (full) size pe aati hai.
                 let offsetConfig = { tx: '-50%', ty: '-85.7%', scale: '1' };
                 if (group.length === 2) {
-                    const dx = isBarrierPair ? (i === 0 ? -6 : 6) : (i === 0 ? -36 : 36);
-                    offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: isBarrierPair ? '0.74' : '0.80' };
+                    const dx = isBarrierPair ? (i === 0 ? -6 : 6) : (i === 0 ? -31 : 31);
+                    offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: isBarrierPair ? '0.74' : '0.62' };
                 } else if (group.length === 3) {
-                    const offsets = [{ dx: 0, dy: -30 }, { dx: -42, dy: 20 }, { dx: 42, dy: 20 }];
+                    const offsets = [{ dx: 0, dy: -16 }, { dx: -29, dy: 14 }, { dx: 29, dy: 14 }];
                     const off = offsets[i] || offsets[0];
-                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.72' };
+                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.52' };
                 } else if (group.length >= 4) {
-                    const offsets = [{ dx: -40, dy: -30 }, { dx: 40, dy: -30 }, { dx: -40, dy: 27 }, { dx: 40, dy: 27 }];
+                    const offsets = [{ dx: -26, dy: -14 }, { dx: 26, dy: -14 }, { dx: -26, dy: 14 }, { dx: 26, dy: 14 }];
                     const off = offsets[i % 4];
-                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.66' };
+                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.45' };
                 }
                 const isFanGroup = group.length > 1; // styling hook: dampens the movable-boost so it can't fully hide stack-mates
 
