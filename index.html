@@ -385,17 +385,13 @@ body {
     width: 100vw;
     height: 100vh;
     padding: max(30px, calc(6px + env(safe-area-inset-top))) 4px max(14px, calc(6px + env(safe-area-inset-bottom)));
-    /* FIX (user request, round 2): pichli baar bhi color "dull/grayish
-       navy" jaisa lag raha tha, kyunki (a) gradient khud thoda muted tha,
-       aur (b) uske upar wallpaper pattern ki dark tiles (neeche
-       .ludo-wallpaper-svg / #ludo-king-tile-pattern) kaafi zyada opacity
-       ke saath baithi hui thi, jo color ko aur dabaa/desaturate kar deti
-       thi. Ab base tone ko ek zyada RICH, saturated royal-blue kiya gaya
-       hai (jaisa asli Ludo apps me hota hai), phir bhi center-se-edge
-       lightness ka farak bahut kam rakha hai taaki brightness barabar
-       rahe — sirf color ab zyada "real/premium" blue jaisa dikhega,
-       grayish/washed-out nahi. */
-    background: radial-gradient(circle at 50% 42%, #3576c2 0%, #2a63a8 32%, #1f4e88 62%, #163c6c 100%);
+    /* FIX (user request, round 3): user ke hisaab se color abhi bhi sahi
+       nahi lag raha tha — is baar hue same royal-blue family me rakha
+       hai lekin brightness aur saturation dono meaningfully aur badhaye
+       gaye hain (vivid, punchy blue — jaisa premium Ludo apps me hota
+       hai), na ki halka/dull tone. Lightness range center-se-edge phir
+       bhi kaafi kam hai taaki brightness barabar rahe. */
+    background: radial-gradient(circle at 50% 42%, #4a94e0 0%, #3a7cc8 32%, #2a63a8 62%, #1d4c85 100%);
     overflow: hidden;
     z-index: 10;
 }
@@ -414,8 +410,10 @@ body {
        #arena-center-glow) bhi center-bright/edge-dark thi, aur is layer
        ki opacity (0.65) ke saath mil kar background ki unevenness aur
        badha deti thi. Opacity halki kar di gayi hai taaki neeche wala
-       naya, zyada barabar-roshan base color hi asal me dikhe. */
-    opacity: 0.4;
+       naya, zyada barabar-roshan base color hi asal me dikhe. Round-3
+       fix ke saath opacity aur bhi kam ki gayi hai taaki naya vivid
+       color pattern ke neeche dab na jaaye. */
+    opacity: 0.3;
 }
 
 .shell-inner {
@@ -1171,19 +1169,30 @@ body {
     }
 }
 
-/* FIX (user request): chaal aane pe movable goti thodi BADI ho jaye (tap
-   karna aasan) — lekin ye ab JS ke group/fan scale (--tok-scale, jo kisi
-   star/cell par kayi goti stacked hone par unhe chhota karke fit karta
-   hai) ko poori tarah OVERRIDE nahi karta, balki use sirf multiply
-   (boost) karta hai. Isliye agar 4 players ki goti ek hi star par hon
-   aur ek player ki baari aaye, to sirf uski goti thodi badi/glow hoti
-   hai apni fanned-out jagah par hi — baaki teeno players ki goti apni
-   jagah par usi size me saaf dikhti rehti hain, unhe peeche dhakela ya
-   chhupaya nahi jaata. Akeli (na-stacked) goti ke liye --tok-scale
-   pehle se hi 1 hota hai, isliye wahan result pehle jaisa hi (1.25x)
-   rehta hai. */
+/* FIX (user request, round 2): pehle jab kayi (2/3/4) players ki goti
+   ek hi star/cell par ho aur unme se ek ki baari aaye, to us movable
+   goti ka boost (1.25x) itna zyada tha ki wo baaki sab (chhoti, 0.90x)
+   tokens ko poori tarah dhak/chupa deti thi — player ko pata hi nahi
+   chalta tha ki wahan aur bhi kis-kis ki goti hai. Ab movable goti ko
+   do situations me alag boost milta hai:
+   - AKELI (kisi ke saath stack nahi) goti: pehle jaisa hi bada boost
+     (1.25x), taaki tap karna aasan rahe.
+   - STACKED (2/3/4-group ka hissa) goti: chhota boost (1.15x) — phir
+     bhi baaki se badi/glow dikhegi, lekin itni badi nahi ki poori tarah
+     unhe dhak de. Isko baaki fix (neeche offsetConfig me wider spacing
+     + bigger resting scale) ke saath milakar ab poore group ki sabhi
+     goti hamesha alag-alag pehchani ja sakengi. */
 .token-movable.token-pin-overflow {
     --move-boost: 1.25;
+}
+.token-fan-group.token-movable.token-pin-overflow {
+    --move-boost: 1.15;
+}
+/* FIX (user request): track par actively chal rahi (gliding) goti ka
+   size bhi thoda bada kiya gaya hai taaki move karte waqt wo aur zyada
+   saaf/prominent dikhe. */
+.token-active-moving.token-pin-overflow {
+    --move-boost: 1.15;
 }
 
 /* FIX: movable goti ka tap area uske charo taraf bada (invisible catcher) —
@@ -3309,29 +3318,29 @@ body {
                         <!-- Outer tile frame -->
                         <rect x="2" y="2" width="126" height="126" rx="4" fill="none" stroke="#2563eb" stroke-width="1" stroke-opacity="0.22" />
                         <!-- Top-Left Quadrant (Red tone) -->
-                        <rect x="6" y="6" width="48" height="48" rx="3" fill="#1e3a8a" fill-opacity="0.24" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.35" />
-                        <rect x="11" y="11" width="38" height="38" rx="2" fill="#0f172a" fill-opacity="0.22" />
+                        <rect x="6" y="6" width="48" height="48" rx="3" fill="#1e3a8a" fill-opacity="0.16" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.35" />
+                        <rect x="11" y="11" width="38" height="38" rx="2" fill="#0f172a" fill-opacity="0.14" />
                         <circle cx="20" cy="20" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <circle cx="40" cy="20" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <circle cx="20" cy="40" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <circle cx="40" cy="40" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <!-- Top-Right Quadrant (Green tone) -->
-                        <rect x="76" y="6" width="48" height="48" rx="3" fill="#1e3a8a" fill-opacity="0.24" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.35" />
-                        <rect x="81" y="11" width="38" height="38" rx="2" fill="#0f172a" fill-opacity="0.22" />
+                        <rect x="76" y="6" width="48" height="48" rx="3" fill="#1e3a8a" fill-opacity="0.16" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.35" />
+                        <rect x="81" y="11" width="38" height="38" rx="2" fill="#0f172a" fill-opacity="0.14" />
                         <circle cx="90" cy="20" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <circle cx="110" cy="20" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <circle cx="90" cy="40" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <circle cx="110" cy="40" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <!-- Bottom-Left Quadrant (Blue tone) -->
-                        <rect x="6" y="76" width="48" height="48" rx="3" fill="#1e3a8a" fill-opacity="0.24" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.35" />
-                        <rect x="11" y="81" width="38" height="38" rx="2" fill="#0f172a" fill-opacity="0.22" />
+                        <rect x="6" y="76" width="48" height="48" rx="3" fill="#1e3a8a" fill-opacity="0.16" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.35" />
+                        <rect x="11" y="81" width="38" height="38" rx="2" fill="#0f172a" fill-opacity="0.14" />
                         <circle cx="20" cy="90" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <circle cx="40" cy="90" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <circle cx="20" cy="110" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <circle cx="40" cy="110" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <!-- Bottom-Right Quadrant (Yellow tone) -->
-                        <rect x="76" y="76" width="48" height="48" rx="3" fill="#1e3a8a" fill-opacity="0.24" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.35" />
-                        <rect x="81" y="81" width="38" height="38" rx="2" fill="#0f172a" fill-opacity="0.22" />
+                        <rect x="76" y="76" width="48" height="48" rx="3" fill="#1e3a8a" fill-opacity="0.16" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.35" />
+                        <rect x="81" y="81" width="38" height="38" rx="2" fill="#0f172a" fill-opacity="0.14" />
                         <circle cx="90" cy="90" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <circle cx="110" cy="90" r="4" fill="#38bdf8" fill-opacity="0.4" />
                         <circle cx="90" cy="110" r="4" fill="#38bdf8" fill-opacity="0.4" />
@@ -5425,36 +5434,37 @@ body {
             cellEl.classList.toggle('occupied-star-cell', safeSpots.includes(key));
 
             group.forEach((t, i) => {
-                // FIX (user request): jab ek hi star/cell par kayi players ki
-                // goti stacked hon, to har goti ka size ab base-tray goti ke
-                // jitna hi (ya us ke kaafi kareeb) rakha gaya hai — pehle
-                // yahan scale bahut chhota (0.74-0.88) kar diya jaata tha
-                // jisse goti bahut chhoti/dabi hui dikhti thi aur samajh
-                // nahi aata tha ki wahan kis-kis player ki goti hai. Saath
-                // hi fan-out spread (dx/dy) bhi thoda badhaya gaya hai
-                // taaki bade size ke bawajood goti ek-doosre par poori
-                // tarah overlap na karein aur har player ki goti alag se
-                // pehchani ja sake.
+                // FIX (user request, round 2): pehle bhi ek baar spacing/scale
+                // badhayi thi, lekin goti ka size cell ke muqable itna bada
+                // hota hai ki utni si spacing se bhi 2-3-4 goti lagbhag poori
+                // tarah overlap ho jaati thi (khaaskar jab unme se ek movable
+                // hoke aur bhi badi ho jaati thi) — isse samajh nahi aata tha
+                // ki star/cell par aur kis-kis player ki goti hai. Ab (a)
+                // resting size aur bhi bada kar diya gaya hai (jaisa user ne
+                // maanga), aur (b) fan-out spread (dx/dy) bahut zyada wide kar
+                // diya gaya hai taaki har goti ka sar (pin-head) alag se
+                // saaf dikhe, chahe neeche thoda overlap ho bhi.
                 let offsetConfig = { tx: '-50%', ty: '-85.7%', scale: '1' };
                 if (group.length === 2) {
-                    const dx = isBarrierPair ? (i === 0 ? -5 : 5) : (i === 0 ? -16 : 16);
-                    offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: isBarrierPair ? '0.90' : '0.92' };
+                    const dx = isBarrierPair ? (i === 0 ? -5 : 5) : (i === 0 ? -30 : 30);
+                    offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: isBarrierPair ? '0.90' : '0.96' };
                 } else if (group.length === 3) {
-                    const offsets = [{ dx: 0, dy: -14 }, { dx: -18, dy: 13 }, { dx: 18, dy: 13 }];
+                    const offsets = [{ dx: 0, dy: -24 }, { dx: -34, dy: 15 }, { dx: 34, dy: 15 }];
                     const off = offsets[i] || offsets[0];
-                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.90' };
+                    offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.94' };
                 } else if (group.length >= 4) {
-                    const offsets = [{ dx: -18, dy: -14 }, { dx: 18, dy: -14 }, { dx: -18, dy: 14 }, { dx: 18, dy: 14 }];
+                    const offsets = [{ dx: -32, dy: -24 }, { dx: 32, dy: -24 }, { dx: -32, dy: 22 }, { dx: 32, dy: 22 }];
                     const off = offsets[i % 4];
                     offsetConfig = { tx: `calc(-50% + ${off.dx}%)`, ty: `calc(-85.7% + ${off.dy}%)`, scale: '0.90' };
                 }
+                const isFanGroup = group.length > 1; // styling hook: dampens the movable-boost so it can't fully hide stack-mates
 
                 const isThisMoving = (activeMove && activeMove.tokenId === t.id);
                 const isMovable = movableIds.includes(t.id);
                 const onStar = safeSpots.includes(key); // star-cell marker (styling hook only)
                 const tEl = document.createElement('div');
                 tEl.id = `t-${t.id}`;
-                tEl.className = `token token-${t.color.toLowerCase()} token-pin-overflow${isMovable ? ' token-movable' : ''}${isThisMoving ? ' token-active-moving' : ''}${t.barrier ? ' token-barrier' : ''}${onStar ? ' token-on-star' : ''}`;
+                tEl.className = `token token-${t.color.toLowerCase()} token-pin-overflow${isMovable ? ' token-movable' : ''}${isThisMoving ? ' token-active-moving' : ''}${t.barrier ? ' token-barrier' : ''}${onStar ? ' token-on-star' : ''}${isFanGroup ? ' token-fan-group' : ''}`;
                 tEl.style.setProperty('--tok-tx', offsetConfig.tx);
                 tEl.style.setProperty('--tok-ty', offsetConfig.ty);
                 tEl.style.setProperty('--tok-scale', offsetConfig.scale);
