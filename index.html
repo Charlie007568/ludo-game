@@ -804,28 +804,19 @@ body {
 }
 
 .ludo-board::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 12px;
-    pointer-events: none;
-    z-index: 1;
-    background: radial-gradient(ellipse at 50% 40%, rgba(255, 246, 224, 0) 52%, rgba(96, 70, 30, 0.10) 100%);
+    content: none; /* FLAT LOOK (image-1 match): removed premium sheen overlay */
 }
 .ludo-board {
     width: 100%;
     height: 100%;
-    background: #faf6ec;
-    background-image: radial-gradient(rgba(140, 118, 82, 0.15) 0.8px, transparent 0.8px), radial-gradient(rgba(140, 118, 82, 0.15) 0.8px, #faf6ec 0.8px);
-    background-size: 26px 26px;
-    background-position: 0 0, 13px 13px;
-    border-radius: 14px;
+    background: #ffffff; /* FLAT LOOK (image-1 match): plain white board, no parchment dots */
+    border-radius: 6px;
     display: grid;
     grid-template-columns: repeat(15, minmax(0, 1fr));
     grid-template-rows: repeat(15, minmax(0, 1fr));
-    border: 2px solid rgba(212, 175, 55, 0.55); /* PREMIUM: soft antique-gold rim */
+    border: 2px solid #1e293b; /* FLAT LOOK: simple dark outer border like image-1 */
     position: relative;
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38), 0 0 0 5px rgba(15, 23, 42, 0.88), 0 0 0 6px rgba(212, 175, 55, 0.32), inset 0 0 24px rgba(110, 82, 36, 0.08); /* PREMIUM frame, no white glare */
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28); /* FLAT LOOK: plain drop shadow, no gold glow */
     overflow: visible !important;
     box-sizing: border-box;
 }
@@ -839,8 +830,7 @@ body {
     padding: 4.5%;
     box-sizing: border-box;
     transition: box-shadow 0.3s ease;
-    /* PREMIUM LOOK: colors gehre dikhen — soft inner shadow + top sheen */
-    box-shadow: inset 0 3px 10px rgba(255, 255, 255, 0.28), inset 0 -6px 16px rgba(0, 0, 0, 0.38);
+    /* FLAT LOOK (image-1 match): no inner glow/sheen, flat solid color */
 }
 .base-active-turn {
     box-shadow: inset 0 0 22px rgba(255, 255, 255, 0.45), 0 0 14px rgba(255, 255, 255, 0.2);
@@ -879,43 +869,38 @@ body {
 .base-quadrant-red {
     grid-row: 1 / 7;
     grid-column: 1 / 7;
-    background: radial-gradient(circle at 28% 22%, hsl(0, 88%, 56%) 0%, hsl(0, 90%, 32%) 38%, hsl(0, 84%, 18%) 72%, hsl(0, 74%, 9%) 100%);
-    border-right: 2.5px solid transparent;
-    border-bottom: 2.5px solid transparent;
-    border-top-left-radius: 12px;
+    background: var(--red); /* FLAT LOOK (image-1 match): plain solid color */
+    border-right: 2px solid #1e293b;
+    border-bottom: 2px solid #1e293b;
 }
 .base-quadrant-green {
     grid-row: 1 / 7;
     grid-column: 10 / 16;
-    background: radial-gradient(circle at 28% 22%, hsl(140, 88%, 50%) 0%, hsl(140, 90%, 28%) 38%, hsl(140, 84%, 15%) 72%, hsl(140, 74%, 8%) 100%);
-    border-left: 2.5px solid transparent;
-    border-bottom: 2.5px solid transparent;
-    border-top-right-radius: 12px;
+    background: var(--green); /* FLAT LOOK (image-1 match): plain solid color */
+    border-left: 2px solid #1e293b;
+    border-bottom: 2px solid #1e293b;
 }
 .base-quadrant-blue {
     grid-row: 10 / 16;
     grid-column: 1 / 7;
-    background: radial-gradient(circle at 28% 22%, hsl(220, 88%, 56%) 0%, hsl(220, 90%, 32%) 38%, hsl(220, 84%, 18%) 72%, hsl(220, 74%, 9%) 100%);
-    border-right: 2.5px solid transparent;
-    border-top: 2.5px solid transparent;
-    border-bottom-left-radius: 12px;
+    background: var(--blue); /* FLAT LOOK (image-1 match): plain solid color */
+    border-right: 2px solid #1e293b;
+    border-top: 2px solid #1e293b;
 }
 .base-quadrant-yellow {
     grid-row: 10 / 16;
     grid-column: 10 / 16;
-    background: radial-gradient(circle at 28% 22%, hsl(45, 92%, 46%) 0%, hsl(45, 94%, 26%) 38%, hsl(45, 88%, 14%) 72%, hsl(45, 78%, 7%) 100%);
-    border-left: 2.5px solid transparent;
-    border-top: 2.5px solid transparent;
-    border-bottom-right-radius: 12px;
+    background: var(--yellow); /* FLAT LOOK (image-1 match): plain solid color */
+    border-left: 2px solid #1e293b;
+    border-top: 2px solid #1e293b;
 }
 
 .base-white-tray {
     width: 82%;
     height: 82%;
     background: #ffffff;
-    border-radius: 14px;
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
-    border: 1.5px solid rgba(15, 23, 42, 0.12);
+    border-radius: 10px; /* FLAT LOOK (image-1 match): simpler corner radius */
+    border: 1.5px solid rgba(15, 23, 42, 0.15);
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
@@ -928,12 +913,12 @@ body {
     justify-content: center;
     align-items: center;
     position: relative;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.16);
+    /* FLAT LOOK (image-1 match): removed inset shadow, plain flat circle */
 }
-.slot-red { background: var(--red-bg); border: 3.5px solid var(--red); }
-.slot-green { background: var(--green-bg); border: 3.5px solid var(--green); }
-.slot-yellow { background: var(--yellow-bg); border: 3.5px solid var(--yellow); }
-.slot-blue { background: var(--blue-bg); border: 3.5px solid var(--blue); }
+.slot-red { background: var(--red); border: none; }
+.slot-green { background: var(--green); border: none; }
+.slot-yellow { background: var(--yellow); border: none; }
+.slot-blue { background: var(--blue); border: none; }
 
 /* Center Home Cell */
 /* CRITICAL FIX 2: overflow: visible so tokens in center home are NOT clipped */
@@ -959,11 +944,10 @@ body {
     z-index: 1;
 }
 
-/* Track Cells - Premium Dark Contrasting Track Lines */
+/* Track Cells - FLAT LOOK (image-1 match): plain flat colors, no gradients */
 .cell {
-    background-color: #fbf8ef;
-    border: 0.6px solid #22304a;
-    box-shadow: inset 0 1px 2px rgba(70, 52, 22, 0.12);
+    background-color: #ffffff;
+    border: 0.6px solid #1e293b;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -973,20 +957,20 @@ body {
     box-sizing: border-box;
 }
 .cell-red-path    { 
-    background: linear-gradient(135deg, #f87171 0%, #b91c1c 60%, #7f1d1d 100%) !important;
-    border: 0.6px solid #7f1d1d !important;
+    background: var(--red) !important;
+    border: 0.6px solid #1e293b !important;
 }
 .cell-green-path  { 
-    background: linear-gradient(135deg, #4ade80 0%, #15803d 60%, #14532d 100%) !important;
-    border: 0.6px solid #14532d !important;
+    background: var(--green) !important;
+    border: 0.6px solid #1e293b !important;
 }
 .cell-yellow-path { 
-    background: linear-gradient(135deg, #fde047 0%, #a16207 60%, #713f12 100%) !important;
-    border: 0.6px solid #713f12 !important;
+    background: var(--yellow) !important;
+    border: 0.6px solid #1e293b !important;
 }
 .cell-blue-path   { 
-    background: linear-gradient(135deg, #60a5fa 0%, #1d4ed8 60%, #1e3a8a 100%) !important;
-    border: 0.6px solid #1e3a8a !important;
+    background: var(--blue) !important;
+    border: 0.6px solid #1e293b !important;
 }
 
 .star-icon {
@@ -997,10 +981,10 @@ body {
     justify-content: center;
     align-items: center;
     pointer-events: none;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #ffffff 0%, #fef9c3 60%, #fde68a 100%);
-    box-shadow: 0 1.5px 4px rgba(0, 0, 0, 0.3), 0 0 6px rgba(253, 224, 71, 0.5);
-    border: 1.5px solid rgba(202, 138, 4, 0.35);
+    border-radius: 0; /* FLAT LOOK (image-1 match): no round badge, plain star on cell */
+    background: transparent;
+    box-shadow: none;
+    border: none;
     z-index: 2;
 }
 .star-icon svg {
@@ -1010,34 +994,18 @@ body {
 }
 
 /* ============================================================
-   ADDED FEATURE: ROYAL BASE-COLORED STAR MEDALLIONS
-   Board ke safe-spot stars ab generic golden badge ki jagah apne
-   base ke color ke ROYAL medallion ban gaye hain — har star ka
-   background us base color ka rich gradient hai (base quadrant ke
-   color jaisa) + halka golden rim, taaki safe-spot premium lage
-   aur player ko turant apne color ka star pehchanne me aasan ho.
-   Star ka polygon ab ivory/cream hai jisse colored badge par star
-   shape saaf chamakti hai.
+   FLAT LOOK (image-1 match): safe-spot stars simplified back to a
+   plain, single cream/white star icon (matching the reference
+   screenshot) instead of the per-base colored gradient medallion.
+   All four color classes now render identically, flat and simple.
    ============================================================ */
-.star-icon.star-red {
-    background: radial-gradient(circle at 35% 35%, #fca5a5 0%, #dc2626 55%, #7f1d1d 100%);
-    border-color: rgba(254, 202, 202, 0.65);
-    box-shadow: 0 1.5px 4px rgba(0,0,0,0.35), 0 0 8px rgba(239,68,68,0.55);
-}
-.star-icon.star-green {
-    background: radial-gradient(circle at 35% 35%, #86efac 0%, #16a34a 55%, #14532d 100%);
-    border-color: rgba(187, 247, 208, 0.65);
-    box-shadow: 0 1.5px 4px rgba(0,0,0,0.35), 0 0 8px rgba(34,197,94,0.55);
-}
-.star-icon.star-yellow {
-    background: radial-gradient(circle at 35% 35%, #fde047 0%, #ca8a04 55%, #713f12 100%);
-    border-color: rgba(254, 249, 195, 0.7);
-    box-shadow: 0 1.5px 4px rgba(0,0,0,0.35), 0 0 8px rgba(234,179,8,0.6);
-}
+.star-icon.star-red,
+.star-icon.star-green,
+.star-icon.star-yellow,
 .star-icon.star-blue {
-    background: radial-gradient(circle at 35% 35%, #93c5fd 0%, #2563eb 55%, #1e3a8a 100%);
-    border-color: rgba(191, 219, 254, 0.65);
-    box-shadow: 0 1.5px 4px rgba(0,0,0,0.35), 0 0 8px rgba(59,130,246,0.55);
+    background: transparent;
+    border: none;
+    box-shadow: none;
 }
 /* (star shrink rule removed per user request — star hamesha same size rahe) */
 /* (yellow ring around occupied-star-cell REMOVED per user request — goti
@@ -4822,13 +4790,10 @@ body {
     }
 
     function createStarSVG(color) {
-        // ADDED: royal look — ivory star with deep base-color outline, so the
-        // star shape pops on top of its base-colored medallion badge.
-        const royal = color === 'Red'    ? { fill: '#fff5f5', stroke: '#7f1d1d' }
-                    : color === 'Green'  ? { fill: '#f0fdf4', stroke: '#14532d' }
-                    : color === 'Yellow' ? { fill: '#fefce8', stroke: '#713f12' }
-                    :                      { fill: '#eff6ff', stroke: '#1e3a8a' };
-        return `<svg viewBox="0 0 24 24" class="star-svg"><polygon points="12,1.5 14.8,8.5 22.2,8.8 16.6,13.5 18.3,21.0 12,16.8 5.7,21.0 7.4,13.5 1.8,8.8 9.2,8.5" fill="${royal.fill}" stroke="${royal.stroke}" stroke-width="1.2"/></svg>`;
+        // FLAT LOOK (image-1 match): plain cream star with a thin dark
+        // outline, sitting directly on the white cell — same for every
+        // quadrant, no colored medallion badge behind it anymore.
+        return `<svg viewBox="0 0 24 24" class="star-svg"><polygon points="12,1.5 14.8,8.5 22.2,8.8 16.6,13.5 18.3,21.0 12,16.8 5.7,21.0 7.4,13.5 1.8,8.8 9.2,8.5" fill="#fefce8" stroke="#1e293b" stroke-width="1"/></svg>`;
     }
 
     function pipGrid(value, skinId) {
@@ -5232,41 +5197,17 @@ body {
 
         const centerHome = document.createElement('div');
         centerHome.className = 'center-home-cell';
+        // FLAT LOOK (image-1 match): plain solid-color pinwheel triangles,
+        // no gradients and no gold circle/star emblem in the middle —
+        // just the 4 flat triangles crossed by two thin diagonal lines.
         centerHome.innerHTML = `
             <svg class="center-home-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <defs>
-                    <linearGradient id="ch-green" x1="50%" y1="0%" x2="50%" y2="100%">
-                        <stop offset="0%" stop-color="#34d399"/>
-                        <stop offset="100%" stop-color="#065f26"/>
-                    </linearGradient>
-                    <linearGradient id="ch-yellow" x1="100%" y1="50%" x2="0%" y2="50%">
-                        <stop offset="0%" stop-color="#fde047"/>
-                        <stop offset="100%" stop-color="#7c5803"/>
-                    </linearGradient>
-                    <linearGradient id="ch-blue" x1="50%" y1="100%" x2="50%" y2="0%">
-                        <stop offset="0%" stop-color="#60a5fa"/>
-                        <stop offset="100%" stop-color="#0a2f96"/>
-                    </linearGradient>
-                    <linearGradient id="ch-red" x1="0%" y1="50%" x2="100%" y2="50%">
-                        <stop offset="0%" stop-color="#f87171"/>
-                        <stop offset="100%" stop-color="#7f0000"/>
-                    </linearGradient>
-                    <radialGradient id="ch-gold" cx="40%" cy="35%" r="65%">
-                        <stop offset="0%" stop-color="#fffbeb"/>
-                        <stop offset="35%" stop-color="#fef08a"/>
-                        <stop offset="70%" stop-color="#eab308"/>
-                        <stop offset="100%" stop-color="#78350f"/>
-                    </radialGradient>
-                </defs>
-                <polygon points="0,0 100,0 50,50" fill="url(#ch-green)"/>
-                <polygon points="100,0 100,100 50,50" fill="url(#ch-yellow)"/>
-                <polygon points="100,100 0,100 50,50" fill="url(#ch-blue)"/>
-                <polygon points="0,100 0,0 50,50" fill="url(#ch-red)"/>
-                <line x1="0" y1="0" x2="100" y2="100" stroke="#0f172a" stroke-width="2"/>
-                <line x1="100" y1="0" x2="0" y2="100" stroke="#0f172a" stroke-width="2"/>
-                <circle cx="50" cy="50" r="16.5" fill="url(#ch-gold)" stroke="#451a03" stroke-width="1.6"/>
-                <circle cx="50" cy="50" r="13.5" fill="none" stroke="#fef9c3" stroke-width="0.9" opacity="0.85"/>
-                <text x="50" y="55.5" text-anchor="middle" font-size="14.5" font-weight="900" fill="#ffffff">★</text>
+                <polygon points="0,0 100,0 50,50" fill="#22c55e"/>
+                <polygon points="100,0 100,100 50,50" fill="#eab308"/>
+                <polygon points="100,100 0,100 50,50" fill="#3b82f6"/>
+                <polygon points="0,100 0,0 50,50" fill="#ef4444"/>
+                <line x1="0" y1="0" x2="100" y2="100" stroke="#1e293b" stroke-width="2"/>
+                <line x1="100" y1="0" x2="0" y2="100" stroke="#1e293b" stroke-width="2"/>
             </svg>
         `;
         board.appendChild(centerHome);
