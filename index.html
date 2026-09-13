@@ -3199,7 +3199,7 @@ body {
                 <span class="dash-card-title">🎮 Select Game Mode</span>
             </div>
             <div class="mode-grid">
-                <div class="mode-tile mode-blue" onclick="window.LudoEngine.startGame('computer')">
+                <div class="mode-tile mode-blue" onclick="window.LudoEngine.showComputerPicker()">
                     <span class="mode-icon-badge">🤖</span>
                     <span class="mode-name">Vs Computer</span>
                 </div>
@@ -3214,6 +3214,39 @@ body {
                 <div class="mode-tile mode-red" onclick="window.LudoEngine.startGame(4)">
                     <span class="mode-icon-badge">🏆</span>
                     <span class="mode-name">Full Table</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADDED: Vs Computer player-count picker — "Vs Computer" tile tap
+             karne pe ye card khulta hai aur player choose karta hai ki woh
+             computer ke against 2, 3 ya 4 player table par khelna chahta
+             hai. User hamesha ek random color leta hai, baaki seats
+             computers ki hoti hain. -->
+        <div class="dash-card" id="computer-picker-card" style="display:none;">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🤖 Vs Computer — Kitne Players?</span>
+            </div>
+            <div class="mode-grid">
+                <div class="mode-tile mode-blue" onclick="window.LudoEngine.startGame('computer2')">
+                    <span class="mode-icon-badge">🎲</span>
+                    <span class="mode-name">1 vs 1</span>
+                    <span class="mode-sub">You + 1 Computer</span>
+                </div>
+                <div class="mode-tile mode-yellow" onclick="window.LudoEngine.startGame('computer3')">
+                    <span class="mode-icon-badge">🎯</span>
+                    <span class="mode-name">1 vs 2</span>
+                    <span class="mode-sub">You + 2 Computers</span>
+                </div>
+                <div class="mode-tile mode-red" onclick="window.LudoEngine.startGame('computer4')">
+                    <span class="mode-icon-badge">🏆</span>
+                    <span class="mode-name">1 vs 3</span>
+                    <span class="mode-sub">You + 3 Computers</span>
+                </div>
+                <div class="mode-tile mode-green" onclick="window.LudoEngine.hideComputerPicker()">
+                    <span class="mode-icon-badge">↩️</span>
+                    <span class="mode-name">Cancel</span>
+                    <span class="mode-sub">Back to modes</span>
                 </div>
             </div>
         </div>
@@ -4389,22 +4422,33 @@ body {
     // in-game sound; leaving a field blank in the Admin Panel keeps that
     // sound's existing default (built-in mp3 clip or WebAudio synth)
     // untouched. Applies instantly, mid-game, without a reload.
+    // ── ADDED: Admin Panel real-time SOUND override ───────────────────
+    // Called from the master_controls/ludo_game Firestore listener below
+    // whenever the admin saves new sound URLs. Admin Panel me har sound ke
+    // saath ab ek "Apply / activate ye sound" checkbox bhi hai — admin sab
+    // URLs pehle se save karke rakhta hai aur sirf jin sounds pe check
+    // lagaya hai unhe hi live karta hai. Bina check wale sound ka URL to
+    // save rehta hai, lekin game us sound ka existing default (built-in
+    // clip ya WebAudio synth) hi bajati rehti hai. Checkbox ON/OFF dono
+    // real-time lagte hain — mid-game, bina reload ke.
     function applyAdminSounds(data) {
         data = data || {};
-        const map = {
-            customCutAudio:  data.soundCutUrl,   // Goti Cut Sound
-            customExitAudio: data.soundBaseUrl,  // Base se bahar (roll 6) Sound
-            customStarAudio: data.soundStarUrl,  // Star Sound
-            customHomeAudio: data.soundHomeUrl,  // Home Sound
-            adminStepAudio:  data.soundStepUrl,  // Goti chalne ka Sound
-            adminDiceAudio:  data.soundDiceUrl,  // Dice roll Sound
-            adminMusicAudio: data.soundMusicUrl  // Menu Music
-        };
+        const map = [
+            { id: 'customCutAudio',  url: data.soundCutUrl,   active: data.soundCutActive },   // Goti Cut Sound
+            { id: 'customExitAudio', url: data.soundBaseUrl,  active: data.soundBaseActive },  // Base se bahar (roll 6) Sound
+            { id: 'customStarAudio', url: data.soundStarUrl,  active: data.soundStarActive },  // Star Sound
+            { id: 'customHomeAudio', url: data.soundHomeUrl,  active: data.soundHomeActive },  // Home Sound
+            { id: 'adminStepAudio',  url: data.soundStepUrl,  active: data.soundStepActive },  // Goti chalne ka Sound
+            { id: 'adminDiceAudio',  url: data.soundDiceUrl,  active: data.soundDiceActive },  // Dice roll Sound
+            { id: 'adminMusicAudio', url: data.soundMusicUrl, active: data.soundMusicActive }   // Menu Music
+        ];
         let musicUrlChanged = false;
-        Object.keys(map).forEach(function (id) {
-            const el = document.getElementById(id);
+        map.forEach(function (entry) {
+            const el = document.getElementById(entry.id);
             if (!el) return;
-            const url = (map[id] || '').trim();
+            // Checkbox OFF ya URL khali => wo custom sound apply NAHI hoga —
+            // game us sound ka default hi bajayegi (purane behaviour jaisa).
+            const url = (entry.active !== false ? (entry.url || '') : '').trim();
             const applied = el.dataset.appliedUrl || '';
             if (url === applied) return; // no change — don't reload/restart unnecessarily
             if (url) {
@@ -4416,7 +4460,7 @@ body {
             }
             try { el.load(); } catch (e) {}
             el.dataset.appliedUrl = url;
-            if (id === 'adminMusicAudio') musicUrlChanged = true;
+            if (entry.id === 'adminMusicAudio') musicUrlChanged = true;
         });
         // If menu music is currently supposed to be playing, restart it so
         // a newly-added/removed custom track takes effect immediately.
@@ -6336,7 +6380,28 @@ body {
     // USER REQUIREMENT:
     // 1. Computer is ALWAYS Red, User is ALWAYS Yellow, dice is at Yellow's base.
     // 2. Random player starts!
+    // ADDED: Vs Computer player-count picker helpers — tile tap pe card
+    // khulta hai, game start hote hi (ya Cancel pe) wapas band ho jata hai.
+    function showComputerPicker() {
+        const card = document.getElementById('computer-picker-card');
+        if (card) {
+            card.style.display = 'block';
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function hideComputerPicker() {
+        const card = document.getElementById('computer-picker-card');
+        if (card) card.style.display = 'none';
+    }
+
     function startGame(mode) {
+        // ADDED: "Vs Computer" ab directly game start nahi karta — pehle
+        // player-count picker (2P/3P/4P) khulta hai. computer2/computer3/
+        // computer4 modes hi actual game start karte hain.
+        if (mode === 'computer') { showComputerPicker(); return; }
+        hideComputerPicker();
+
         // BUG FIX: Partner Mod AND its "Dice Pass to Partner" sub-option
         // only ever work with a full 4-player table. Previously, turning
         // just "Dice Pass to Partner" on (without Partner Mode) and then
@@ -6348,7 +6413,7 @@ body {
         // count actually tapped. (vs-Computer already expands to 4 players
         // on its own when a Mod is active, so it needs no change here.)
         let partnerAutoDisabledForSmallTable = false;
-        if ((partnerModeSetting === 'on' || handoffModeSetting === 'on') && (mode === 2 || mode === 3)) {
+        if ((partnerModeSetting === 'on' || handoffModeSetting === 'on') && (mode === 2 || mode === 3 || mode === 'computer2' || mode === 'computer3')) {
             partnerModeSetting = 'off';
             handoffModeSetting = 'off';
             partnerAutoDisabledForSmallTable = true;
@@ -6379,40 +6444,26 @@ body {
         const nameInput = document.getElementById('user-name-input');
         const customName = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Player 1';
 
-        if (mode === 'computer') {
+        if (mode === 'computer2' || mode === 'computer3' || mode === 'computer4') {
+            // ADDED: Vs Computer ab 2/3/4 player table — user hamesha ek
+            // random color leta hai, baaki seats computers ki hoti hain.
+            // Barrier/Partner Mod on hone par 2P table bhi full 4P board
+            // ban jati hai (bilkul pehle jaisa).
+            const compCount = parseInt(mode.replace('computer', ''), 10);
             const modActive = (barrierModeSetting === 'on' || partnerModeSetting === 'on' || handoffModeSetting === 'on');
-            if (modActive) {
-                // ADDED: Barrier/Partner Mod needs a full table to mean
-                // anything (Partner especially needs a real partner), so
-                // vs-Computer becomes you + 3 bots on a full board whenever
-                // either mod is switched on, instead of the usual 1v1 pair.
-                const allColors = ['Red', 'Green', 'Yellow', 'Blue'];
-                const userColor = allColors[Math.floor(Math.random() * allColors.length)];
-                const hexOf = (c) => colors.find(x => x.name === c).hex;
-                players = allColors.map(c => c === userColor
-                    ? { name: `${customName} (${c})`, color: c, hex: hexOf(c), isBot: false }
-                    : { name: `Computer (${c})`, color: c, hex: hexOf(c), isBot: true }
-                );
-            } else {
-            const pairChoice = Math.random() < 0.5 ? 'RedYellow' : 'GreenBlue';
-            const userIsFirstColor = Math.random() < 0.5;
-
-            if (pairChoice === 'RedYellow') {
-                const userColor = userIsFirstColor ? 'Red' : 'Yellow';
-                const botColor = userIsFirstColor ? 'Yellow' : 'Red';
-                players = [
-                    { name: `Computer (${botColor})`, color: botColor, hex: botColor === 'Red' ? colors[0].hex : colors[2].hex, isBot: true },
-                    { name: `${customName} (${userColor})`, color: userColor, hex: userColor === 'Red' ? colors[0].hex : colors[2].hex, isBot: false }
-                ];
-            } else {
-                const userColor = userIsFirstColor ? 'Green' : 'Blue';
-                const botColor = userIsFirstColor ? 'Blue' : 'Green';
-                players = [
-                    { name: `Computer (${botColor})`, color: botColor, hex: botColor === 'Green' ? colors[1].hex : colors[3].hex, isBot: true },
-                    { name: `${customName} (${userColor})`, color: userColor, hex: userColor === 'Green' ? colors[1].hex : colors[3].hex, isBot: false }
-                ];
-            }
-            }
+            const tableSize = (compCount === 2 && modActive) ? 4 : compCount;
+            const allColors = ['Red', 'Green', 'Yellow', 'Blue'];
+            const hexOf = (c) => colors.find(x => x.name === c).hex;
+            const tableColors = tableSize === 2
+                ? (Math.random() < 0.5 ? ['Red', 'Yellow'] : ['Green', 'Blue'])
+                : tableSize === 3
+                    ? ['Red', 'Green', 'Yellow']
+                    : allColors;
+            const userColor = tableColors[Math.floor(Math.random() * tableColors.length)];
+            players = tableColors.map(c => c === userColor
+                ? { name: `${customName} (${c})`, color: c, hex: hexOf(c), isBot: false }
+                : { name: `Computer (${c})`, color: c, hex: hexOf(c), isBot: true }
+            );
         } else if (mode === 2) {
             const pairChoice = Math.random() < 0.5 ? 'RedYellow' : 'GreenBlue';
             if (pairChoice === 'RedYellow') {
@@ -7253,6 +7304,8 @@ body {
 
     window.LudoEngine = {
         startGame,
+        showComputerPicker,
+        hideComputerPicker,
         goToMenu,
         reviewBoard,
         openStandings,
