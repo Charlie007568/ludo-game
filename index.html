@@ -5540,10 +5540,18 @@ body {
                 let offsetConfig = { tx: '-50%', ty: '-85.7%', scale: '1' };
                 const nStack = group.length;
                 const onStar = safeSpots.includes(key); // star-cell marker (moved up: also drives the compact star-grid below)
-                if (nStack === 2 && isBarrierPair) {
-                    const dx = i === 0 ? -7 : 7;
-                    offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: '0.78' };
-                } else if (onStar && nStack >= 2) {
+                // BUG FIX (user request): star cell par jab 2 goti aapas me
+                // "barrier pair" (same color) bhi hon, to pehle yahan
+                // barrier wali WIDE spacing (dx ±7%, scale 0.78) le li
+                // jaati thi — ye star cell ki tight boundary ke liye bani hi
+                // nahi thi, isliye goti star cell se BAHAR (base square ki
+                // taraf) chali jaati thi. Fix: agar goti STAR par hai, to
+                // hamesha pehle tight, cell-ke-andar-hi-rehne-wali star grid
+                // (neeche wala branch) use hogi — chahe wo goti barrier pair
+                // kyun na ho. Barrier ki "B" tag / glow abhi bhi dikhegi
+                // (wo alag se, offset se independent handle hoti hai), sirf
+                // position/size ab hamesha star ke andar hi confined rahega.
+                if (onStar && nStack >= 2) {
                     // STAR-SPECIFIC COMPACT GRID (user request): star cell par
                     // jitni bhi goti aayein (2 se 8 tak), unhe ek chhoti,
                     // TIGHTLY-CONTAINED grid di jaati hai jo hamesha usi ek
@@ -5580,6 +5588,13 @@ body {
                         ty: `calc(-85.7% + ${(dyC * CELL_H).toFixed(2)}%)`,
                         scale: scale.toFixed(2)
                     };
+                } else if (nStack === 2 && isBarrierPair) {
+                    // Barrier pair par NORMAL (non-star) track cell — is
+                    // case me purana glued-together look (jaisa pehle tha)
+                    // waisa hi rakha gaya hai; sirf STAR cell ke liye upar
+                    // wala tight grid branch priority leta hai.
+                    const dx = i === 0 ? -7 : 7;
+                    offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: '0.78' };
                 } else if (nStack >= 2) {
                     // USER FIX: pehle jitni zyada goti ek star/cell par
                     // hoti thi wo utni choti ho jaati thi (0.26 tak!) aur
