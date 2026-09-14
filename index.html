@@ -1167,11 +1167,14 @@ body {
 /* USER FIX: movable goti ke charo taraf wali light/brightness glow HATA
    di gayi hai — ab movable goti sirf halka sa black shadow + bounce/hop
    ke saath dikhti hai, isliye uske peeche ya paas khadi doosri players
-   ki goti bhi poori tarah saaf dikhti hai. */
-.token-movable.token-red:not(.token-on-star),
-.token-movable.token-green:not(.token-on-star),
-.token-movable.token-yellow:not(.token-on-star),
-.token-movable.token-blue:not(.token-on-star) {
+   ki goti bhi poori tarah saaf dikhti hai. Ye ab STAR par baithi
+   movable goti par bhi lagu hota hai — koi alag color/white glow nahi,
+   sabhi movable goti (track, base, ya star — kahin bhi ho) sirf isi
+   plain shadow ke saath bounce karti hain. */
+.token-movable.token-red,
+.token-movable.token-green,
+.token-movable.token-yellow,
+.token-movable.token-blue {
     filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) !important;
 }
 
@@ -1187,13 +1190,12 @@ body {
 .token-fan-group.token-blue {
     filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5));
 }
-/* Movable-but-not-on-star goti ko wahi plain hop-shadow milta hai (star
-   wali goti ke liye neeche .token-on-star.token-movable ka apna
-   glow-pulse hai, jise yahan overwrite nahi karna). */
-.token-fan-group.token-movable.token-red:not(.token-on-star),
-.token-fan-group.token-movable.token-green:not(.token-on-star),
-.token-fan-group.token-movable.token-yellow:not(.token-on-star),
-.token-fan-group.token-movable.token-blue:not(.token-on-star) { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) !important; }
+/* Movable goti (star ho ya normal cell) ko hamesha yahi plain hop-shadow
+   milta hai — koi permanent color/white brightness halo nahi. */
+.token-fan-group.token-movable.token-red,
+.token-fan-group.token-movable.token-green,
+.token-fan-group.token-movable.token-yellow,
+.token-fan-group.token-movable.token-blue { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) !important; }
 
 /* FIX (user request): jab ek hi star/cell par 4 alag players ki goti
    ho jaayein, to poore cell ko ek soft white pulsing glow diya gaya
@@ -1243,31 +1245,15 @@ body {
     --move-boost: 1.10;
 }
 
-/* USER REQUEST (with reference screenshots): star cell par jab goti ek
-   doosre se CHIPKI/overlapping stack me baithi ho aur unme se koi ek
-   chalne wali (movable) ho jaaye, to pehle wo bhi baaki goti ki tarah
-   size me boost (--move-boost) leke thoda upar hop karti thi — isse
-   tight cascade stack ka arrangement bigad jaata tha aur goti thodi
-   bahar/upar shift ho jaati thi. Fix: star par movable goti ab size ya
-   position BILKUL nahi badalti (--move-boost: 1, hop-animation off) —
-   sirf uske apne color ka ek glow PULSE hota hai, taaki poori stack
-   apni jagah "chipki" hui hi rahe aur sirf glow se pata chale ki yeh
-   chalne wali hai. */
-.token-on-star.token-movable.token-pin-overflow,
-.token-fan-group.token-on-star.token-movable.token-pin-overflow {
-    --move-boost: 1;
-}
-.token-on-star.token-movable {
-    animation: tokenStarGlowPulse 1.05s infinite alternate cubic-bezier(0.42, 0, 0.58, 1) !important;
-}
-@keyframes tokenStarGlowPulse {
-    0% {
-        filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 2px rgba(var(--tok-glow, 255, 255, 255), 0.35));
-    }
-    100% {
-        filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 6px rgba(var(--tok-glow, 255, 255, 255), 1)) drop-shadow(0 0 12px rgba(var(--tok-glow, 255, 255, 255), 0.9));
-    }
-}
+/* USER FIX (updated): pehle star par movable goti ka bounce/hop OFF kar
+   diya gaya tha (sirf glow-pulse hoti thi), taaki tight cascade stack ka
+   arrangement na bigde. User ne saaf kaha ki star par baithi movable
+   goti (1 ho ya 2) ko bhi baaki sab (track/base) ki tarah BOUNCE karna
+   chahiye — ab star par bhi koi special-case nahi: movable goti apna
+   normal --move-boost (solo: 1.08, stacked/fan-group: 1.04) leke
+   .token-movable ka wahi tokenPinHopPulse bounce animation chalati hai,
+   aur koi alag color/white glow-pulse nahi lagta (permanent brightness
+   hata di gayi hai — sirf plain shadow, upar dekhein). */
 
 /* FIX: movable goti ka tap area uske charo taraf bada (invisible catcher) —
    goti ka pin-visual cell se upar tika hota hai, isliye sir pe tap karne pe
