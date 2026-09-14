@@ -1251,6 +1251,32 @@ body {
     --move-boost: 1.10;
 }
 
+/* USER REQUEST (with reference screenshots): star cell par jab goti ek
+   doosre se CHIPKI/overlapping stack me baithi ho aur unme se koi ek
+   chalne wali (movable) ho jaaye, to pehle wo bhi baaki goti ki tarah
+   size me boost (--move-boost) leke thoda upar hop karti thi — isse
+   tight cascade stack ka arrangement bigad jaata tha aur goti thodi
+   bahar/upar shift ho jaati thi. Fix: star par movable goti ab size ya
+   position BILKUL nahi badalti (--move-boost: 1, hop-animation off) —
+   sirf uske apne color ka ek glow PULSE hota hai, taaki poori stack
+   apni jagah "chipki" hui hi rahe aur sirf glow se pata chale ki yeh
+   chalne wali hai. */
+.token-on-star.token-movable.token-pin-overflow,
+.token-fan-group.token-on-star.token-movable.token-pin-overflow {
+    --move-boost: 1;
+}
+.token-on-star.token-movable {
+    animation: tokenStarGlowPulse 1.05s infinite alternate cubic-bezier(0.42, 0, 0.58, 1) !important;
+}
+@keyframes tokenStarGlowPulse {
+    0% {
+        filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 2px rgba(var(--tok-glow, 255, 255, 255), 0.35));
+    }
+    100% {
+        filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 6px rgba(var(--tok-glow, 255, 255, 255), 1)) drop-shadow(0 0 12px rgba(var(--tok-glow, 255, 255, 255), 0.9));
+    }
+}
+
 /* FIX: movable goti ka tap area uske charo taraf bada (invisible catcher) —
    goti ka pin-visual cell se upar tika hota hai, isliye sir pe tap karne pe
    cell miss ho jata tha. Ab 16px extra margin ke saath har tap pakda jayega. */
@@ -5552,37 +5578,32 @@ body {
                 // (wo alag se, offset se independent handle hoti hai), sirf
                 // position/size ab hamesha star ke andar hi confined rahega.
                 if (onStar && nStack >= 2) {
-                    // STAR-SPECIFIC COMPACT GRID (user request): star cell par
-                    // jitni bhi goti aayein (2 se 8 tak), unhe ek chhoti,
-                    // TIGHTLY-CONTAINED grid di jaati hai jo hamesha usi ek
-                    // star cell ke ANDAR hi rehti hai — kabhi bhi paas wali
-                    // cell/track me "bahar" nahi failti (jaisa normal
-                    // multi-stack neeche wale branch me hota hai, jahan
-                    // spread cols/rows ke saath badhta jaata hai). Yahan
-                    // spreadCellsX/Y hamesha FIXED (ek single cell ke andar
-                    // hi) rakhe gaye hain, aur goti ka size count ke hisaab
-                    // se chhota hota jaata hai taaki 8 goti tak bhi ek saath,
-                    // side-by-side, cell ke andar hi saaf pehchani ja sakein.
-                    const cols = Math.ceil(Math.sqrt(nStack));
-                    const rows = Math.ceil(nStack / cols);
-                    const col = i % cols;
-                    const row = Math.floor(i / cols);
-                    // 1 cell = 75.76% token-width, 1 cell = 54.35% token-height
-                    const CELL_W = 75.76, CELL_H = 54.35;
-                    // Fixed spread (in units of ONE cell) regardless of
-                    // cols/rows — is a single star cell ke daayre se kabhi
-                    // bahar nahi jaata, chahe 2 goti ho ya 8.
-                    const spreadCellsX = cols > 1 ? 0.82 : 0;
-                    const spreadCellsY = rows > 1 ? 0.62 : 0;
-                    const gapX = cols > 1 ? spreadCellsX / (cols - 1) : 0;
-                    const gapY = rows > 1 ? spreadCellsY / (rows - 1) : 0;
-                    const dxC = (col - (cols - 1) / 2) * gapX;
-                    const dyC = (row - (rows - 1) / 2) * gapY;
-                    const scale = nStack === 2 ? 0.50
-                        : nStack === 3 ? 0.46
-                        : nStack === 4 ? 0.42
-                        : nStack <= 6 ? 0.34
-                        : 0.28; // 7-8 goti ek saath star par
+                    // CASCADE "CHIPKI" STACK (user request, with reference
+                    // screenshots): pehle yahan ek chhota GRID (rows/cols)
+                    // hota tha jisme goti clearly ALAG-ALAG khaanon me
+                    // baithti thi. User ne screenshots ke saath dikhaya ki
+                    // unhe iski jagah goti EK DOOSRE SE CHIPKI/OVERLAP
+                    // karti hui, ek diagonal "cascade" me chahiye — jaise
+                    // ek stack of coins thoda tira-tedha rakha ho. Ab har
+                    // agli goti pichli ke upar thodi si diagonal offset ke
+                    // saath overlap karti hai (poora sar/head phir bhi alag
+                    // se dikhta hai). Total cascade-travel hamesha FIXED
+                    // capped hai (maxSpreadX/Y) — chahe 2 goti ho ya 8, wo
+                    // hamesha isi star cell ke andar hi confined rehti
+                    // hain, kabhi bahar nahi jaatin. Jitni zyada goti
+                    // hongi utni hi tight (aur thodi chhoti) hoke chipki
+                    // rahengi.
+                    const CELL_W = 75.76, CELL_H = 54.35; // 1 full cell in token-width/height %
+                    const maxSpreadX = 0.62, maxSpreadY = 0.50; // total cascade travel — fixed, never grows with count
+                    const stepX = nStack > 1 ? maxSpreadX / (nStack - 1) : 0;
+                    const stepY = nStack > 1 ? maxSpreadY / (nStack - 1) : 0;
+                    const dxC = (i - (nStack - 1) / 2) * stepX;
+                    const dyC = (i - (nStack - 1) / 2) * stepY;
+                    const scale = nStack === 2 ? 0.78
+                        : nStack === 3 ? 0.70
+                        : nStack === 4 ? 0.64
+                        : nStack <= 6 ? 0.54
+                        : 0.46; // 7-8 goti ek saath star par
                     offsetConfig = {
                         tx: `calc(-50% + ${(dxC * CELL_W).toFixed(2)}%)`,
                         ty: `calc(-85.7% + ${(dyC * CELL_H).toFixed(2)}%)`,
@@ -5639,6 +5660,15 @@ body {
                 tEl.style.setProperty('--tok-ty', offsetConfig.ty);
                 tEl.style.setProperty('--tok-scale', offsetConfig.scale);
                 tEl.style.zIndex = `${38 + i}`;
+                // USER REQUEST: jab star par chipki hui goti me se koi ek
+                // chalne wali (movable) ho, to size/position badalne ke
+                // bajaye sirf uske apne color ka GLOW pulse hona chahiye —
+                // taaki tight stack ka look bigde nahi. Color yahan set
+                // kiya jaata hai taaki CSS glow usi goti ke color ka ho.
+                if (onStar) {
+                    const GLOW_RGB = { RED: '239,68,68', GREEN: '34,197,94', YELLOW: '234,179,8', BLUE: '59,130,246' };
+                    tEl.style.setProperty('--tok-glow', GLOW_RGB[t.color] || '255,255,255');
+                }
 
                 if (isThisMoving && activeMove) {
                     if (activeMove.type === 'SPAWN') {
