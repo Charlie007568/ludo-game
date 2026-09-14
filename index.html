@@ -1164,17 +1164,15 @@ body {
     cursor: pointer !important;
 }
 
-.token-movable.token-red {
-    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(254, 240, 138, 0.85)) drop-shadow(0 0 8px rgba(239, 68, 68, 0.65)) !important;
-}
-.token-movable.token-green {
-    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(254, 240, 138, 0.85)) drop-shadow(0 0 8px rgba(34, 197, 94, 0.65)) !important;
-}
-.token-movable.token-yellow {
-    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 8px rgba(234, 179, 8, 0.70)) !important;
-}
+/* USER FIX: movable goti ke charo taraf wali light/brightness glow HATA
+   di gayi hai — ab movable goti sirf halka sa black shadow + bounce/hop
+   ke saath dikhti hai, isliye uske peeche ya paas khadi doosri players
+   ki goti bhi poori tarah saaf dikhti hai. */
+.token-movable.token-red,
+.token-movable.token-green,
+.token-movable.token-yellow,
 .token-movable.token-blue {
-    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(254, 240, 138, 0.85)) drop-shadow(0 0 8px rgba(59, 130, 246, 0.65)) !important;
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) !important;
 }
 
 /* FIX (user request): jab 2/3/4 alag-alag players ki goti ek hi
@@ -1200,10 +1198,10 @@ body {
 .token-fan-group.token-movable {
     filter: unset;
 }
-.token-fan-group.token-movable.token-red { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(254, 240, 138, 0.85)) drop-shadow(0 0 8px rgba(239, 68, 68, 0.65)) !important; }
-.token-fan-group.token-movable.token-green { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(254, 240, 138, 0.85)) drop-shadow(0 0 8px rgba(34, 197, 94, 0.65)) !important; }
-.token-fan-group.token-movable.token-yellow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 8px rgba(234, 179, 8, 0.70)) !important; }
-.token-fan-group.token-movable.token-blue { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 3.5px rgba(254, 240, 138, 0.85)) drop-shadow(0 0 8px rgba(59, 130, 246, 0.65)) !important; }
+.token-fan-group.token-movable.token-red,
+.token-fan-group.token-movable.token-green,
+.token-fan-group.token-movable.token-yellow,
+.token-fan-group.token-movable.token-blue { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) !important; }
 
 /* FIX (user request): jab ek hi star/cell par 4 alag players ki goti
    ho jaayein, to poore cell ko ek soft white pulsing glow diya gaya
@@ -1241,10 +1239,10 @@ body {
      + bigger resting scale) ke saath milakar ab poore group ki sabhi
      goti hamesha alag-alag pehchani ja sakengi. */
 .token-movable.token-pin-overflow {
-    --move-boost: 1.18;
+    --move-boost: 1.08;
 }
 .token-fan-group.token-movable.token-pin-overflow {
-    --move-boost: 1.10;
+    --move-boost: 1.04;
 }
 /* FIX (user request): track par actively chal rahi (gliding) goti ka
    size bhi thoda bada kiya gaya hai taaki move karte waqt wo aur zyada
@@ -5530,23 +5528,38 @@ body {
                 let offsetConfig = { tx: '-50%', ty: '-85.7%', scale: '1' };
                 const nStack = group.length;
                 if (nStack === 2 && isBarrierPair) {
-                    const dx = i === 0 ? -6 : 6;
-                    offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: '0.74' };
+                    const dx = i === 0 ? -7 : 7;
+                    offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: '0.78' };
                 } else if (nStack >= 2) {
-                    // har goti ki apni seat: cols x rows ka chhota grid
+                    // USER FIX: pehle jitni zyada goti ek star/cell par
+                    // hoti thi wo utni choti ho jaati thi (0.26 tak!) aur
+                    // phir bhi aapas me overlap karti thi — 5-6 goti par
+                    // to sab kuch chota-chota chipak jata tha. Ab:
+                    // (a) size kabhi 0.44 se neeche NAHI jaata, aur
+                    // (b) fan-out spread poori tarah badha diya gaya hai —
+                    // har goti ka anchor takreeban 1 se 1.5 cell door baithta
+                    // hai, isliye 2/3/4/6/8... goti ho, har player ki goti
+                    // ka sar (color head) alag-alag, bina ek doosre ko
+                    // dhake, saaf dikhta hai.
                     const cols = Math.ceil(Math.sqrt(nStack));
                     const rows = Math.ceil(nStack / cols);
                     const col = i % cols;
                     const row = Math.floor(i / cols);
-                    const ox = (col - (cols - 1) / 2) * (0.92 / cols);
-                    const oy = (row - (rows - 1) / 2) * (0.92 / rows);
-                    const scale = nStack === 2 ? 0.62
-                        : nStack === 3 ? 0.52
-                        : nStack === 4 ? 0.45
-                        : Math.max(0.26, 0.45 - (nStack - 4) * 0.035);
+                    // 1 cell = 75.76% token-width, 1 cell = 54.35% token-height
+                    const CELL_W = 75.76, CELL_H = 54.35;
+                    const spreadCellsX = Math.min(3.0, 0.75 * cols);
+                    const spreadCellsY = Math.min(2.4, 0.75 * rows);
+                    const gapX = cols > 1 ? spreadCellsX / (cols - 1) : 0;
+                    const gapY = rows > 1 ? spreadCellsY / (rows - 1) : 0;
+                    const dxC = (col - (cols - 1) / 2) * gapX;
+                    const dyC = (row - (rows - 1) / 2) * gapY;
+                    const scale = nStack === 2 ? 0.68
+                        : nStack === 3 ? 0.60
+                        : nStack === 4 ? 0.55
+                        : Math.max(0.44, 0.55 - (nStack - 4) * 0.03);
                     offsetConfig = {
-                        tx: `calc(-50% + ${(ox * 75.76).toFixed(2)}%)`,
-                        ty: `calc(-85.7% + ${(oy * 54.35).toFixed(2)}%)`,
+                        tx: `calc(-50% + ${(dxC * CELL_W).toFixed(2)}%)`,
+                        ty: `calc(-85.7% + ${(dyC * CELL_H).toFixed(2)}%)`,
                         scale: scale.toFixed(2)
                     };
                 }
