@@ -1261,6 +1261,18 @@ body {
     border-radius: 14px;
 }
 
+/* STAR-STACK TAP FIX (user request follow-up): jab star cell par 2-8
+   goti ek chhoti, tight grid me ho, tab purana 16px wala invisible tap
+   catcher itna bada tha ki paas baithi doosri (chhoti) goti ke upar bhi
+   chadh jaata — us par tap karne se galat goti select ho sakti thi. Yahan
+   sirf star ke tight fan-group wali movable goti ke liye catcher chhota
+   kar diya gaya hai, taaki tap sahi goti par hi lage, baaki jagah (normal
+   cells) purana 16px catcher waisa hi rehta hai. */
+.token-fan-group.token-on-star.token-movable::after {
+    inset: -5px;
+    border-radius: 8px;
+}
+
 /* Base Token Movable Pulse */
 .token-in-base.token-movable {
     animation: tokenBaseHopPulse 1.05s infinite alternate cubic-bezier(0.42, 0, 0.58, 1) !important;
@@ -5527,9 +5539,47 @@ body {
                 // wapas badi hoti hai — akeli goti hamesha original size.
                 let offsetConfig = { tx: '-50%', ty: '-85.7%', scale: '1' };
                 const nStack = group.length;
+                const onStar = safeSpots.includes(key); // star-cell marker (moved up: also drives the compact star-grid below)
                 if (nStack === 2 && isBarrierPair) {
                     const dx = i === 0 ? -7 : 7;
                     offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: '0.78' };
+                } else if (onStar && nStack >= 2) {
+                    // STAR-SPECIFIC COMPACT GRID (user request): star cell par
+                    // jitni bhi goti aayein (2 se 8 tak), unhe ek chhoti,
+                    // TIGHTLY-CONTAINED grid di jaati hai jo hamesha usi ek
+                    // star cell ke ANDAR hi rehti hai — kabhi bhi paas wali
+                    // cell/track me "bahar" nahi failti (jaisa normal
+                    // multi-stack neeche wale branch me hota hai, jahan
+                    // spread cols/rows ke saath badhta jaata hai). Yahan
+                    // spreadCellsX/Y hamesha FIXED (ek single cell ke andar
+                    // hi) rakhe gaye hain, aur goti ka size count ke hisaab
+                    // se chhota hota jaata hai taaki 8 goti tak bhi ek saath,
+                    // side-by-side, cell ke andar hi saaf pehchani ja sakein.
+                    const cols = Math.ceil(Math.sqrt(nStack));
+                    const rows = Math.ceil(nStack / cols);
+                    const col = i % cols;
+                    const row = Math.floor(i / cols);
+                    // 1 cell = 75.76% token-width, 1 cell = 54.35% token-height
+                    const CELL_W = 75.76, CELL_H = 54.35;
+                    // Fixed spread (in units of ONE cell) regardless of
+                    // cols/rows — is a single star cell ke daayre se kabhi
+                    // bahar nahi jaata, chahe 2 goti ho ya 8.
+                    const spreadCellsX = cols > 1 ? 0.82 : 0;
+                    const spreadCellsY = rows > 1 ? 0.62 : 0;
+                    const gapX = cols > 1 ? spreadCellsX / (cols - 1) : 0;
+                    const gapY = rows > 1 ? spreadCellsY / (rows - 1) : 0;
+                    const dxC = (col - (cols - 1) / 2) * gapX;
+                    const dyC = (row - (rows - 1) / 2) * gapY;
+                    const scale = nStack === 2 ? 0.50
+                        : nStack === 3 ? 0.46
+                        : nStack === 4 ? 0.42
+                        : nStack <= 6 ? 0.34
+                        : 0.28; // 7-8 goti ek saath star par
+                    offsetConfig = {
+                        tx: `calc(-50% + ${(dxC * CELL_W).toFixed(2)}%)`,
+                        ty: `calc(-85.7% + ${(dyC * CELL_H).toFixed(2)}%)`,
+                        scale: scale.toFixed(2)
+                    };
                 } else if (nStack >= 2) {
                     // USER FIX: pehle jitni zyada goti ek star/cell par
                     // hoti thi wo utni choti ho jaati thi (0.26 tak!) aur
@@ -5567,7 +5617,6 @@ body {
 
                 const isThisMoving = (activeMove && activeMove.tokenId === t.id);
                 const isMovable = movableIds.includes(t.id);
-                const onStar = safeSpots.includes(key); // star-cell marker (styling hook only)
                 const tEl = document.createElement('div');
                 tEl.id = `t-${t.id}`;
                 tEl.className = `token token-${t.color.toLowerCase()} token-pin-overflow${isMovable ? ' token-movable' : ''}${isThisMoving ? ' token-active-moving' : ''}${t.barrier ? ' token-barrier' : ''}${onStar ? ' token-on-star' : ''}${isFanGroup ? ' token-fan-group' : ''}`;
