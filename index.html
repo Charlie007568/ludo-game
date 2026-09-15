@@ -5589,45 +5589,59 @@ body {
                     // default centered offsetConfig aur isFanGroup=false
                     // hi rehte hain — dekhein upar wali comment.
                 } else if (onStar && nStack >= 2) {
-                    // CASCADE "CHIPKI" STACK (user request, with reference
-                    // screenshots): pehle yahan ek chhota GRID (rows/cols)
-                    // hota tha jisme goti clearly ALAG-ALAG khaanon me
-                    // baithti thi. User ne screenshots ke saath dikhaya ki
-                    // unhe iski jagah goti EK DOOSRE SE CHIPKI/OVERLAP
-                    // karti hui, ek diagonal "cascade" me chahiye — jaise
-                    // ek stack of coins thoda tira-tedha rakha ho. Ab har
-                    // agli goti pichli ke upar thodi si diagonal offset ke
-                    // saath overlap karti hai (poora sar/head phir bhi alag
-                    // se dikhta hai). Total cascade-travel hamesha FIXED
-                    // capped hai (maxSpreadX/Y) — chahe 2 goti ho ya 8, wo
-                    // hamesha isi star cell ke andar hi confined rehti
-                    // hain, kabhi bahar nahi jaatin. Jitni zyada goti
-                    // hongi utni hi tight (aur thodi chhoti) hoke chipki
-                    // rahengi.
+                    // CASCADE "CHIPKI" STACK — goti ek doosre ke upar
+                    // thodi si diagonal offset ke saath overlap karti hai
+                    // (sar/head alag se dikhta hai), poori tarah is star
+                    // cell ke andar hi confined.
+                    // BUG FIX (user request, saath me screenshots): goti
+                    // ka apna pin-shape cell se khud hi chauda hota hai
+                    // (~1.32x), isliye pehli wali spread (maxSpreadX:0.62)
+                    // + pehle wale scale (0.78 tak) ke saath extreme
+                    // (sabse kinare wali) goti asal cell-boundary se BAHAR
+                    // nikal ke bagal wali (khaali) cell tak chali jaati
+                    // thi — dekhne me "goti alag cell mein chali gayi"
+                    // jaisa lagta tha. Fix: (a) horizontal spread (X) ab
+                    // bahut kam kar diya gaya hai (goti sirf thodi si
+                    // daayein-baayein khisakti hai), (b) resting scale bhi
+                    // har count par thoda aur chhota kar diya gaya hai —
+                    // taaki extreme goti bhi hamesha isi cell ki boundary
+                    // ke andar hi rahe. Cascade look mostly vertical (Y)
+                    // diagonal offset se hi milta hai, jisme thoda upar
+                    // "poke" hona normal hai (jaisa akeli goti bhi karti
+                    // hai — pin hamesha cell se thoda upar khada dikhta
+                    // hai).
                     const CELL_W = 75.76, CELL_H = 54.35; // 1 full cell in token-width/height %
-                    const maxSpreadX = 0.62, maxSpreadY = 0.50; // total cascade travel — fixed, never grows with count
+                    const maxSpreadX = 0.26, maxSpreadY = 0.55; // total cascade travel — fixed, never grows with count
                     const stepX = nStack > 1 ? maxSpreadX / (nStack - 1) : 0;
                     const stepY = nStack > 1 ? maxSpreadY / (nStack - 1) : 0;
                     const dxC = (i - (nStack - 1) / 2) * stepX;
                     const dyC = (i - (nStack - 1) / 2) * stepY;
-                    const scale = nStack === 2 ? 0.78
-                        : nStack === 3 ? 0.70
-                        : nStack === 4 ? 0.64
-                        : nStack <= 6 ? 0.54
-                        : 0.46; // 7-8 goti ek saath star par
+                    const scale = nStack === 2 ? 0.66
+                        : nStack === 3 ? 0.60
+                        : nStack === 4 ? 0.55
+                        : nStack <= 6 ? 0.48
+                        : 0.42; // 7-8 goti ek saath star par
                     offsetConfig = {
                         tx: `calc(-50% + ${(dxC * CELL_W).toFixed(2)}%)`,
                         ty: `calc(-85.7% + ${(dyC * CELL_H).toFixed(2)}%)`,
                         scale: scale.toFixed(2)
                     };
-                } else if (nStack === 2 && isBarrierPair) {
-                    // Barrier pair par NORMAL (non-star) track cell — is
-                    // case me purana glued-together look (jaisa pehle tha)
-                    // waisa hi rakha gaya hai; sirf STAR cell ke liye upar
-                    // wala tight grid branch priority leta hai.
+                } else if (nStack === 2) {
+                    // BUG FIX (user request, saath me screenshots): jab bhi
+                    // kisi bhi normal (non-star) cell par THEEK 2 goti
+                    // hoti hain — chahe wo aapas me officially "barrier
+                    // pair" ho ya nahi (2 same-color, ya bas 2 alag color
+                    // goti ek saath) — pehle sirf officially-barrier pair
+                    // ko hi ye tight/glued spacing milti thi; baaki sab
+                    // 2-count cases neeche wale generic grid-spread
+                    // formula me chali jaati thi, jiska spread itna wide
+                    // tha (~1.5 cell tak!) ki dono goti asal me DO ALAG
+                    // cells jaisi dikhne lagti thi. Fix: ab HAR 2-goti
+                    // wale normal cell ko hamesha yahi tight, cell-ke-
+                    // andar-hi-rehne-wali spacing milti hai.
                     const dx = i === 0 ? -7 : 7;
                     offsetConfig = { tx: `calc(-50% + ${dx}%)`, ty: '-85.7%', scale: '0.78' };
-                } else if (nStack >= 2) {
+                } else if (nStack >= 3) {
                     // USER FIX: pehle jitni zyada goti ek star/cell par
                     // hoti thi wo utni choti ho jaati thi (0.26 tak!) aur
                     // phir bhi aapas me overlap karti thi — 5-6 goti par
@@ -5638,6 +5652,10 @@ body {
                     // hai, isliye 2/3/4/6/8... goti ho, har player ki goti
                     // ka sar (color head) alag-alag, bina ek doosre ko
                     // dhake, saaf dikhta hai.
+                    // (nStack===2 ka case ab upar hi handle ho jaata hai —
+                    // is grid-spread formula ka wide spacing sirf 3+ goti
+                    // ke liye hai, taaki bilkul 2-goti wala cell kabhi bhi
+                    // itna wide na phaile ki alag cell jaisa dikhe.)
                     const cols = Math.ceil(Math.sqrt(nStack));
                     const rows = Math.ceil(nStack / cols);
                     const col = i % cols;
@@ -5650,8 +5668,7 @@ body {
                     const gapY = rows > 1 ? spreadCellsY / (rows - 1) : 0;
                     const dxC = (col - (cols - 1) / 2) * gapX;
                     const dyC = (row - (rows - 1) / 2) * gapY;
-                    const scale = nStack === 2 ? 0.68
-                        : nStack === 3 ? 0.60
+                    const scale = nStack === 3 ? 0.60
                         : nStack === 4 ? 0.55
                         : Math.max(0.44, 0.55 - (nStack - 4) * 0.03);
                     offsetConfig = {
@@ -5694,23 +5711,22 @@ body {
                             tEl.style.setProperty('--step-dy', `${dRow}`);
                             const tailAngle = Math.atan2(-dRow, -dCol) * 180 / Math.PI;
                             tEl.style.setProperty('--tail-angle', `${tailAngle}deg`);
-
-                            const prevCell = board.querySelector(`[data-r="${activeMove.prevPos[0]}"][data-c="${activeMove.prevPos[1]}"]`);
-                            if (prevCell) {
-                                prevCell.style.overflow = 'visible';
-                                const ghost = document.createElement('div');
-                                ghost.className = `token-trail-ghost trail-${t.color.toLowerCase()} trail-style-${customization.trailEffect}`;
-                                ghost.innerHTML = `
-                                    <div class="ghost-ambient-haze"></div>
-                                    <div class="ghost-golden-ring"></div>
-                                    <div class="ghost-stream-ribbon" style="--ghost-rot: ${tailAngle}deg;"></div>
-                                    <div class="ghost-stardust-spark ghost-spark-1" style="--drift-x: -5px; --drift-y: -4px;"></div>
-                                    <div class="ghost-stardust-spark ghost-spark-2" style="--drift-x: 6px; --drift-y: -6px;"></div>
-                                    <div class="ghost-stardust-spark ghost-spark-3" style="--drift-x: -3px; --drift-y: 5px;"></div>
-                                `;
-                                prevCell.appendChild(ghost);
-                                setTimeout(() => ghost.remove(), 650);
-                            }
+                            // USER FIX: pehle har intermediate step par
+                            // "prevCell" (jis cell se goti abhi-abhi guzri)
+                            // par ek blurred glow-haze + golden-ring ghost
+                            // effect dikhaya jaata tha. Ye halka blur cell
+                            // ki boundary se bahar bhi failta tha (kyunki
+                            // us cell ka overflow:visible tha), jisse aisa
+                            // lagta tha jaise us cell ke andar koi goti
+                            // "dhas" (sink) rahi ho — khaaskar jab wo
+                            // haze/ring current goti ke bilkul paas (upar
+                            // ya neeche wali cell) baithta tha. User ne
+                            // pehle bhi is tarah ki permanent brightness
+                            // hatane ko kaha tha; is ghost-glow ko yahan se
+                            // permanently hata diya gaya hai — ab goti sirf
+                            // seedhe smooth glide + apni khud ki thin tail
+                            // ke saath move karti dikhti hai, bina kisi
+                            // pichli cell par lingering glow-blob ke.
                         }
                         tEl.classList.add('token-gliding');
                         if (activeMove.isLast) {
