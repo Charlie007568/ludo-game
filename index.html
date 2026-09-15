@@ -3173,6 +3173,13 @@ body {
                 });
             },
             // ADDED: admin panel ke liye live match info (mode + saare colors)
+            // ADDED: admin panel ke color chips ke liye — har player ki kitni
+            // goti abhi board par (base se bahar) hai, real-time push. Sirf
+            // tab likhte hain jab count badalta hai (game-side guard).
+            setTokenCounts(counts) {
+                const dRef = ref(rtdb, 'devices/' + deviceId);
+                update(dRef, { tokenCounts: (counts && typeof counts === 'object') ? counts : null }).catch(() => {});
+            },
             setMatchInfo(info) {
                 // FIXED: dono fields ALAG-ALAG update hote hain — pehle ek
                 // hi update() me dono likhe jate the, to RTDB rules me kisi
@@ -5438,6 +5445,25 @@ body {
         return (list && list[index]) || list[0] || { left: '50%', top: '50%', scale: '0.85' };
     }
 
+    // ADDED: admin panel ke color chips ke saath goti-count badge ke liye —
+    // har player ki kitni goti abhi board par (base se bahar: PATH ya HOME)
+    // hai, real-time devices/{id}/tokenCounts pe push karta hai. renderTokens()
+    // har move/cut/home pe chalta hai, isliye count hamesha fresh rehta hai;
+    // signature compare karke sirf actual change pe hi RTDB write hota hai.
+    let lastPushedTokenCountsSig = null;
+    function pushTokenCountsToAdmin() {
+        if (!players.length) return;
+        if (!window.__ludoFirebaseBridge || !window.__ludoFirebaseBridge.setTokenCounts) return;
+        const counts = {};
+        players.forEach(p => {
+            counts[p.color] = (tokens[p.color] || []).filter(t => t.status !== 'BASE').length;
+        });
+        const sig = JSON.stringify(counts);
+        if (sig === lastPushedTokenCountsSig) return; // no change — don't spam RTDB
+        lastPushedTokenCountsSig = sig;
+        window.__ludoFirebaseBridge.setTokenCounts(counts);
+    }
+
     function renderTokens(activeMove) {
         const board = document.getElementById('board');
         if (!board) return;
@@ -5822,6 +5848,8 @@ body {
                 });
             });
         }
+
+        pushTokenCountsToAdmin();
     }
 
     function renderScoreboard() {
@@ -6865,6 +6893,12 @@ body {
         // ADDED: admin panel ki device list se match info clear
         if (window.__ludoFirebaseBridge && window.__ludoFirebaseBridge.setMatchInfo) {
             window.__ludoFirebaseBridge.setMatchInfo(null);
+        }
+        // ADDED: menu pe wapas aate hi goti-count bhi clear — warna admin
+        // panel me purane match ka count chip pe chipka reh jaata.
+        lastPushedTokenCountsSig = null;
+        if (window.__ludoFirebaseBridge && window.__ludoFirebaseBridge.setTokenCounts) {
+            window.__ludoFirebaseBridge.setTokenCounts(null);
         }
 
         clearAutoMove();
