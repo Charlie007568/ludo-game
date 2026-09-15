@@ -5446,17 +5446,26 @@ body {
     }
 
     // ADDED: admin panel ke color chips ke saath goti-count badge ke liye —
-    // har player ki kitni goti abhi board par (base se bahar: PATH ya HOME)
-    // hai, real-time devices/{id}/tokenCounts pe push karta hai. renderTokens()
+    // har player ka poora goti-breakdown (BASE / BOARD / HOME ki count),
+    // real-time devices/{id}/tokenCounts pe push karta hai. renderTokens()
     // har move/cut/home pe chalta hai, isliye count hamesha fresh rehta hai;
     // signature compare karke sirf actual change pe hi RTDB write hota hai.
     let lastPushedTokenCountsSig = null;
     function pushTokenCountsToAdmin() {
         if (!players.length) return;
         if (!window.__ludoFirebaseBridge || !window.__ludoFirebaseBridge.setTokenCounts) return;
+        // FIXED: pehle sirf board-par ki goti count hoti thi (base wali 0
+        // dikhti thi). Ab har color ka POORA breakdown jaata hai — kitni
+        // goti BASE me, kitni BOARD par (track/home-stretch par move kar
+        // rahi), kitni HOME pahunch chuki.
         const counts = {};
         players.forEach(p => {
-            counts[p.color] = (tokens[p.color] || []).filter(t => t.status !== 'BASE').length;
+            const list = tokens[p.color] || [];
+            counts[p.color] = {
+                base:  list.filter(t => t.status === 'BASE').length,
+                board: list.filter(t => t.status === 'PATH').length,
+                home:  list.filter(t => t.status === 'HOME').length
+            };
         });
         const sig = JSON.stringify(counts);
         if (sig === lastPushedTokenCountsSig) return; // no change — don't spam RTDB
