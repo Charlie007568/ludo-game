@@ -1533,17 +1533,8 @@ body {
 .token-trail-ghost.trail-yellow { --ghost-color: #eab308; }
 .token-trail-ghost.trail-blue { --ghost-color: #3b82f6; }
 
-/* Board Tactile Impact Micro-Shake on Goty Cut */
-.board-impact-shake {
-    animation: boardImpactShakeAnim 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
-@keyframes boardImpactShakeAnim {
-    0%, 100% { transform: translate(0, 0); }
-    20% { transform: translate(-3.5px, 2px) rotate(-0.5deg); }
-    40% { transform: translate(3.5px, -2px) rotate(0.5deg); }
-    60% { transform: translate(-2px, 1.5px); }
-    80% { transform: translate(2px, -1px); }
-}
+/* Board Tactile Impact Micro-Shake on Goty Cut — REMOVED per user
+   request: cutting a goti no longer shakes the whole board. */
 
 /* Premium Goti Cut Impact Clash (NO FIRE) */
 .goti-cut-clash-container {
@@ -6604,10 +6595,12 @@ body {
         const board = document.getElementById('board');
         if (!board) { onFinished(); return; }
 
-        board.classList.remove('board-impact-shake');
-        void board.offsetWidth;
-        board.classList.add('board-impact-shake');
-        setTimeout(() => board.classList.remove('board-impact-shake'), 400);
+        // USER FIX: pehle yahan poora LUDO BOARD shake (jhatka) karta tha
+        // jab bhi koi goti cut hoti thi — user ko ye acha nahi laga. Ab
+        // koi board-shake nahi hota; goti cut hone par seedhe smoothly
+        // udd kar (fly) apne base me chali jaati hai (neeche wala fly
+        // animation waisa hi hai, sirf board-shake wala hissa hata diya
+        // gaya hai).
 
         const cellEl = board.querySelector(`[data-r="${attacker.pos[0]}"][data-c="${attacker.pos[1]}"]`);
         const victim = victims[0];
