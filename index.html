@@ -385,20 +385,20 @@ body {
     width: 100vw;
     height: 100vh;
     padding: max(30px, calc(6px + env(safe-area-inset-top))) 4px max(14px, calc(6px + env(safe-area-inset-bottom)));
-    /* FIX (user request, round 3): user ke hisaab se color abhi bhi sahi
-       nahi lag raha tha — is baar hue same royal-blue family me rakha
-       hai lekin brightness aur saturation dono meaningfully aur badhaye
-       gaye hain (vivid, punchy blue — jaisa premium Ludo apps me hota
-       hai), na ki halka/dull tone. Lightness range center-se-edge phir
-       bhi kaafi kam hai taaki brightness barabar rahe. */
-    /* FIX (user request): premium look — halka warm gold ambient glow
-       board ke peeche add kiya (studio-lighting jaisa), aur edges ko
-       pehle se zyada gehra/vignette kiya gaya hai taaki poora screen
-       ek flat single-tone blue ki jagah ek rich, depth-wala premium
-       backdrop lage. */
+    /* USER FIX: pehle board ke peeche wala background bahut zyada bright
+       tha, aur radial-gradient hone ki wajah se sirf BEECH me zyada
+       roshan aur kinaron/corners par kaafi kam roshan (uneven) tha. User
+       ne saaf kaha ki brightness kam honi chahiye AUR har jagah barabar
+       honi chahiye. Fix: (a) ab ek top-to-bottom LINEAR gradient hai
+       (radial "hotspot" bilkul hata diya), jisme upar-neeche ka farak
+       bahut kam hai — isliye screen par kahin bhi ek jagah dusri se
+       zyada roshan nahi dikhti; (b) saare color-stops pehle se kaafi
+       darker/dull rakhe gaye hain (jaise #5aa3ec jaisa bright sky-blue
+       hata diya), taaki poora backdrop halka aur premium-dark lage, na
+       ki bright/washed-out. */
     background:
-        radial-gradient(circle at 50% 40%, rgba(253, 224, 71, 0.14), transparent 52%),
-        radial-gradient(circle at 50% 42%, #5aa3ec 0%, #3d82cc 30%, #2760a0 58%, #163c6e 82%, #0c2547 100%);
+        radial-gradient(circle at 50% 40%, rgba(253, 224, 71, 0.05), transparent 55%),
+        linear-gradient(180deg, #17324e 0%, #142a42 50%, #0e2034 100%);
     overflow: hidden;
     z-index: 10;
 }
@@ -417,10 +417,12 @@ body {
        #arena-center-glow) bhi center-bright/edge-dark thi, aur is layer
        ki opacity (0.65) ke saath mil kar background ki unevenness aur
        badha deti thi. Opacity halki kar di gayi hai taaki neeche wala
-       naya, zyada barabar-roshan base color hi asal me dikhe. Round-3
-       fix ke saath opacity aur bhi kam ki gayi hai taaki naya vivid
-       color pattern ke neeche dab na jaaye. */
-    opacity: 0.3;
+    /* USER FIX: overall backdrop brightness kam kar di gayi hai (upar
+       #game-screen background dekhein) — is overlay ki apni opacity bhi
+       thodi kam ki hai taaki pattern ke bright accents (cyan dots/stars)
+       naye darker base ke saath overpower na karein aur poora background
+       hamesha barabar-dim dikhe. */
+    opacity: 0.22;
 }
 
 .shell-inner {
@@ -3392,31 +3394,31 @@ body {
                         <!-- Top-Left Quadrant (Red tone) -->
                         <rect x="6" y="6" width="48" height="48" rx="3" fill="#1e3a8a" fill-opacity="0.16" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.35" />
                         <rect x="11" y="11" width="38" height="38" rx="2" fill="#0f172a" fill-opacity="0.14" />
-                        <circle cx="20" cy="20" r="4" fill="#38bdf8" fill-opacity="0.4" />
-                        <circle cx="40" cy="20" r="4" fill="#38bdf8" fill-opacity="0.4" />
-                        <circle cx="20" cy="40" r="4" fill="#38bdf8" fill-opacity="0.4" />
-                        <circle cx="40" cy="40" r="4" fill="#38bdf8" fill-opacity="0.4" />
+                        <circle cx="20" cy="20" r="4" fill="#38bdf8" fill-opacity="0.22" />
+                        <circle cx="40" cy="20" r="4" fill="#38bdf8" fill-opacity="0.22" />
+                        <circle cx="20" cy="40" r="4" fill="#38bdf8" fill-opacity="0.22" />
+                        <circle cx="40" cy="40" r="4" fill="#38bdf8" fill-opacity="0.22" />
                         <!-- Top-Right Quadrant (Green tone) -->
                         <rect x="76" y="6" width="48" height="48" rx="3" fill="#1e3a8a" fill-opacity="0.16" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.35" />
                         <rect x="81" y="11" width="38" height="38" rx="2" fill="#0f172a" fill-opacity="0.14" />
-                        <circle cx="90" cy="20" r="4" fill="#38bdf8" fill-opacity="0.4" />
-                        <circle cx="110" cy="20" r="4" fill="#38bdf8" fill-opacity="0.4" />
-                        <circle cx="90" cy="40" r="4" fill="#38bdf8" fill-opacity="0.4" />
-                        <circle cx="110" cy="40" r="4" fill="#38bdf8" fill-opacity="0.4" />
+                        <circle cx="90" cy="20" r="4" fill="#38bdf8" fill-opacity="0.22" />
+                        <circle cx="110" cy="20" r="4" fill="#38bdf8" fill-opacity="0.22" />
+                        <circle cx="90" cy="40" r="4" fill="#38bdf8" fill-opacity="0.22" />
+                        <circle cx="110" cy="40" r="4" fill="#38bdf8" fill-opacity="0.22" />
                         <!-- Bottom-Left Quadrant (Blue tone) -->
                         <rect x="6" y="76" width="48" height="48" rx="3" fill="#1e3a8a" fill-opacity="0.16" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.35" />
                         <rect x="11" y="81" width="38" height="38" rx="2" fill="#0f172a" fill-opacity="0.14" />
-                        <circle cx="20" cy="90" r="4" fill="#38bdf8" fill-opacity="0.4" />
-                        <circle cx="40" cy="90" r="4" fill="#38bdf8" fill-opacity="0.4" />
-                        <circle cx="20" cy="110" r="4" fill="#38bdf8" fill-opacity="0.4" />
-                        <circle cx="40" cy="110" r="4" fill="#38bdf8" fill-opacity="0.4" />
+                        <circle cx="20" cy="90" r="4" fill="#38bdf8" fill-opacity="0.22" />
+                        <circle cx="40" cy="90" r="4" fill="#38bdf8" fill-opacity="0.22" />
+                        <circle cx="20" cy="110" r="4" fill="#38bdf8" fill-opacity="0.22" />
+                        <circle cx="40" cy="110" r="4" fill="#38bdf8" fill-opacity="0.22" />
                         <!-- Bottom-Right Quadrant (Yellow tone) -->
                         <rect x="76" y="76" width="48" height="48" rx="3" fill="#1e3a8a" fill-opacity="0.16" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.35" />
                         <rect x="81" y="81" width="38" height="38" rx="2" fill="#0f172a" fill-opacity="0.14" />
-                        <circle cx="90" cy="90" r="4" fill="#38bdf8" fill-opacity="0.4" />
-                        <circle cx="110" cy="90" r="4" fill="#38bdf8" fill-opacity="0.4" />
-                        <circle cx="90" cy="110" r="4" fill="#38bdf8" fill-opacity="0.4" />
-                        <circle cx="110" cy="110" r="4" fill="#38bdf8" fill-opacity="0.4" />
+                        <circle cx="90" cy="90" r="4" fill="#38bdf8" fill-opacity="0.22" />
+                        <circle cx="110" cy="90" r="4" fill="#38bdf8" fill-opacity="0.22" />
+                        <circle cx="90" cy="110" r="4" fill="#38bdf8" fill-opacity="0.22" />
+                        <circle cx="110" cy="110" r="4" fill="#38bdf8" fill-opacity="0.22" />
                         <!-- Center Triangles -->
                         <polygon points="54,54 76,54 65,65" fill="#1d4ed8" fill-opacity="0.45" />
                         <polygon points="76,54 76,76 65,65" fill="#1d4ed8" fill-opacity="0.45" />
@@ -3424,10 +3426,10 @@ body {
                         <polygon points="54,76 54,54 65,65" fill="#1d4ed8" fill-opacity="0.45" />
                         <!-- Board track divider gridlines -->
                         <path d="M54,6 L54,124 M65,6 L65,124 M76,6 L76,124 M6,54 L124,54 M6,65 L124,65 M6,76 L124,76" stroke="#3b82f6" stroke-width="0.5" stroke-opacity="0.25" />
-                        <text x="65" y="24" font-size="7" fill="#60a5fa" fill-opacity="0.4" text-anchor="middle">★</text>
-                        <text x="114" y="68" font-size="7" fill="#60a5fa" fill-opacity="0.4" text-anchor="middle">★</text>
-                        <text x="65" y="116" font-size="7" fill="#60a5fa" fill-opacity="0.4" text-anchor="middle">★</text>
-                        <text x="16" y="68" font-size="7" fill="#60a5fa" fill-opacity="0.4" text-anchor="middle">★</text>
+                        <text x="65" y="24" font-size="7" fill="#60a5fa" fill-opacity="0.22" text-anchor="middle">★</text>
+                        <text x="114" y="68" font-size="7" fill="#60a5fa" fill-opacity="0.22" text-anchor="middle">★</text>
+                        <text x="65" y="116" font-size="7" fill="#60a5fa" fill-opacity="0.22" text-anchor="middle">★</text>
+                        <text x="16" y="68" font-size="7" fill="#60a5fa" fill-opacity="0.22" text-anchor="middle">★</text>
                     </pattern>
 
                     <!-- FIX (user request): pehle center glow bahut bright (0.24 opacity
@@ -3438,24 +3440,24 @@ body {
                          badha diya hai taaki glow zyada FAILE aur ye vignette-jaisa
                          sharp na lage — poora background barabar roshan dikhega. -->
                     <radialGradient id="arena-center-glow" cx="50%" cy="46%" r="65%">
-                        <stop offset="0%" stop-color="#5ea8e0" stop-opacity="0.10"/>
-                        <stop offset="45%" stop-color="#2c5a8c" stop-opacity="0.06"/>
-                        <stop offset="100%" stop-color="#0a1626" stop-opacity="0.22"/>
+                        <stop offset="0%" stop-color="#5ea8e0" stop-opacity="0.05"/>
+                        <stop offset="45%" stop-color="#2c5a8c" stop-opacity="0.04"/>
+                        <stop offset="100%" stop-color="#0a1626" stop-opacity="0.18"/>
                     </radialGradient>
                     <radialGradient id="corner-glow-red" cx="12%" cy="12%" r="38%">
-                        <stop offset="0%" stop-color="#ef4444" stop-opacity="0.09"/>
+                        <stop offset="0%" stop-color="#ef4444" stop-opacity="0.05"/>
                         <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
                     </radialGradient>
                     <radialGradient id="corner-glow-green" cx="88%" cy="12%" r="38%">
-                        <stop offset="0%" stop-color="#22c55e" stop-opacity="0.09"/>
+                        <stop offset="0%" stop-color="#22c55e" stop-opacity="0.05"/>
                         <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
                     </radialGradient>
                     <radialGradient id="corner-glow-yellow" cx="88%" cy="88%" r="38%">
-                        <stop offset="0%" stop-color="#eab308" stop-opacity="0.09"/>
+                        <stop offset="0%" stop-color="#eab308" stop-opacity="0.05"/>
                         <stop offset="100%" stop-color="#eab308" stop-opacity="0"/>
                     </radialGradient>
                     <radialGradient id="corner-glow-blue" cx="12%" cy="88%" r="38%">
-                        <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.09"/>
+                        <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.05"/>
                         <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
                     </radialGradient>
                 </defs>
