@@ -1,7 +1,7 @@
 import { requireAuth, rtdbGet, rtdbPatch, rtdbTransaction, jsonResponse, optionsResponse } from '../_firebaseAdmin.js';
 
 const ONLINE_ROOT = 'lm_online';
-const STARTING_COINS = 5000;
+const STARTING_COINS = 1000;
 
 export async function onRequestOptions() {
     return optionsResponse();
