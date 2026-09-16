@@ -2791,6 +2791,48 @@ body {
     background: radial-gradient(ellipse at center, rgba(253,224,71,0.55) 0%, rgba(253,224,71,0.18) 60%, transparent 80%);
     pointer-events: none; z-index: 32;
 }
+
+/* ADDED: ONLINE MULTIPLAYER (lobby, requests, chat, result) */
+.olp-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.olp-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(30,41,59,0.55); border: 1px solid rgba(148,163,184,0.18); }
+.olp-row.olp-busy { opacity: 0.55; }
+.olp-dot { width: 9px; height: 9px; border-radius: 50%; background: #00e676; box-shadow: 0 0 6px rgba(0,230,118,0.8); flex-shrink: 0; }
+.olp-dot.busy { background: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,0.8); }
+.olp-info { flex: 1; min-width: 0; }
+.olp-name { font-size: 0.78rem; font-weight: 800; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.olp-meta { font-size: 0.64rem; color: #94a3b8; }
+.olp-challenge { flex-shrink: 0; font-family: 'Plus Jakarta Sans',sans-serif; font-size: 0.66rem; font-weight: 900; padding: 6px 11px; border-radius: 999px; border: 1px solid rgba(96,165,250,0.55); background: rgba(37,99,235,0.25); color: #bfdbfe; cursor: pointer; }
+.olp-challenge:hover { background: rgba(37,99,235,0.45); }
+.olp-challenge:disabled { opacity: 0.5; cursor: not-allowed; }
+.olp-empty { text-align: center; font-size: 0.74rem; color: #94a3b8; padding: 12px 0; }
+.olp-pending { text-align: center; font-size: 0.68rem; color: #fde047; padding: 6px 0 2px; }
+.olp-pending a { color: #f87171; }
+#online-request-modal, #online-result-modal { display: none; position: fixed; inset: 0; background: rgba(2,6,23,0.9); backdrop-filter: blur(10px); z-index: 500; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+#online-request-modal .glass-panel, #online-result-modal .glass-panel { max-width: 320px; width: 100%; text-align: center; padding: 24px 22px; }
+.orq-vs { font-size: 1.05rem; font-weight: 900; color: #fde047; margin: 8px 0 2px; }
+.orq-meta { font-size: 0.68rem; color: #94a3b8; margin-bottom: 14px; }
+.orq-btn-row { display: flex; gap: 8px; }
+.orq-btn { flex: 1; padding: 11px; border-radius: 10px; border: none; font-weight: 900; font-size: 0.76rem; cursor: pointer; font-family: 'Plus Jakarta Sans',sans-serif; }
+.orq-accept { background: linear-gradient(135deg, #4ade80, #16a34a); color: #052e12; }
+.orq-decline { background: rgba(71,85,105,0.7); color: #e2e8f0; border: 1px solid rgba(148,163,184,0.4); }
+#online-game-bar { display: none; position: fixed; left: 50%; bottom: 6px; transform: translateX(-50%); z-index: 240; width: min(96vw, 560px); flex-direction: column; gap: 5px; align-items: stretch; background: rgba(15,23,42,0.88); backdrop-filter: blur(10px); border: 1px solid rgba(234,179,8,0.35); border-radius: 14px; padding: 7px 9px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.ogb-row { display: flex; align-items: center; gap: 6px; }
+.ogb-emojis { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+.ogb-emoji-btn { font-size: 1.15rem; background: rgba(30,41,59,0.7); border: 1px solid rgba(148,163,184,0.25); border-radius: 8px; padding: 3px 6px; cursor: pointer; line-height: 1; }
+.ogb-emoji-btn:hover { background: rgba(51,65,85,0.9); transform: scale(1.12); }
+#ogb-chat-input { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 999px; border: 1px solid rgba(148,163,184,0.3); background: rgba(2,6,23,0.6); color: #f8fafc; font-size: 0.72rem; outline: none; font-family: 'Plus Jakarta Sans',sans-serif; }
+.ogb-send-btn { flex-shrink: 0; padding: 7px 12px; border-radius: 999px; border: none; background: linear-gradient(135deg, #60a5fa, #2563eb); color: #fff; font-weight: 900; font-size: 0.7rem; cursor: pointer; font-family: 'Plus Jakarta Sans',sans-serif; }
+.ogb-leave-btn { flex-shrink: 0; padding: 7px 11px; border-radius: 999px; border: 1px solid rgba(248,113,113,0.5); background: rgba(239,68,68,0.18); color: #f87171; font-weight: 900; font-size: 0.7rem; cursor: pointer; font-family: 'Plus Jakarta Sans',sans-serif; }
+.ogb-leave-btn:hover { background: rgba(239,68,68,0.32); }
+.ogb-bubble { position: fixed; transform: translate(-50%, -100%); background: linear-gradient(135deg, #1e293b, #0f172a); border: 1.5px solid rgba(253,224,71,0.65); color: #fff; padding: 6px 12px; border-radius: 999px; font-size: 1.25rem; font-weight: 800; box-shadow: 0 8px 22px rgba(0,0,0,0.6), 0 0 14px rgba(253,224,71,0.35); pointer-events: none; z-index: 460; white-space: nowrap; max-width: 70vw; overflow: hidden; text-overflow: ellipsis; animation: ogbBubbleFloat 2.6s ease-out forwards; }
+@keyframes ogbBubbleFloat { 0% { opacity: 0; margin-top: 10px; transform: translate(-50%, -100%) scale(0.6); } 12% { opacity: 1; transform: translate(-50%, -100%) scale(1.08); } 24% { transform: translate(-50%, -100%) scale(1); } 100% { opacity: 0; margin-top: -70px; transform: translate(-50%, -100%) scale(0.95); } }
+.olp-stake-row { display: flex; align-items: center; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
+.olp-stake-label { font-size: 0.6rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; flex-shrink: 0; }
+.stake-pill { padding: 6px 8px; font-size: 0.66rem; flex: 0 0 auto; min-width: 38px; }
+.olp-stake-input { width: 64px; padding: 6px 8px; border-radius: 9px; border: 1px solid rgba(148,163,184,0.3); background: rgba(2,6,23,0.6); color: #fde047; font-size: 0.68rem; font-weight: 800; outline: none; font-family: 'Plus Jakarta Sans',sans-serif; -moz-appearance: textfield; }
+.olp-stake-input::-webkit-outer-spin-button, .olp-stake-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+
     </style>
 <script src="/_aistudio-iframe.js?v=2f1c016a"></script>
     <!-- ============================================================
@@ -2821,7 +2863,7 @@ body {
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getDatabase, ref, update, onValue, serverTimestamp, onDisconnect, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, update, onValue, serverTimestamp, onDisconnect, push, set, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey:            "AIzaSyDPYuTSyVY5_I9DoAUg6NCkZ_3ERpZ705M",
@@ -3191,6 +3233,54 @@ body {
                 update(dRef, { matchMode: (info && info.mode) || null }).catch(() => {});
                 update(dRef, { playingColors: (info && info.colors) || null }).catch(() => {});
             },
+            // ── ADDED: ONLINE MULTIPLAYER bridge methods ──
+            getMyDeviceId() { return deviceId; },
+            getMyDeviceName() { return deviceName; },
+            callFn(fnName, payload) { return callFn(fnName, payload); },
+            onlineHeartbeat(coins, inMatch, oppInfo, vsBot) {
+                const oRef = ref(rtdb, 'onlinePlayers/' + deviceId);
+                update(oRef, { deviceId: deviceId, deviceName: deviceName, coins: coins || 0, inMatch: inMatch || null, online: true, lastSeen: serverTimestamp() }).catch(() => {});
+                onDisconnect(oRef).update({ online: false, inMatch: null, lastSeen: serverTimestamp() }).catch(() => {});
+                // devices node pe bhi inMatch marker (admin panel ko dikhane ke liye kaun kisse khel raha hai)
+                update(ref(rtdb, 'devices/' + deviceId), {
+                    inMatch: inMatch || null,
+                    inMatchOppId: (inMatch && oppInfo) ? oppInfo.oppDeviceId : null,
+                    inMatchOppName: (inMatch && oppInfo) ? String(oppInfo.oppName || '').slice(0, 100) : null,
+                    inMatchVsBot: !!vsBot
+                }).catch(() => {});
+            },
+            listenOnlinePlayers(cb) { onValue(ref(rtdb, 'onlinePlayers'), (s) => { try { cb(s.val() || {}); } catch (e) {} }, () => cb({})); },
+            sendMatchRequest(targetDeviceId, myCoins, toName, stake) {
+                const rRef = push(ref(rtdb, 'matchRequests'));
+                return set(rRef, { from: deviceId, fromName: deviceName, fromCoins: myCoins || 0, to: targetDeviceId, toName: toName || 'Player', stake: stake || 1000, status: 'pending', createdAt: Date.now() }).then(() => rRef.key);
+            },
+            respondMatchRequest(reqId, status) { return update(ref(rtdb, 'matchRequests/' + reqId), { status: status, respondedAt: Date.now() }); },
+            listenMatchRequests(cb) { onValue(ref(rtdb, 'matchRequests'), (s) => { try { cb(s.val() || {}); } catch (e) {} }, () => cb({})); },
+            removeMatchRequest(reqId) { return update(ref(rtdb, 'matchRequests'), { [reqId]: null }); },
+            createMatchAfterAccept(reqId, req) {
+                const matchId = 'm_' + reqId;
+                return set(ref(rtdb, 'matches/' + matchId), {
+                    hostDeviceId: req.from, hostName: req.fromName,
+                    guestDeviceId: deviceId, guestName: deviceName,
+                    stake: req.stake || 1000,
+                    status: 'active', createdAt: Date.now(), result: null
+                }).then(() => matchId);
+            },
+            listenMatches(cb) { onValue(ref(rtdb, 'matches'), (s) => { try { cb(s.val() || {}); } catch (e) {} }, () => cb({})); },
+            pushMatchState(matchId, state) { return update(ref(rtdb, 'matches/' + matchId), { state: Object.assign({}, state, { at: Date.now() }) }).catch(() => {}); },
+            sendMatchIntent(matchId, intent) { const iRef = push(ref(rtdb, 'matches/' + matchId + '/intents')); return set(iRef, Object.assign({}, intent, { at: Date.now() })); },
+            listenMatchIntents(matchId, cb) { onValue(query(ref(rtdb, 'matches/' + matchId + '/intents'), limitToLast(40)), (s) => { try { cb(s.val() || {}); } catch (e) {} }, () => cb({})); },
+            sendMatchChat(matchId, payload) { const cRef = push(ref(rtdb, 'matches/' + matchId + '/chat')); return set(cRef, Object.assign({}, payload, { from: deviceId, fromName: deviceName, at: Date.now() })); },
+            listenMatchChat(matchId, cb) { onValue(query(ref(rtdb, 'matches/' + matchId + '/chat'), limitToLast(30)), (s) => { try { cb(s.val() || {}); } catch (e) {} }, () => cb({})); },
+            setMatchConnected(matchId, connected, myRole) {
+                const pRef = ref(rtdb, 'matches/' + matchId + '/players/' + deviceId);
+                update(pRef, { connected: !!connected, deviceName: deviceName }).catch(() => {});
+                if (uid && myRole) update(ref(rtdb, 'matches/' + matchId), { [myRole === 'host' ? 'hostUid' : 'guestUid']: uid }).catch(() => {});
+                if (connected) onDisconnect(pRef).update({ connected: false }).catch(() => {});
+            },
+            pushMatchRig(matchId, info) { return update(ref(rtdb, 'matches/' + matchId + '/rig/' + deviceId), Object.assign({}, info, { at: Date.now() })).catch(() => {}); },
+            settleMatchResult(matchId, result) { return update(ref(rtdb, 'matches/' + matchId), { result: Object.assign({}, result, { at: Date.now() }), status: 'finished' }); },
+            removeMatch(matchId) { return update(ref(rtdb, 'matches'), { [matchId]: null }); },
         };
 
         onAuthStateChanged(auth, (user) => { if (user) registerIdentity(user.uid); });
@@ -3338,6 +3428,46 @@ body {
                     <span class="mode-sub">Back to modes</span>
                 </div>
             </div>
+        </div>
+
+        <!-- ADDED: ONLINE MULTIPLAYER — live online players list. -->
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <span class="dash-card-title">🌐 Online Players</span>
+                <span class="dash-card-title" style="color:#4ade80;" id="online-count-badge">0 available</span>
+            </div>
+            <div class="olp-list" id="online-players-list">
+                <div class="olp-empty">Connecting…</div>
+            </div>
+            <!-- ADDED: custom stake selector — players khud decide karte
+                 hain kitne coins ka match khelna hai (100 se 1,00,000). -->
+            <div class="olp-stake-row">
+                <span class="olp-stake-label">STAKE 🪙</span>
+                <div class="diff-pill stake-pill" data-stake="100" onclick="window.LudoEngine.setOnlineStake(100)">100</div>
+                <div class="diff-pill stake-pill" data-stake="500" onclick="window.LudoEngine.setOnlineStake(500)">500</div>
+                <div class="diff-pill stake-pill active" data-stake="1000" onclick="window.LudoEngine.setOnlineStake(1000)">1K</div>
+                <div class="diff-pill stake-pill" data-stake="2000" onclick="window.LudoEngine.setOnlineStake(2000)">2K</div>
+                <div class="diff-pill stake-pill" data-stake="5000" onclick="window.LudoEngine.setOnlineStake(5000)">5K</div>
+                <input id="stake-custom-input" class="olp-stake-input" type="number" min="100" max="100000" step="100" placeholder="Custom" onchange="window.LudoEngine.setOnlineStakeCustom(this)"/>
+            </div>
+            <!-- ADDED: ONLINE MATCH — agar koi player online nahi milta to
+                 random naam ke GUEST (bot) ke against online-style match:
+                 player khud choose karta hai 2P/3P/4P table AUR kitne coins
+                 ka stake (upar wala shared STAKE selector). Match bilkul
+                 online jaisa dikhta hai (random names, stake, 2x prize,
+                 result popup) lekin offline hi chalta hai (computer system).
+                 Admin panel me device pe "🤖 vs GUEST" badge dikhta hai. -->
+            <div class="diff-pill-row" style="margin-top:10px;">
+                <span class="olp-stake-label">TABLE</span>
+                <div class="diff-pill stake-pill guest-table-pill active" data-gtable="2" onclick="window.LudoEngine.setGuestTable(2)">🎲 2P</div>
+                <div class="diff-pill stake-pill guest-table-pill" data-gtable="3" onclick="window.LudoEngine.setGuestTable(3)">🎯 3P</div>
+                <div class="diff-pill stake-pill guest-table-pill" data-gtable="4" onclick="window.LudoEngine.setGuestTable(4)">🏆 4P</div>
+            </div>
+            <button class="mod-single-btn" style="margin-top:10px;" onclick="window.LudoEngine.startGuestMatch()">
+                <span>🎮</span>
+                <span>Find Online Match</span>
+            </button>
+            <p class="settings-hint" style="text-align:center; margin-top:6px;">Koi player online nahi? Random Guest ke saath match auto-start — stake 🪙<span id="guest-stake-hint">1,000</span>, winner ko 🪙<span id="guest-prize-hint">2,000</span>.</p>
         </div>
 
         <!-- ADDED: Match Mods — Barrier and Partner can now be switched on together; "Off" resets both -->
@@ -3543,6 +3673,48 @@ body {
         </button>
 
     </div>
+
+        <!-- ADDED: incoming online challenge popup -->
+        <div id="online-request-modal" onclick="if(event.target===this) window.LudoEngine.declineIncomingRequest()">
+            <div class="glass-panel">
+                <p class="coins-modal-title">⚔️ Online Challenge!</p>
+                <p class="orq-vs" id="orq-name">Player</p>
+                <p class="orq-meta" id="orq-meta">🪙 Stake 1,000 · Winner gets 🪙2,000</p>
+                <div class="orq-btn-row">
+                    <button class="orq-btn orq-decline" onclick="window.LudoEngine.declineIncomingRequest()">❌ Decline</button>
+                    <button class="orq-btn orq-accept" onclick="window.LudoEngine.acceptIncomingRequest()">✅ Accept</button>
+                </div>
+            </div>
+        </div>
+        <!-- ADDED: online match result popup -->
+        <div id="online-result-modal">
+            <div class="glass-panel">
+                <p class="coins-modal-title" id="ores-title" style="font-size:1.3rem;">🏆 You Won!</p>
+                <p class="orq-meta" id="ores-sub" style="margin-bottom:10px;"></p>
+                <p class="orq-vs" id="ores-coins" style="margin-bottom:14px;"></p>
+                <button class="orq-btn orq-accept" style="width:100%;" onclick="window.LudoEngine.closeOnlineResult()">🏠 Back to Menu</button>
+            </div>
+        </div>
+        <!-- ADDED: in-game online bar — emoji reactions, chat, leave -->
+        <div id="online-game-bar">
+            <div class="ogb-emojis">
+                <button class="ogb-emoji-btn" onclick="window.LudoEngine.sendEmoji('😀')">😀</button>
+                <button class="ogb-emoji-btn" onclick="window.LudoEngine.sendEmoji('😂')">😂</button>
+                <button class="ogb-emoji-btn" onclick="window.LudoEngine.sendEmoji('😮')">😮</button>
+                <button class="ogb-emoji-btn" onclick="window.LudoEngine.sendEmoji('🔥')">🔥</button>
+                <button class="ogb-emoji-btn" onclick="window.LudoEngine.sendEmoji('👍')">👍</button>
+                <button class="ogb-emoji-btn" onclick="window.LudoEngine.sendEmoji('💪')">💪</button>
+                <button class="ogb-emoji-btn" onclick="window.LudoEngine.sendEmoji('🎉')">🎉</button>
+                <button class="ogb-emoji-btn" onclick="window.LudoEngine.sendEmoji('❤️')">❤️</button>
+                <button class="ogb-emoji-btn" onclick="window.LudoEngine.sendEmoji('😈')">😈</button>
+                <button class="ogb-emoji-btn" onclick="window.LudoEngine.sendEmoji('🤝')">🤝</button>
+            </div>
+            <div class="ogb-row">
+                <input id="ogb-chat-input" type="text" maxlength="80" placeholder="Message opponent…" onkeydown="if(event.key==='Enter') window.LudoEngine.sendChatText()"/>
+                <button class="ogb-send-btn" onclick="window.LudoEngine.sendChatText()">➤</button>
+                <button class="ogb-leave-btn" onclick="window.LudoEngine.leaveOnlineMatch()">🚪 Leave</button>
+            </div>
+        </div>
 
         <!-- ADDED: Admin lock overlay — mirrors the Loader's own lock
              screen, shown whenever the Admin Panel's App Status is OFF.
@@ -5963,6 +6135,21 @@ body {
     const turnsWithoutSix = { Red: 0, Green: 0, Yellow: 0, Blue: 0 };
 
     function rollDiceNumber(color) {
+        // ADDED: ONLINE MATCH — har color ka roll us DEVICE ke rig settings
+        // se rig hota hai jis device ka player wo color khel raha hai. Rig
+        // info matches/{id}/rig/{deviceId} se aati hai (dono players apni
+        // settings push karte hain), isliye admin panel dono devices ke
+        // chips se online match bhi rig kar sakta hai — offline ho ya online.
+        if (onlineMatch && onlineMatch.role === 'host') {
+            const rigDev = (color === onlineMatch.myColor) ? ob().getMyDeviceId() : onlineMatch.oppDeviceId;
+            const rinfo = (onlineMatch.rig && onlineMatch.rig[rigDev]) || null;
+            if (rinfo && rinfo.master !== false && rinfo.rigColor === color) {
+                if (rigState.color !== color) rigState.color = color;
+                const orv = computeRiggedRoll(color);
+                console.log('%c[RIG WIN] online ' + color + ' ke liye best roll: ' + orv, 'color:#eab308;font-weight:bold;font-size:14px');
+                return orv;
+            }
+        }
         // USER REQUEST: dice ab poori tarah fair/random hai — 6 samet har
         // number (1-6) ki equal (1/6) chance hai, koi extra boost/weight
         // nahi diya jaata kisi bhi state (base me goti, turnsWithout, etc.)
@@ -6036,6 +6223,17 @@ body {
 
     function onDiceClick(color) {
         const cp = getEffectiveCurrentPlayer();
+        // ADDED: ONLINE MATCH — sirf apni color ki baari mein roll; guest
+        // device pe intent host ko bhejo, host khud validate karke chalata hai.
+        if (onlineMatch) {
+            if (!cp || (cp.color !== onlineMatch.myColor && !onlineMatch._execIntent && !(onlineMatch.isBot && cp.color === onlineMatch.oppColor))) return;
+            if (onlineMatch.role === 'guest') {
+                if (gameState !== 'IDLE') return;
+                sendOnlineIntent({ type: 'roll', color: color });
+                return;
+            }
+            onlineTimeoutCount[color] = 0;
+        }
         // ADDED FEATURE (hard guard): sirf WOH player dice roll kar sakta
         // hai jiski chaal ho (cp.color === color) AUR game IDLE ho. Kisi
         // aur player ke dice pe tap — chahe kisi bhi reason se event aa
@@ -6218,6 +6416,17 @@ body {
 
     function handleTokenClick(token) {
         if (gameState !== 'AWAITING_MOVE') return;
+        // ADDED: ONLINE MATCH — guest apni chaal intent ke through bhejta
+        // hai; host tabhi move karta hai jab current color host ki ho.
+        if (onlineMatch) {
+            const ocp = getEffectiveCurrentPlayer();
+            if (!ocp || (ocp.color !== onlineMatch.myColor && !onlineMatch._execIntent)) return;
+            if (onlineMatch.role === 'guest') {
+                sendOnlineIntent({ type: 'move', tokenId: token.id });
+                return;
+            }
+            onlineTimeoutCount[token.color] = 0;
+        }
         clearAutoMove(); // player ne khud tap kiya — auto-move cancel
         const cp = getEffectiveCurrentPlayer();
         if (cp.isBot) return;
@@ -6239,6 +6448,7 @@ body {
         // double-move hoti ya turn bina chaale dusre player pe shift ho jata.
         if (gameState !== 'AWAITING_MOVE') return;
         clearAutoMove();
+        if (onlineMatch && onlineMatch.role === 'host') onlineTimeoutCount[token.color] = 0;
         gameState = 'MOVING';
         // ADDED: if this token is Barrier-locked with a partner, that partner
         // always shares the same step count, so it moves in perfect lockstep.
@@ -6438,7 +6648,15 @@ body {
                 gameState = 'GAMEOVER';
                 playSound('match_fanfare');
                 setTimeout(() => {
-                    document.getElementById('winner-modal').style.display = 'flex';
+                    if (guestMatch) {
+                        // ADDED: guest (online-style) match — stake/prize settle
+                        finishGuestMatch();
+                    } else if (!onlineMatch) {
+                        document.getElementById('winner-modal').style.display = 'flex';
+                    } else if (onlineMatch.role === 'host') {
+                        // ADDED: online match — host result likh kar match band karta hai
+                        endOnlineMatch(winnersList[0] || onlineMatch.oppColor, 'finished');
+                    }
                 }, 1200);
                 return;
             }
@@ -6831,6 +7049,7 @@ body {
                 ? { name: `${customName} (${c})`, color: c, hex: hexOf(c), isBot: false }
                 : { name: `Computer (${c})`, color: c, hex: hexOf(c), isBot: true }
             );
+            if (guestMatch) applyGuestNames(players, userColor); // ADDED: online-style guest naam
         } else if (mode === 2) {
             const pairChoice = Math.random() < 0.5 ? 'RedYellow' : 'GreenBlue';
             if (pairChoice === 'RedYellow') {
@@ -6899,6 +7118,15 @@ body {
     }
 
     function goToMenu() {
+        // ADDED: ONLINE MATCH — Exit dabane par match chhodna = haar.
+        if (onlineMatch) { leaveOnlineMatch(); return; }
+        // ADDED: GUEST MATCH — exit = forfeit, stake wapas nahi milta.
+        if (guestMatch) {
+            const gm = guestMatch;
+            guestMatch = null;
+            onlineToast('🚪 Match chhod diya — 🪙' + gm.stake.toLocaleString('en-IN') + ' stake gaya.');
+            if (ob() && ob().onlineHeartbeat) onlineHeartbeatNow(null);
+        }
         // ADDED: admin panel ki device list se match info clear
         if (window.__ludoFirebaseBridge && window.__ludoFirebaseBridge.setMatchInfo) {
             window.__ludoFirebaseBridge.setMatchInfo(null);
@@ -7492,12 +7720,13 @@ body {
     // bacha hai, kitne six de chuke (3rd six = chaal shift, isliye cap 2).
     let rigState = { color: null, plan: null, sixesGiven: 0 };
 
-    function applyRigMaster(v) { rigMasterEnabled = !!v; }
+    function applyRigMaster(v) { rigMasterEnabled = !!v; syncOnlineRig(); }
     function applyRigColor(v) {
         riggedColor = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
         rigState = { color: null, plan: null, sixesGiven: 0 }; // rig badalte hi purana plan discard
         // DEBUG: admin panel se rig change hote hi console me confirm ho jata hai
         console.log('%c[RIG WIN] rigged color: ' + (riggedColor || 'OFF'), 'color:#b388ff;font-weight:bold');
+        syncOnlineRig(); // ADDED: online match ho to rig settings match node me push karo
     }
 
     function computeRiggedRoll(color) {
@@ -7675,6 +7904,794 @@ body {
         }
     }
 
+
+    // ═══════════════════════════════════════════════════════════════
+    // ADDED: ONLINE MULTIPLAYER SYSTEM (1v1, Red vs Yellow)
+    // Lobby → challenge → accept/decline → host-authoritative match
+    // (poora state real-time sync; guest "intent" bhejta hai). Stake
+    // 1000 server se (stakeMatch.js), winner +2000 (settleMatch.js) —
+    // backend na mile to local fallback. Leave/disconnect = opponent
+    // wins. 30s idle = auto roll (max 3), 4th timeout = haar. Emoji/
+    // chat bubble receiver ke base ke paas. Rig Win offline + online
+    // dono me kaam karta hai (rig settings match node me sync hote hain).
+    // ═══════════════════════════════════════════════════════════════
+    var onlineMatch = null;
+    var onlinePlayersCache = {};
+    var myOutgoingReqId = null;
+    var incomingQueue = [];
+    var incomingActive = null;
+    var incomingHandled = {};
+    var onlineTimeoutCount = { Red: 0, Yellow: 0 };
+    var onlineTurnTimer = null;
+    var applyingRemote = false;
+    var onlineInitDone = false;
+    var finishedMatchIds = {};
+    var processedChat = {};
+    var ONLINE_STAKE = 1000;
+    var ONLINE_PRIZE = 2000;
+    var ONLINE_TURN_MS = 30000;
+
+    function ob() { return window.__ludoFirebaseBridge; }
+    function oEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function onlineToast(t) { showPartnerOffToast(t); }
+
+    // ── Rig sync (online matches) ───────────────────────────────────
+    function syncOnlineRig() {
+        if (!onlineMatch || onlineMatch.isBot || !ob() || !ob().pushMatchRig) return;
+        try { ob().pushMatchRig(onlineMatch.id, { rigColor: riggedColor, master: rigMasterEnabled }); } catch (e) {}
+    }
+
+    // ── Lobby rendering ─────────────────────────────────────────────
+    function lobbyVisible() {
+        const m = document.getElementById('menu-screen');
+        return m && m.style.display !== 'none';
+    }
+
+    function renderOnlinePlayers() {
+        const box = document.getElementById('online-players-list');
+        const badge = document.getElementById('online-count-badge');
+        if (!box) return;
+        const me = ob() ? ob().getMyDeviceId() : null;
+        const now = Date.now();
+        let arr = [];
+        try {
+            arr = Object.keys(onlinePlayersCache || {}).map(k => onlinePlayersCache[k])
+                .filter(p => p && p.deviceId && p.deviceId !== me && p.online !== false && p.lastSeen && (now - p.lastSeen) < 90000);
+        } catch (e) { arr = []; }
+        const available = arr.filter(p => !p.inMatch);
+        const busy = arr.filter(p => p.inMatch);
+        if (badge) badge.textContent = available.length + ' available';
+        let html = '';
+        if (!arr.length) {
+            html = '<div class="olp-empty">Abhi koi player online nahi hai… thodi der mein dobara check karein.</div>';
+        } else {
+            html += available.map(p =>
+                '<div class="olp-row"><span class="olp-dot"></span>' +
+                '<div class="olp-info"><div class="olp-name">' + oEsc(p.deviceName || 'Player') + '</div>' +
+                '<div class="olp-meta">🪙 ' + Number(p.coins || 0).toLocaleString('en-IN') + '</div></div>' +
+                '<button class="olp-challenge" onclick="window.LudoEngine.sendOnlineChallenge(\'' + p.deviceId + '\')">⚔️ Challenge</button></div>'
+            ).join('');
+            html += busy.map(p =>
+                '<div class="olp-row olp-busy"><span class="olp-dot busy"></span>' +
+                '<div class="olp-info"><div class="olp-name">' + oEsc(p.deviceName || 'Player') + '</div>' +
+                '<div class="olp-meta">🎮 match me busy</div></div>' +
+                '<button class="olp-challenge" disabled>Busy</button></div>'
+            ).join('');
+        }
+        if (myOutgoingReqId) {
+            html += '<div class="olp-pending">📤 Challenge bheja gaya — jawab ka intezaar… <a href="#" onclick="window.LudoEngine.cancelOutgoingRequest();return false;">Cancel</a></div>';
+        }
+        box.innerHTML = html;
+    }
+
+    function sendOnlineChallenge(targetId) {
+        if (!ob()) return;
+        if (onlineMatch) { onlineToast('🎮 Aap already ek match me ho!'); return; }
+        if (myOutgoingReqId) { onlineToast('📤 Pehle wale challenge ka jawab aa raha hai…'); return; }
+        const p = onlinePlayersCache[targetId];
+        if (p && p.inMatch) { onlineToast('🎮 ' + (p.deviceName || 'Player') + ' pehle se ek match me hai'); return; }
+        if (coinBalance < ONLINE_STAKE) { onlineToast('⚠️ Is stake ke liye aapke paas coins nahi! (🪙' + ONLINE_STAKE.toLocaleString('en-IN') + ' chahiye)'); return; }
+        ob().sendMatchRequest(targetId, coinBalance, p ? p.deviceName : 'Player', ONLINE_STAKE).then(id => {
+            myOutgoingReqId = id;
+            onlineToast('⚔️ Challenge bheja: ' + (p ? p.deviceName : 'Player'));
+            renderOnlinePlayers();
+        }).catch(() => onlineToast('⚠️ Challenge bhejne me problem aayi — retry karein'));
+    }
+
+    function cancelOutgoingRequest() {
+        if (!myOutgoingReqId || !ob()) return;
+        ob().respondMatchRequest(myOutgoingReqId, 'cancelled');
+        myOutgoingReqId = null;
+        renderOnlinePlayers();
+    }
+
+    // ── Request lifecycle ───────────────────────────────────────────
+    function handleRequestsUpdate(reqs) {
+        if (!ob()) return;
+        const me = ob().getMyDeviceId();
+        Object.keys(reqs || {}).forEach(id => {
+            const r = reqs[id];
+            if (!r || typeof r !== 'object') return;
+            if (r.to === me) {
+                if (r.status === 'pending' && !incomingHandled[id]) {
+                    incomingHandled[id] = true;
+                    if (onlineMatch) {
+                        ob().respondMatchRequest(id, 'busy');
+                    } else {
+                        incomingQueue.push({ id: id, r: r });
+                        showNextIncoming();
+                    }
+                } else if (r.status === 'cancelled' && incomingActive && incomingActive.id === id) {
+                    closeIncomingModal();
+                    onlineToast('❌ ' + (r.fromName || 'Player') + ' ne challenge cancel kar diya');
+                }
+            } else if (r.from === me) {
+                if (r.status === 'pending') {
+                    if (myOutgoingReqId !== id) { myOutgoingReqId = id; renderOnlinePlayers(); }
+                } else if (!incomingHandled['out_' + id]) {
+                    incomingHandled['out_' + id] = true;
+                    const name = r.toName || (onlinePlayersCache[r.to] ? onlinePlayersCache[r.to].deviceName : 'Player');
+                    if (r.status === 'declined') onlineToast('❌ ' + name + ' ne challenge decline kiya');
+                    else if (r.status === 'busy') onlineToast('🎮 ' + name + ' abhi kisi aur match me busy hai');
+                    else if (r.status === 'accepted') onlineToast('✅ ' + name + ' ne challenge accept kiya — match shuru!');
+                    if (r.status !== 'pending') {
+                        myOutgoingReqId = null;
+                        renderOnlinePlayers();
+                        setTimeout(() => { if (ob()) ob().removeMatchRequest(id); }, 40000);
+                    }
+                }
+            }
+        });
+    }
+
+    function showNextIncoming() {
+        if (incomingActive || !incomingQueue.length) return;
+        incomingActive = incomingQueue.shift();
+        const r = incomingActive.r;
+        document.getElementById('orq-name').textContent = r.fromName || 'Player';
+        const st = (typeof r.stake === 'number' && r.stake >= 100) ? r.stake : ONLINE_STAKE;
+        document.getElementById('orq-meta').textContent = '🪙 Stake ' + st.toLocaleString('en-IN') + ' · Winner gets 🪙' + (st * 2).toLocaleString('en-IN');
+        document.getElementById('online-request-modal').style.display = 'flex';
+    }
+
+    function closeIncomingModal() {
+        document.getElementById('online-request-modal').style.display = 'none';
+        incomingActive = null;
+        setTimeout(showNextIncoming, 300);
+    }
+
+    function acceptIncomingRequest() {
+        if (!incomingActive || !ob()) return;
+        const reqStake = (typeof incomingActive.r.stake === 'number' && incomingActive.r.stake >= 100) ? incomingActive.r.stake : ONLINE_STAKE;
+        if (coinBalance < reqStake) {
+            onlineToast('⚠️ 🪙' + reqStake.toLocaleString('en-IN') + ' stake ke liye coins kam hain — challenge decline kiya');
+            declineIncomingRequest();
+            return;
+        }
+        const id = incomingActive.id;
+        const r = incomingActive.r;
+        closeIncomingModal();
+        ob().respondMatchRequest(id, 'accepted');
+        ob().createMatchAfterAccept(id, r).catch(() => onlineToast('⚠️ Match start nahi ho paya'));
+    }
+
+    function declineIncomingRequest() {
+        if (!incomingActive || !ob()) return;
+        const id = incomingActive.id;
+        closeIncomingModal();
+        ob().respondMatchRequest(id, 'declined');
+    }
+
+    // ── Match detection (host / guest join) ─────────────────────────
+    function handleMatchesUpdate(matches) {
+        if (!ob()) return;
+        const me = ob().getMyDeviceId();
+        if (!onlineMatch) {
+            Object.keys(matches || {}).forEach(id => {
+                const m = matches[id];
+                if (!m || typeof m !== 'object') return;
+                if (m.status === 'finished' || m.result) {
+                    finishedMatchIds[id] = true;
+                    if (m.createdAt && Date.now() - m.createdAt > 600000 && ob().removeMatch) ob().removeMatch(id);
+                    return;
+                }
+                if (finishedMatchIds[id]) return;
+                if (m.hostDeviceId === me) joinAsHost(id, m);
+                else if (m.guestDeviceId === me) joinAsGuest(id, m);
+            });
+            return;
+        }
+        const m = matches[onlineMatch.id];
+        if (!m) return;
+        if (m.result && !onlineMatch.resultHandled) { handleRemoteResult(m.result); return; }
+        if (onlineMatch.role === 'host') {
+            onlineMatch.rig = m.rig || null; // ADDED: dono devices ki rig settings
+            const oppP = m.players && m.players[onlineMatch.oppDeviceId];
+            if (oppP && oppP.connected === false && !m.result && !onlineMatch.resultHandled) {
+                settleAndWriteResult(onlineMatch.myColor, 'left');
+            }
+        } else if (m.state) {
+            applyOnlineState(m.state);
+        }
+    }
+
+    function myDisplayName() {
+        const ni = document.getElementById('user-name-input');
+        return (ni && ni.value.trim()) ? ni.value.trim() : 'Player';
+    }
+
+    function beginOnlineGameUI() {
+        if (botMoveTimeoutId) clearTimeout(botMoveTimeoutId);
+        clearAutoMove();
+        hideBoardRollingDice();
+        document.getElementById('menu-screen').style.display = 'none';
+        document.getElementById('computer-picker-card').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'flex';
+        document.getElementById('winner-modal').style.display = 'none';
+        const reopenBtn = document.getElementById('btn-reopen-standings');
+        if (reopenBtn) reopenBtn.style.display = 'none';
+        winnersList = [];
+        consecutiveSixes = 0;
+        players = [
+            { name: onlineMatch.myName + ' (Red)', color: 'Red', hex: colors[0].hex, isBot: false },
+            { name: onlineMatch.oppName + ' (Yellow)', color: 'Yellow', hex: colors[2].hex, isBot: !!onlineMatch.isBot }
+        ];
+        activeBarrierMode = 'off';
+        activePartnerMode = 'off';
+        activeHandoffMode = 'off';
+        pendingBarrierDecision = null;
+        currentPlayerIndex = Math.floor(Math.random() * players.length);
+        initTokens();
+        createBoard();
+        if (ob().setMatchInfo) ob().setMatchInfo({ mode: onlineMatch.isBot ? 'Bot 1v1' : 'Online 1v1', colors: ['Red', 'Yellow'] });
+        document.querySelectorAll('.base-rank-crown-badge').forEach(el => el.classList.remove('show-rank', 'rank-1', 'rank-2', 'rank-3', 'rank-4'));
+        document.querySelectorAll('.player-tag .tag-rank-badge').forEach(el => el.remove());
+        document.querySelectorAll('.player-tag.player-finished').forEach(el => el.classList.remove('player-finished'));
+        if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+        (function () { const a = document.getElementById('adminMusicAudio'); if (a) { try { a.pause(); } catch (e) {} } })();
+        renderScoreboard();
+        updateTurnUI();
+        renderTokens();
+    }
+
+    // ADDED: stake server se kata hai (stakeMatch.js); backend na mile to
+    // local wallet se. Fail ho jaye to match cancel (winner nahi, koi
+    // prize nahi).
+    async function stakeOnlineCoins() {
+        // ADDED: custom stake — har match me jo stake select/pending tha wahi lagta hai
+        const stakeAmt = (onlineMatch && typeof onlineMatch.stake === 'number') ? onlineMatch.stake : ONLINE_STAKE;
+        // ADDED: bot (guest) match pura local rehta hai — server functions ki zaroorat nahi
+        if (onlineMatch.isBot) {
+            if (coinBalance >= stakeAmt) { addCoins(-stakeAmt); return true; }
+            onlineToast('⚠️ Is stake ke liye aapke paas coins nahi! (🪙' + stakeAmt.toLocaleString('en-IN') + ' chahiye)');
+            return false;
+        }
+        if (ob().callFn && isBackendConnected()) {
+            try {
+                const res = await ob().callFn('stakeMatch', { matchId: onlineMatch.id });
+                if (res && res.ok) return true;
+                if (res && res.reason === 'insufficient') onlineToast('⚠️ Coins kam hain — stake nahi ho saka!');
+                return false; // server ne mana kiya — locally mat kato (mismatch se bachne ke liye)
+            } catch (e) { /* network fail — local fallback neeche */ }
+        }
+        if (coinBalance >= stakeAmt) { addCoins(-stakeAmt); return true; }
+        onlineToast('⚠️ Is stake ke liye aapke paas coins nahi! (🪙' + stakeAmt.toLocaleString('en-IN') + ' chahiye)');
+        return false;
+    }
+
+    // ADDED: winner ko 2000 — settleMatch.js server se pay karta hai
+    // (idempotent); backend unreachable ho to local wallet fallback.
+    function creditOnlinePrize() {
+        if (onlineMatch.prizeGiven) return;
+        onlineMatch.prizeGiven = true;
+        // ADDED: prize = stake x 2 (custom stake ke hisaab se)
+        const prizeAmt = ((typeof onlineMatch.stake === 'number') ? onlineMatch.stake : ONLINE_STAKE) * 2;
+        if (onlineMatch.isBot) { addCoins(prizeAmt); return; }
+        if (ob().callFn && isBackendConnected()) {
+            ob().callFn('settleMatch', { matchId: onlineMatch.id }).then(res => {
+                if (res && res.ok) return; // server ne pay kiya — coins snapshot se update hoga
+                addCoins(ONLINE_PRIZE);
+            }).catch(() => addCoins(prizeAmt));
+            return;
+        }
+        addCoins(prizeAmt);
+    }
+
+    function joinAsHost(matchId, m) {
+        if (onlineMatch) return;
+        onlineMatch = {
+            id: matchId, role: 'host', myColor: 'Red', oppColor: 'Yellow',
+            oppName: m.guestName || 'Opponent', oppDeviceId: m.guestDeviceId,
+            myName: myDisplayName(), processedIntents: {}, noteSeq: 0,
+            tick: 0, startedAt: Date.now(), resultHandled: false, prizeGiven: false, rig: null,
+            stake: (typeof m.stake === 'number') ? m.stake : ONLINE_STAKE
+        };
+        onlineTimeoutCount = { Red: 0, Yellow: 0 };
+        beginOnlineGameUI();
+        stakeOnlineCoins().then(ok => { if (!ok && onlineMatch) settleAndWriteResult(null, 'stake_failed'); });
+        showOnlineGameBar();
+        onlineHeartbeatNow(matchId);
+        ob().setMatchConnected(matchId, true, 'host');
+        ob().listenMatchIntents(matchId, handleOnlineIntents);
+        ob().listenMatchChat(matchId, handleOnlineChat);
+        syncOnlineRig();
+        document.getElementById('msg-log').innerText = '🌐 Online Match vs ' + onlineMatch.oppName + ' — Stake 🪙' + onlineMatch.stake.toLocaleString('en-IN') + ' · Winner gets 🪙' + (onlineMatch.stake * 2).toLocaleString('en-IN') + '!';
+        startOnlineTurnTimer();
+    }
+
+    function joinAsGuest(matchId, m) {
+        if (onlineMatch) return;
+        onlineMatch = {
+            id: matchId, role: 'guest', myColor: 'Yellow', oppColor: 'Red',
+            oppName: m.hostName || 'Opponent', oppDeviceId: m.hostDeviceId,
+            myName: myDisplayName(), noteSeq: 0, lastAppliedTick: -1,
+            seenRoll: null, seenNoteSeq: 0, startedAt: Date.now(),
+            resultHandled: false, prizeGiven: false,
+            stake: (typeof m.stake === 'number') ? m.stake : ONLINE_STAKE
+        };
+        beginOnlineGameUI();
+        stakeOnlineCoins().then(ok => { if (!ok && onlineMatch) settleAndWriteResult(null, 'stake_failed'); });
+        showOnlineGameBar();
+        onlineHeartbeatNow(matchId);
+        ob().setMatchConnected(matchId, true, 'guest');
+        ob().listenMatchChat(matchId, handleOnlineChat);
+        syncOnlineRig();
+        gameState = 'ONLINE_WAIT';
+        document.getElementById('msg-log').innerText = '🌐 Connected! Opponent ka pehla move ka intezaar…';
+    }
+
+    // ── State sync (host pushes, guest applies) ─────────────────────
+    function pushOnlineState() {
+        if (!onlineMatch || onlineMatch.role !== 'host' || onlineMatch.isBot) return;
+        onlineMatch.tick = (onlineMatch.tick || 0) + 1;
+        const logEl = document.getElementById('msg-log');
+        ob().pushMatchState(onlineMatch.id, {
+            players: players,
+            tokens: tokens,
+            currentPlayerIndex: currentPlayerIndex,
+            winnersList: winnersList.slice(),
+            gameState: gameState,
+            currentRoll: currentRoll,
+            consecutiveSixes: consecutiveSixes,
+            tick: onlineMatch.tick,
+            note: onlineMatch.lastNote || null,
+            log: logEl ? logEl.innerText : ''
+        });
+    }
+
+    function applyOnlineState(s) {
+        if (!onlineMatch || onlineMatch.role !== 'guest' || !s) return;
+        if (s.tick === onlineMatch.lastAppliedTick) return;
+        onlineMatch.lastAppliedTick = s.tick;
+        applyingRemote = true;
+        try {
+            players = s.players;
+            tokens = s.tokens;
+            currentPlayerIndex = s.currentPlayerIndex;
+            winnersList = s.winnersList || [];
+            currentRoll = s.currentRoll || 0;
+            consecutiveSixes = s.consecutiveSixes || 0;
+            gameState = s.gameState;
+            renderTokens();
+            renderScoreboard();
+            const cp = getEffectiveCurrentPlayer();
+            if (cp && (gameState === 'AWAITING_MOVE' || gameState === 'IDLE') && currentRoll) {
+                const box = document.getElementById('dice-' + cp.color);
+                const cube = box && box.querySelector('.dice3d');
+                if (cube) {
+                    const rot = DICE_FACE_ROTATION[currentRoll] || DICE_FACE_ROTATION[1];
+                    cube.style.transform = 'rotateX(' + rot.x + 'deg) rotateY(' + rot.y + 'deg)';
+                }
+            }
+            if (gameState === 'AWAITING_MOVE' && currentRoll && currentRoll !== onlineMatch.seenRoll) playSound('roll');
+            onlineMatch.seenRoll = (gameState === 'AWAITING_MOVE') ? currentRoll : null;
+            if (s.note && s.note.seq !== onlineMatch.seenNoteSeq) {
+                onlineMatch.seenNoteSeq = s.note.seq;
+                onlineToast(s.note.text);
+            }
+            if (typeof s.log === 'string') document.getElementById('msg-log').innerText = s.log;
+        } finally {
+            applyingRemote = false;
+        }
+    }
+
+    function onlineAfterRender() {
+        if (!onlineMatch || applyingRemote) return;
+        if (onlineMatch.role !== 'host') return;
+        pushOnlineState();
+        startOnlineTurnTimer();
+    }
+
+    var _onlineOrigRenderTokens = renderTokens;
+    renderTokens = function (activeMove) { _onlineOrigRenderTokens(activeMove); onlineAfterRender(); };
+    var _onlineOrigRenderScoreboard = renderScoreboard;
+    renderScoreboard = function () { _onlineOrigRenderScoreboard(); onlineAfterRender(); };
+    var _onlineOrigUpdateTurnUI = updateTurnUI;
+    updateTurnUI = function () { _onlineOrigUpdateTurnUI(); onlineAfterRender(); };
+
+    // ── Intents (guest → host) ──────────────────────────────────────
+    function sendOnlineIntent(intent) {
+        if (!onlineMatch) return;
+        ob().sendMatchIntent(onlineMatch.id, intent);
+    }
+
+    function handleOnlineIntents(intents) {
+        if (!onlineMatch || onlineMatch.role !== 'host') return;
+        Object.keys(intents || {}).sort().forEach(k => {
+            const it = intents[k];
+            if (!it || typeof it !== 'object') return;
+            if (onlineMatch.processedIntents[k]) return;
+            onlineMatch.processedIntents[k] = true;
+            if (typeof it.at === 'number' && it.at < onlineMatch.startedAt - 5000) return;
+            const cp = getEffectiveCurrentPlayer();
+            if (!cp) return;
+            onlineMatch._execIntent = true;
+            try {
+                if (it.type === 'roll' && it.color === cp.color && gameState === 'IDLE') {
+                    onDiceClick(it.color);
+                } else if (it.type === 'move' && gameState === 'AWAITING_MOVE' && cp.color === onlineMatch.oppColor) {
+                    let found = null;
+                    (tokens[cp.color] || []).forEach(t => { if (t.id === it.tokenId) found = t; });
+                    if (found) handleTokenClick(found);
+                }
+            } finally {
+                onlineMatch._execIntent = false;
+            }
+        });
+    }
+
+    // ── Turn timer + auto roll (3 baar), 4th timeout = haar ─────────
+    function startOnlineTurnTimer() {
+        if (onlineTurnTimer) { clearTimeout(onlineTurnTimer); onlineTurnTimer = null; }
+        if (!onlineMatch || onlineMatch.role !== 'host' || gameState === 'GAMEOVER') return;
+        onlineTurnTimer = setTimeout(onOnlineTurnTimeout, ONLINE_TURN_MS);
+    }
+
+    function onlineNote(text) {
+        if (!onlineMatch) return;
+        onlineMatch.noteSeq = (onlineMatch.noteSeq || 0) + 1;
+        onlineMatch.lastNote = { seq: onlineMatch.noteSeq, text: text };
+        onlineToast(text);
+    }
+
+    function onOnlineTurnTimeout() {
+        onlineTurnTimer = null;
+        if (!onlineMatch || onlineMatch.role !== 'host' || gameState === 'GAMEOVER') return;
+        const cp = getEffectiveCurrentPlayer();
+        if (!cp) return;
+        onlineTimeoutCount[cp.color] = (onlineTimeoutCount[cp.color] || 0) + 1;
+        const n = onlineTimeoutCount[cp.color];
+        if (n >= 4) {
+            const winner = players.find(p => p.color !== cp.color);
+            if (winner) settleAndWriteResult(winner.color, 'timeout');
+            return;
+        }
+        onlineNote('⏰ ' + cp.name + ' ne time liya — auto roll (' + n + '/3)');
+        onlineMatch._execIntent = true;
+        try { onDiceClick(cp.color); } finally { onlineMatch._execIntent = false; }
+        setTimeout(() => {
+            if (!onlineMatch) return;
+            if (gameState === 'AWAITING_MOVE' && currentMovableTokens.length) {
+                const t = currentMovableTokens.find(x => x.status === 'BASE') || currentMovableTokens[0];
+                onlineMatch._execIntent = true;
+                try { initiateMove(t, currentRoll); } finally { onlineMatch._execIntent = false; }
+            }
+        }, 1500);
+    }
+
+    // ── Match end + coins ───────────────────────────────────────────
+    function settleAndWriteResult(winnerColor, reason) {
+        if (!onlineMatch || onlineMatch.resultHandled) return;
+        onlineMatch.resultHandled = true;
+        let iWon = false, winnerName = '';
+        if (winnerColor) {
+            const winner = players.find(p => p.color === winnerColor);
+            iWon = winnerColor === onlineMatch.myColor;
+            winnerName = winner ? winner.name : winnerColor;
+            if (iWon) creditOnlinePrize();
+        }
+        const stakeAmt = (typeof onlineMatch.stake === 'number') ? onlineMatch.stake : ONLINE_STAKE;
+        // ADDED: bot (guest) match local hai — RTDB result mat likho
+        if (!onlineMatch.isBot) ob().settleMatchResult(onlineMatch.id, { winnerColor: winnerColor, winnerName: winnerName, reason: reason }).catch(() => {});
+        finishOnlineCleanup();
+        showOnlineResult({ iWon: iWon, reason: reason, winnerName: winnerName, stake: stakeAmt, prize: stakeAmt * 2 });
+    }
+
+    function handleRemoteResult(r) {
+        if (!onlineMatch || onlineMatch.resultHandled) return;
+        onlineMatch.resultHandled = true;
+        let iWon = false;
+        if (r.winnerColor) {
+            iWon = r.winnerColor === onlineMatch.myColor;
+            if (iWon) creditOnlinePrize();
+        }
+        finishOnlineCleanup();
+        showOnlineResult({ iWon: iWon, reason: r.reason, winnerName: r.winnerName });
+    }
+
+    function endOnlineMatch(winnerColor, reason) {
+        settleAndWriteResult(winnerColor, reason);
+    }
+
+    function finishOnlineCleanup() {
+        if (onlineTurnTimer) { clearTimeout(onlineTurnTimer); onlineTurnTimer = null; }
+        gameState = 'GAMEOVER';
+        if (ob().setMatchInfo) ob().setMatchInfo(null);
+        lastPushedTokenCountsSig = null;
+        if (ob().setTokenCounts) ob().setTokenCounts(null);
+        hideOnlineGameBar();
+        onlineHeartbeatNow(null);
+        onlineMatch = null;
+    }
+
+    function showOnlineResult(info) {
+        const m = document.getElementById('online-result-modal');
+        const t = document.getElementById('ores-title');
+        const s = document.getElementById('ores-sub');
+        const c = document.getElementById('ores-coins');
+        if (!m) return;
+        if (info.reason === 'stake_failed') {
+            t.textContent = '⚠️ Match Cancelled';
+            t.style.color = '#fde047';
+            s.textContent = 'Stake process nahi ho paya (coins/server issue)';
+            c.textContent = '🪙 Koi coins nahi kite gaye';
+        } else if (info.iWon) {
+            t.textContent = '🏆 You Won!';
+            t.style.color = '#4ade80';
+            const extra = info.reason === 'left' ? ' (opponent ne match chhod diya)' : info.reason === 'timeout' ? ' (opponent ka time khatam)' : '';
+            s.textContent = (info.winnerName || 'You') + extra;
+            c.textContent = '+🪙 ' + Number(info.prize || 2000).toLocaleString('en-IN') + ' aapke wallet me add ho gaye!';
+        } else {
+            t.textContent = info.reason === 'left' ? '🚪 You Left' : '😞 You Lost';
+            t.style.color = '#f87171';
+            s.textContent = info.reason === 'timeout'
+                ? '⏰ 4 baar time out — bahut der ho gayi'
+                : info.reason === 'left'
+                    ? 'Aapne match chhod diya — opponent jeet gaya'
+                    : (info.winnerName || 'Opponent') + ' ne match jeet liya';
+            c.textContent = '🪙 ' + Number(info.stake || 1000).toLocaleString('en-IN') + ' stake gaya — better luck next time!';
+        }
+        m.style.display = 'flex';
+    }
+
+    function closeOnlineResult() {
+        document.getElementById('online-result-modal').style.display = 'none';
+        goToMenu();
+    }
+
+    function leaveOnlineMatch() {
+        if (!onlineMatch) return;
+        const ok = window.confirm('⚠️ Match chhod doge to haar jaoge. Kya aap sure ho?');
+        if (!ok) return;
+        settleAndWriteResult(onlineMatch.oppColor, 'left');
+    }
+
+    // ── Online game bar + emoji/chat ────────────────────────────────
+    function showOnlineGameBar() {
+        const b = document.getElementById('online-game-bar');
+        if (b) b.style.display = 'flex';
+    }
+    function hideOnlineGameBar() {
+        const b = document.getElementById('online-game-bar');
+        if (b) b.style.display = 'none';
+    }
+
+    function handleOnlineChat(msgs) {
+        Object.keys(msgs || {}).forEach(k => {
+            const msg = msgs[k];
+            if (!msg || typeof msg !== 'object') return;
+            const key = (msg.at || 0) + '_' + (msg.from || '') + '_' + (msg.emoji || msg.text || '');
+            if (processedChat[key]) return;
+            processedChat[key] = true;
+            showChatBubble(msg);
+        });
+    }
+
+    function showChatBubble(msg) {
+        if (!onlineMatch) return;
+        // bubble RECEIVER ke base ke paas aata hai: sender ke screen pe
+        // opponent ke base ke paas, receiver ke screen pe uske apne base ke paas.
+        const receiverColor = (msg.from === ob().getMyDeviceId()) ? onlineMatch.oppColor : onlineMatch.myColor;
+        playSound('bounce');
+        const anchor = document.getElementById('tag-' + receiverColor);
+        const r = anchor ? anchor.getBoundingClientRect() : null;
+        const b = document.createElement('div');
+        b.className = 'ogb-bubble';
+        b.textContent = msg.emoji || msg.text || '👋';
+        b.style.left = (r ? (r.left + r.width / 2) : (window.innerWidth / 2)) + 'px';
+        b.style.top = (r ? Math.max(48, r.top - 4) : 100) + 'px';
+        document.body.appendChild(b);
+        setTimeout(() => { if (b.parentNode) b.parentNode.removeChild(b); }, 2700);
+    }
+
+    function sendEmoji(emo) {
+        if (!onlineMatch) return;
+        if (!onlineMatch.isBot) ob().sendMatchChat(onlineMatch.id, { emoji: emo });
+        showChatBubble({ emoji: emo, from: ob().getMyDeviceId() });
+    }
+
+    function sendChatText() {
+        if (!onlineMatch) return;
+        const inp = document.getElementById('ogb-chat-input');
+        const t = inp ? inp.value.trim() : '';
+        if (!t) return;
+        inp.value = '';
+        if (!onlineMatch.isBot) ob().sendMatchChat(onlineMatch.id, { text: t.slice(0, 80) });
+        showChatBubble({ text: t.slice(0, 80), from: ob().getMyDeviceId() });
+    }
+
+    // ── Heartbeat + init ────────────────────────────────────────────
+    function onlineHeartbeatNow(inMatchVal) {
+        if (!ob() || !ob().onlineHeartbeat) return;
+        let v = (inMatchVal === undefined) ? (onlineMatch ? onlineMatch.id : null) : inMatchVal;
+        let oppInfo = null;
+        if (onlineMatch) {
+            if (v) oppInfo = { oppDeviceId: onlineMatch.oppDeviceId, oppName: onlineMatch.oppName };
+        } else if (guestMatch) {
+            // ADDED: guest (online-style bot) match ko admin panel me
+            // "🤖 vs GUEST" badge ke saath dikhane ke liye heartbeat.
+            if (v === undefined || v === null) v = 'guest';
+            oppInfo = { oppDeviceId: null, oppName: guestMatch.oppNames[0] || 'Guest' };
+        }
+        try { ob().onlineHeartbeat(coinBalance, v, oppInfo, !!(onlineMatch && onlineMatch.isBot) || !!guestMatch); } catch (e) {}
+    }
+
+
+    // ── ADDED: custom stake + Bot (Guest) match ─────────────────────
+    const BOT_NAMES = ['Aarav', 'Rohan', 'Vikram', 'Arjun', 'Kabir', 'Rahul', 'Dev', 'Zara', 'Priya', 'Riya', 'Amit', 'Sanjay', 'Neha', 'Karan'];
+    function randomBotName() {
+        const n = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+        return n + '-' + Math.floor(100 + Math.random() * 900);
+    }
+
+    function setOnlineStake(v, el) {
+        v = parseInt(v, 10);
+        if (!isFinite(v)) v = 1000;
+        v = Math.max(100, Math.min(100000, v));
+        ONLINE_STAKE = v;
+        ONLINE_PRIZE = v * 2;
+        guestStakeHintSync(); // ADDED: menu ke guest-match hint ke saath sync
+        // pills ka active state sync karo (custom input se aaya ho to bhi)
+        document.querySelectorAll('.stake-pill').forEach(function (p) {
+            p.classList.toggle('active', parseInt(p.dataset.stake, 10) === v);
+        });
+        const inp = document.getElementById('stake-custom-input');
+        if (inp && document.activeElement !== inp) inp.value = v;
+    }
+
+    function setOnlineStakeCustom(inp) {
+        if (inp) setOnlineStake(inp.value, null);
+    }
+
+    // ── ADDED: ONLINE-STYLE GUEST MATCH (2P / 3P / 4P) ─────────────────
+    // Computer system ko online match jaisa present karta hai: random naam
+    // ke Guest opponents, shared custom coin stake, 2x prize, result popup
+    // aur admin panel me device pe "🤖 vs GUEST" badge. Pura match offline
+    // chalta hai (players[i].isBot) — sirf presentation online jaisi hai.
+    let guestMatch = null;   // { stake, count, oppNames[], myColor }
+    let guestTableCount = 2;
+
+    function setGuestTable(n) {
+        guestTableCount = (n === 3 || n === 4) ? n : 2;
+        document.querySelectorAll('.guest-table-pill').forEach(function (p) {
+            p.classList.toggle('active', parseInt(p.dataset.gtable, 10) === guestTableCount);
+        });
+    }
+
+    function guestStakeHintSync() {
+        const s = document.getElementById('guest-stake-hint');
+        const p2 = document.getElementById('guest-prize-hint');
+        if (s) s.textContent = ONLINE_STAKE.toLocaleString('en-IN');
+        if (p2) p2.textContent = (ONLINE_STAKE * 2).toLocaleString('en-IN');
+    }
+
+    function startGuestMatch() {
+        if (onlineMatch) { onlineToast('🎮 Aap already ek match me ho!'); return; }
+        if (myOutgoingReqId) { onlineToast('📤 Pehle pending challenge ka jawab aa jane dein…'); return; }
+        if (coinBalance < ONLINE_STAKE) {
+            onlineToast('⚠️ Is stake ke liye aapke paas coins nahi! (🪙' + ONLINE_STAKE.toLocaleString('en-IN') + ' chahiye)');
+            return;
+        }
+        // har opponent seat ka alag random naam
+        const oppNames = [];
+        for (let i = 0; i < guestTableCount - 1; i++) oppNames.push(randomBotName() + ' (Guest)');
+        guestMatch = { stake: ONLINE_STAKE, count: guestTableCount, oppNames: oppNames, myColor: null };
+        // stake turant kata jata hai (bilkul real online match ki tarah)
+        addCoins(-ONLINE_STAKE);
+        // "searching" feel — fake search, phir match start
+        onlineToast('🔍 Online player dhoondha ja raha hai… (🪙' + ONLINE_STAKE.toLocaleString('en-IN') + ' stake)');
+        setTimeout(function () {
+            onlineToast('✅ Match mil gaya! vs ' + oppNames.join(' · '));
+            setTimeout(function () { startGame('computer' + guestTableCount); }, 900);
+        }, 1800);
+    }
+
+    // startGame() ke computer-modes me bot naam "Computer (C)" hote hain;
+    // guestMatch chal raha ho to unki jagah random guest naam aa jate hain
+    // aur user ka color record hota hai (stake settle ke liye).
+    function applyGuestNames(playersArr, userColor) {
+        if (!guestMatch) return playersArr;
+        guestMatch.myColor = userColor;
+        let oi = 0;
+        playersArr.forEach(function (p) { if (p.isBot) p.name = guestMatch.oppNames[oi++] || p.name; });
+        return playersArr;
+    }
+
+    // match khatam hone pe (winnersList final ho chuki hai) stake settle
+    function finishGuestMatch() {
+        if (!guestMatch) return;
+        const gm = guestMatch;
+        guestMatch = null;
+        const iWon = winnersList[0] === gm.myColor;
+        const m = document.getElementById('online-result-modal');
+        const t = document.getElementById('ores-title');
+        const s = document.getElementById('ores-sub');
+        const c = document.getElementById('ores-coins');
+        if (ob() && ob().onlineHeartbeat) onlineHeartbeatNow(null); // admin badge clear
+        if (!m || !t || !s || !c) return;
+        if (iWon) {
+            addCoins(gm.stake * 2);
+            t.textContent = '🏆 You Won!';
+            t.style.color = '#4ade80';
+            s.textContent = 'Aapne Guest match jeet liya! 🎉';
+            c.textContent = '+🪙 ' + (gm.stake * 2).toLocaleString('en-IN') + ' aapke wallet me add ho gaye!';
+        } else {
+            t.textContent = '😞 You Lost';
+            t.style.color = '#f87171';
+            const wObj = players.find(function (p) { return p.color === winnersList[0]; });
+            s.textContent = (wObj ? wObj.name : 'Guest') + ' ne match jeet liya';
+            c.textContent = '🪙 ' + gm.stake.toLocaleString('en-IN') + ' stake gaya — better luck next time!';
+        }
+        m.style.display = 'flex';
+    }
+
+    // ADDED: koi player online nahi hai? Random naam ke GUEST (bot) ke
+    // against online-style match — wahi custom stake, wahi 2x prize, wahi
+    // rules (leave/timeout/rig). Pura match isi device pe chalta hai
+    // (host-authoritative), isliye coins ka stake/prize local wallet se
+    // hota hai. Admin panel me device "🤖 vs <naam> (bot)" dikhata hai.
+    function startBotMatch() {
+        if (!ob()) { onlineToast('⚠️ Network ready nahi hai — thodi der baad try karein'); return; }
+        if (onlineMatch) { onlineToast('🎮 Aap already ek match me ho!'); return; }
+        if (myOutgoingReqId) { onlineToast('📤 Pehle pending challenge ka jawab aa jane dein…'); return; }
+        if (coinBalance < ONLINE_STAKE) {
+            onlineToast('⚠️ Is stake ke liye aapke paas coins nahi! (🪙' + ONLINE_STAKE.toLocaleString('en-IN') + ' chahiye)');
+            return;
+        }
+        onlineMatch = {
+            id: 'bot_' + Date.now().toString(36), role: 'host', isBot: true,
+            myColor: 'Red', oppColor: 'Yellow',
+            oppName: randomBotName() + ' (Guest)', oppDeviceId: null,
+            myName: myDisplayName(), processedIntents: {}, noteSeq: 0,
+            tick: 0, startedAt: Date.now(), resultHandled: false, prizeGiven: false, rig: null,
+            stake: ONLINE_STAKE
+        };
+        onlineTimeoutCount = { Red: 0, Yellow: 0 };
+        beginOnlineGameUI();
+        stakeOnlineCoins().then(function (ok) { if (!ok && onlineMatch) settleAndWriteResult(null, 'stake_failed'); });
+        showOnlineGameBar();
+        onlineHeartbeatNow(onlineMatch.id);
+        syncOnlineRig();
+        document.getElementById('msg-log').innerText = '🤖 Guest Match vs ' + onlineMatch.oppName + ' — Stake 🪙' + ONLINE_STAKE.toLocaleString('en-IN') + ' · Winner gets 🪙' + (ONLINE_STAKE * 2).toLocaleString('en-IN') + '!';
+        startOnlineTurnTimer();
+    }
+
+    function tryInitOnline() {
+        if (onlineInitDone) return;
+        if (!(window.__ludoFirebaseBridge && window.__ludoFirebaseBridge.getMyDeviceId)) {
+            setTimeout(tryInitOnline, 2000);
+            return;
+        }
+        onlineInitDone = true;
+        ob().listenOnlinePlayers(function (list) { onlinePlayersCache = list || {}; if (lobbyVisible()) renderOnlinePlayers(); });
+        ob().listenMatchRequests(handleRequestsUpdate);
+        ob().listenMatches(handleMatchesUpdate);
+        onlineHeartbeatNow();
+        setInterval(() => { onlineHeartbeatNow(); }, 20000);
+        renderOnlinePlayers();
+    }
+    tryInitOnline();
+
     window.LudoEngine = {
         startGame,
         showComputerPicker,
@@ -7706,6 +8723,19 @@ body {
             applyDeviceBlock,
         applyAdminSounds,
         openBugReport,
+        sendOnlineChallenge,
+        cancelOutgoingRequest,
+        acceptIncomingRequest,
+        declineIncomingRequest,
+        closeOnlineResult,
+        leaveOnlineMatch,
+        sendEmoji,
+        sendChatText,
+        setOnlineStake,
+        setOnlineStakeCustom,
+        startBotMatch,
+        setGuestTable,
+        startGuestMatch,
         closeBugReport,
         submitBugReport
     };
