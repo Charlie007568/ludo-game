@@ -8733,19 +8733,33 @@ window.LudoOnline = (function () {
 </script>
 
 <script>
-// ADDED: Loader handshake — Back/Exit flow ke liye. Game apni current
-// screen (board/menu) loader ko postMessage se batata hai, aur loader ke
-// 'go-menu' message pe main menu me wapas jaata hai. Isse:
-//   board pe Back  -> "Exit to Menu?" -> Yes = game ka menu (app band nahi)
-//   menu me Back   -> "Exit Game?"   -> Yes = poora app band
+// ADDED: Loader handshake — Back/Exit flow ke liye.
+//  - Game apni screen (board/menu) loader ko postMessage se batata hai.
+//  - Game KHUD bhi history guard entries push karta hai + apna popstate
+//    sunta hai: jab bhi Back kisi bhi document ki entry pop kare, koi na
+//    koi popstate zaroor fire hota hai aur "back-pressed" parent ko jata
+//    hai — isliye pehli baar menu se Back pe bhi popup aata hai.
+//  - Loader ke 'go-menu' pe game main menu me wapas jaata hai.
+// Flow: board pe Back -> "Exit to Menu?" -> Yes = game menu (app band nahi)
+//       menu me Back -> "Exit Game?"   -> Yes = poora app band
 (function () {
-    function reportScreen() {
+    function currentScreen() {
         const gs = document.getElementById('game-screen');
-        const inGame = gs && gs.style.display !== 'none';
-        try {
-            window.parent.postMessage({ type: 'rbe-game', screen: inGame ? 'game' : 'menu' }, '*');
-        } catch (e) {}
+        return (gs && gs.style.display !== 'none') ? 'game' : 'menu';
     }
+    function reportScreen() {
+        try { window.parent.postMessage({ type: 'rbe-game', screen: currentScreen() }, '*'); } catch (e) {}
+    }
+    function pushGuard() {
+        try { history.pushState({ rbeGameGuard: true }, '', location.href); } catch (e) {}
+    }
+    pushGuard();
+    window.addEventListener('popstate', function () {
+        pushGuard(); // guard hamesha bana rahe
+        try {
+            window.parent.postMessage({ type: 'rbe-game', action: 'back-pressed', screen: currentScreen() }, '*');
+        } catch (e) {}
+    });
     window.addEventListener('message', function (ev) {
         const d = ev.data || {};
         if (d.type !== 'rbe-loader') return;
