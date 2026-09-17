@@ -2794,6 +2794,17 @@ body {
     background: radial-gradient(ellipse at center, rgba(253,224,71,0.55) 0%, rgba(253,224,71,0.18) 60%, transparent 80%);
     pointer-events: none; z-index: 32;
 }
+    /* ADDED: premium online notifications + rematch bar */
+    .premium-toast { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); z-index: 9999; display: none; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: 999px; background: linear-gradient(135deg, rgba(30,27,75,0.92), rgba(15,23,42,0.96)); border: 1.5px solid rgba(253,224,71,0.55); color: #fff; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.2px; box-shadow: 0 12px 32px rgba(0,0,0,0.65), 0 0 22px rgba(253,224,71,0.22), inset 0 1px 0 rgba(255,255,255,0.16); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); cursor: pointer; max-width: 92vw; text-align: center; line-height: 1.45; animation: toastSlideDown 0.35s cubic-bezier(0.16,1,0.3,1); }
+    .premium-toast.out { animation: toastFadeOut 0.28s ease forwards; }
+    @keyframes toastSlideDown { 0% { opacity: 0; transform: translate(-50%,-18px) scale(0.94); } 100% { opacity: 1; transform: translate(-50%,0) scale(1); } }
+    @keyframes toastFadeOut { to { opacity: 0; transform: translate(-50%,-12px) scale(0.96); } }
+    #rematch-bar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 390; display: none; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 18px; background: linear-gradient(150deg, rgba(30,41,59,0.92), rgba(15,23,42,0.95)); border: 1.5px solid rgba(234,179,8,0.55); box-shadow: 0 16px 44px rgba(0,0,0,0.7), 0 0 26px rgba(234,179,8,0.25), inset 0 1px 0 rgba(255,255,255,0.12); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); animation: toastSlideDown 0.4s cubic-bezier(0.16,1,0.3,1); }
+    #rematch-bar .rmbtn { padding: 11px 20px; border-radius: 12px; border: none; font-weight: 900; font-size: 0.8rem; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: transform 0.15s ease, filter 0.15s ease; white-space: nowrap; }
+    #rematch-bar .rmbtn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+    #rematch-bar .rm-yes { background: linear-gradient(135deg, #fde047, #eab308); color: #451a03; box-shadow: 0 4px 16px rgba(234,179,8,0.45); }
+    #rematch-bar .rm-no { background: rgba(51,65,85,0.9); color: #e2e8f0; border: 1px solid rgba(148,163,184,0.4); }
+    #rematch-status { font-size: 0.68rem; color: #94a3b8; font-weight: 700; padding: 0 6px; white-space: nowrap; }
     </style>
 <script src="/_aistudio-iframe.js?v=2f1c016a"></script>
     <!-- ============================================================
@@ -3367,7 +3378,7 @@ body {
                 <span class="diff-pill" style="flex:0 0 auto;padding:5px 10px;" onclick="window.LudoOnline.closeArena()">✖ Close</span>
             </div>
             <div class="form-group" style="margin-bottom:8px;">
-                <label style="font-size:0.7rem;color:#94a3b8;font-weight:700;">Entry fee (coins) — ⚔️ Challenge bhejne ke liye, 100 se 1,00,000 tak apni marzi ka amount:</label>
+                <label style="font-size:0.7rem;color:#94a3b8;font-weight:700;">Entry fee (coins) — for ⚔️ Challenges, custom amount 100 to 100,000:</label>
                 <input type="number" id="online-bet-input" min="100" max="100000" step="50" value="1000" style="width:100%;padding:10px 12px;background:rgba(0,0,0,0.4);border:1px solid rgba(234,179,8,0.45);border-radius:10px;color:#fde047;font-weight:800;font-size:0.95rem;outline:none;">
             </div>
             <div class="diff-pill-row" style="margin-top:0;margin-bottom:10px;">
@@ -3376,7 +3387,7 @@ body {
                 <div class="diff-pill" id="online-count-4" onclick="window.LudoOnline.setCount(4)">🏆 4 Players</div>
             </div>
             <button class="coin-claim-btn" id="online-find-btn" onclick="window.LudoOnline.findMatch()">▶ Play Random Match</button>
-            <p class="coin-claim-countdown" id="online-search-status" style="margin:6px 0 10px;">Entry fee sabse kat-ti hai • Payout: 1st = 2× fee, 2nd = 1× fee (4P me 3rd = 1×), aakhri = 0</p>
+            <p class="coin-claim-countdown" id="online-search-status" style="margin:6px 0 10px;">Entry fee applies to all • Payout: 1st = 2× fee, 2nd = 1× fee (3rd = 1× in 4P), last = 0</p>
             <div class="dash-card-head" style="margin-top:4px;">
                 <span class="dash-card-title">👥 Online Players</span>
                 <span class="device-count-badge" id="online-players-count" style="margin-left:auto;background:rgba(0,229,255,0.15);color:#00e5ff;font-size:0.68rem;font-weight:700;padding:2px 9px;border-radius:20px;">0 online</span>
@@ -3717,16 +3728,23 @@ body {
         <!-- ADDED: Online multiplayer — incoming challenge popup -->
     <div id="online-request-modal" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.9);backdrop-filter:blur(8px);z-index:600;align-items:center;justify-content:center;padding:20px;">
         <div class="glass-panel" style="max-width:300px;width:100%;text-align:center;padding:24px;">
-            <p class="coins-modal-title">⚔️ Challenge Aaya!</p>
-            <p class="coins-modal-sub"><b id="online-req-from" style="color:#fde047;">Player</b> ne aapko challenge kiya hai</p>
+            <p class="coins-modal-title">⚔️ Challenge Received!</p>
+            <p class="coins-modal-sub"><b id="online-req-from" style="color:#fde047;">Player</b> challenged you to a match</p>
             <p style="font-size:0.95rem;font-weight:800;color:#64ffda;margin-bottom:14px;">Entry: 🪙 <span id="online-req-bet">1,000</span></p>
             <button class="coin-claim-btn" onclick="window.LudoOnline.acceptReq()">✅ Accept &amp; Play</button>
             <button class="coins-modal-close" onclick="window.LudoOnline.declineReq()">❌ Decline</button>
         </div>
     </div>
 
-    <!-- ADDED: Online multiplayer toast -->
-    <div id="online-toast" class="partner-off-toast" style="display:none;"></div>
+    <!-- ADDED: Premium online toast -->
+    <div id="online-toast" class="premium-toast" style="display:none;"></div>
+
+    <!-- ADDED: Play Again (rematch) bar — win/exit ke baad -->
+    <div id="rematch-bar">
+        <button class="rmbtn rm-yes" id="rematch-yes" onclick="window.LudoOnline.requestRematch()">🔁 Play Again</button>
+        <button class="rmbtn rm-no" onclick="window.LudoOnline.exitToMenu()">🏠 Exit</button>
+        <span id="rematch-status"></span>
+    </div>
 
     <!-- Customizer Studio Modal HTML -->
         <div id="customizer-modal" class="customizer-overlay" style="display:none;" onclick="window.LudoEngine.closeCustomizer()">
@@ -4024,7 +4042,9 @@ body {
         } else if (s.gs === 'IDLE' && (prevCpi !== s.cpi || prevGs !== 'IDLE')) {
             document.getElementById('msg-log').innerText = cpNow ? (cpNow.name + "'s turn \uD83C\uDFB2") : '';
         } else if (s.gs === 'GAMEOVER' && prevGs !== 'GAMEOVER') {
+            onlineSession.over = true;
             onlineShowRemoteGameOver(); playSound('match_fanfare');
+            if (window.LudoOnline && window.LudoOnline.showRematchBar) window.LudoOnline.showRematchBar();
         }
     }
 
@@ -4066,7 +4086,7 @@ body {
         onlineClearRollRetry();
         const box = document.getElementById('dice-' + color);
         if (box) { box.classList.add('spinning'); setTimeout(() => box.classList.remove('spinning'), 650); }
-        document.getElementById('msg-log').innerText = '\u23F3 Roll bheja ja raha hai\u2026';
+        document.getElementById('msg-log').innerText = '\u23F3 Sending roll\u2026';
         let tries = 0;
         const attempt = () => {
             if (!onlineSession || onlineSession.isHost || gameState !== 'IDLE') return; // ho gaya / turn gaya
@@ -4164,8 +4184,8 @@ body {
             }
             const msg = (res && res.ok)
                 ? (res.payout > 0
-                    ? '\uD83C\uDFC6 Rank ' + res.rank + '! +' + res.payout + ' coins mil gaye! \uD83E\uDE99'
-                    : '\uD83D\uDE14 Is baar kuch nahi mila — agli baar try karo!')
+                    ? '\uD83C\uDFC6 Rank ' + res.rank + '! +' + res.payout + ' coins won! \uD83E\uDE99'
+                    : '\uD83D\uDE14 No winnings this time — try again!')
                 : null;
             if (msg) {
                 if (window.LudoOnline && window.LudoOnline.toast) window.LudoOnline.toast(msg);
@@ -4250,11 +4270,12 @@ body {
         onlineSettleWinner(best.uid);
         if (window.LudoOnline && window.LudoOnline.toast) {
             window.LudoOnline.toast(best.uid === sess.myUid
-                ? '\uD83C\uDFC6 Jeet gaye! ' + forfeitedName + ' ne match chhod diya — pot aapka!'
-                : '\uD83D\uDEAA ' + forfeitedName + ' ne exit kiya — winner: ' + best.name);
+                ? '\uD83C\uDFC6 You win! ' + forfeitedName + ' left the match — the pot is yours!'
+                : '\uD83D\uDEAA ' + forfeitedName + ' exited — winner: ' + best.name);
         }
-        onlineSession = null;
+        onlineSession.over = true; // session rakhte hain — rematch/decline ke liye
         onlineClearInMatchMark();
+        if (window.LudoOnline && window.LudoOnline.showRematchBar) window.LudoOnline.showRematchBar();
     }
 
     // ADDED: 3P/4P me koi exit/timeout → uska DICE HIDE + match bache
@@ -4285,7 +4306,7 @@ body {
             bet: onlineSession.bet
         });
         if (window.LudoOnline && window.LudoOnline.toast) {
-            window.LudoOnline.toast('\uD83D\uDEAA ' + (exitedEntry.name || 'Player') + ' exit — match bache players me continue');
+            window.LudoOnline.toast('\uD83D\uDEAA ' + (exitedEntry.name || 'Player') + ' left — match continues with remaining players');
         }
     }
 
@@ -4297,8 +4318,10 @@ body {
         const b = window.__ludoFirebaseBridge;
         const roomId = onlineSession.roomId;
         onlineSession.syncActive = false;
+        onlineSession.over = true;
         if (b) b.updateData('lm_online/rooms/' + roomId, { status: 'finished', winnerUid: winnerUid || null, finishedAt: Date.now() });
         onlineSettleWinner(winnerUid);
+        if (window.LudoOnline && window.LudoOnline.showRematchBar) window.LudoOnline.showRematchBar();
     }
 
     function onlineAbandonMatch() {
@@ -4312,15 +4335,34 @@ body {
         onlineSession = null;
         const b = window.__ludoFirebaseBridge;
         if (b) {
-            // FIXED: 2P exit → opponent INSTANT win (forfeit); 3P/4P exit →
-            // player eliminate, match continue. Leaver ki fee forfeit hoti hai.
-            if ((s.playerCount || 2) <= 2) {
+            if (s.over) {
+                // match pehle se khatam — forfeit nahi, sirf rematch decline
+                b.updateData('lm_online/rooms/' + s.roomId + '/rematch/' + s.myUid, false).catch(() => {});
+            } else if ((s.playerCount || 2) <= 2) {
+                // 2P mid-match exit → opponent INSTANT win; leaver ko menu pe rematch bar
                 b.updateData('lm_online/rooms/' + s.roomId, { status: 'forfeit', forfeitedBy: s.myUid, at: Date.now() });
+                if (window.LudoOnline && window.LudoOnline.showRematchBar) window.LudoOnline.showRematchBar();
             } else {
                 b.updateData('lm_online/rooms/' + s.roomId, { status: 'player-exit', exitedUid: s.myUid, at: Date.now() });
             }
         }
         onlineClearInMatchMark();
+    }
+
+    function onlineCleanupSilent() {
+        if (!onlineSession) return;
+        onlineClearTurnTimer();
+        onlineClearRollRetry();
+        onlineClearMoveRetry();
+        const s = onlineSession;
+        if (s.intentUnsub) { try { s.intentUnsub(); } catch (e) {} }
+        if (s.oppWatchers) s.oppWatchers.forEach(u => { try { u(); } catch (e) {} });
+        onlineSession = null;
+        onlineClearInMatchMark();
+    }
+    function onlineRemainingUids() {
+        if (!onlineSession) return [];
+        return players.filter(p => !p.exited).map(p => onlineSession.roomPlayers[p.color]).filter(Boolean);
     }
 
     window.__ludoOnlineCore = {
@@ -4334,6 +4376,8 @@ body {
         settleWinner: (wuid) => onlineSettleWinner(wuid),
         handleForfeit: (room) => onlineHandleForfeit(room),
         handlePlayerExit: (room) => onlineHandlePlayerExit(room),
+        cleanupSilent: () => onlineCleanupSilent(),
+        remainingUids: () => onlineRemainingUids(),
         abandon: () => { if (onlineSession && onlineSession.active) onlineAbandonMatch(); }
     };
 
@@ -8362,6 +8406,7 @@ window.LudoOnline = (function () {
     let count = 2, searching = false, pollTimer = null;
     let roomUnsubs = [], reqUnsub = null, respUnsub = null, playersUnsub = null;
     let currentReqKey = null, currentReq = null;
+    let activeRoomId = null; // ADDED: rematch ke liye current room id
 
     const B = () => window.__ludoFirebaseBridge;
     const core = () => window.__ludoOnlineCore;
@@ -8371,11 +8416,47 @@ window.LudoOnline = (function () {
     const betVal = () => { const el = document.getElementById('online-bet-input'); let v = parseInt(el && el.value, 10); if (!isFinite(v)) v = 1000; return Math.max(100, Math.min(100000, v)); };
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+    // ADDED: premium toast — slide-down, blur, glow, tap-to-dismiss
     function toast(msg) {
         const t = document.getElementById('online-toast');
         if (!t) return;
-        t.textContent = msg; t.style.display = 'flex';
-        clearTimeout(t._h); t._h = setTimeout(() => { t.style.display = 'none'; }, 3200);
+        clearTimeout(t._h); clearTimeout(t._h2);
+        t.classList.remove('out');
+        t.textContent = msg;
+        t.style.display = 'flex';
+        t.onclick = hideToast;
+        t._h = setTimeout(hideToast, 3600);
+    }
+    function hideToast() {
+        const t = document.getElementById('online-toast');
+        if (!t || t.style.display === 'none') return;
+        t.classList.add('out');
+        clearTimeout(t._h);
+        t._h2 = setTimeout(() => { t.style.display = 'none'; t.classList.remove('out'); }, 280);
+    }
+
+    // ADDED: Play Again (rematch) bar
+    function showRematchBar() {
+        const b = document.getElementById('rematch-bar');
+        if (!b) return;
+        b.style.display = 'flex';
+        const y = document.getElementById('rematch-yes'); if (y) y.style.display = '';
+        const st = document.getElementById('rematch-status'); if (st) st.textContent = '';
+    }
+    function hideRematchBar() {
+        const b = document.getElementById('rematch-bar');
+        if (b) b.style.display = 'none';
+    }
+    function requestRematch() {
+        if (!B() || !activeRoomId) return;
+        const y = document.getElementById('rematch-yes'); if (y) y.style.display = 'none';
+        const st = document.getElementById('rematch-status'); if (st) st.textContent = 'Waiting for opponent\u2026';
+        B().updateData('lm_online/rooms/' + activeRoomId + '/rematch/' + myUid(), true).catch(() => {});
+    }
+    function exitToMenu() {
+        hideRematchBar();
+        hideToast();
+        if (window.LudoEngine && window.LudoEngine.goToMenu) window.LudoEngine.goToMenu();
     }
 
     function openArena() {
@@ -8409,7 +8490,7 @@ window.LudoOnline = (function () {
         const nowTs = Date.now();
         const entries = Object.values(obj || {}).filter(e => e && e.deviceId && e.deviceId !== me && e.online !== false && (nowTs - (e.lastSeen || 0)) < 60000);
         if (badge) badge.textContent = entries.length + ' online';
-        if (!entries.length) { list.innerHTML = '<div style="text-align:center;font-size:0.75rem;color:#888;padding:10px 0;">Koi player online nahi — Random Match try karo!</div>'; return; }
+        if (!entries.length) { list.innerHTML = '<div style="text-align:center;font-size:0.75rem;color:#888;padding:10px 0;">No players online yet — try a Random Match!</div>'; return; }
         entries.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
         list.innerHTML = entries.slice(0, 40).map(e => {
             const inMatch = !!e.inMatch;
@@ -8426,9 +8507,9 @@ window.LudoOnline = (function () {
     function challenge(targetUid, targetName) {
         if (!B() || !myUid()) { toast('\u23F3 Connecting\u2026'); return; }
         const bet = betVal();
-        if (myCoins() < bet) { toast('\u274C Aapke paas ' + bet + ' coins nahi hain'); return; }
+        if (myCoins() < bet) { toast('\u274C You need ' + bet + ' coins'); return; }
         B().pushChild('lm_online/requests/' + targetUid, { from: myUid(), fromDeviceId: B().getDeviceId(), fromName: myName(), bet: bet, at: Date.now() });
-        toast('\uD83D\uDCE8 Challenge bheja: ' + targetName + ' \u2022 Entry ' + bet + ' coins');
+        toast('\uD83D\uDCE8 Challenge sent to ' + targetName + ' \u2022 Entry ' + bet + ' coins');
     }
 
     function onRequests(obj) {
@@ -8452,7 +8533,7 @@ window.LudoOnline = (function () {
         if (myCoins() < bet) {
             B().pushChild('lm_online/requestResponses/' + req.from, { status: 'declined', reason: 'insufficient', at: Date.now() });
             B().removeData('lm_online/requests/' + myUid() + '/' + key);
-            toast('\u274C Coins kam hain — request decline ho gayi'); return;
+            toast('\u274C Not enough coins — request declined'); return;
         }
         const roomId = 'room_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
         const playersObj = {};
@@ -8479,8 +8560,8 @@ window.LudoOnline = (function () {
         const pair = entries[0];
         B().updateData('lm_online/requestResponses/' + myUid() + '/' + pair[0], { seen: true });
         const r = pair[1];
-        if (r.status === 'accepted' && r.roomId) { toast('\u2705 Challenge accept — match start!'); joinRoom(r.roomId); }
-        else toast('\u274C ' + (r.reason === 'insufficient' ? 'Saamne wale ke paas coins kam hain' : 'Challenge decline ho gaya'));
+        if (r.status === 'accepted' && r.roomId) { toast('\u2705 Challenge accepted — starting match!'); joinRoom(r.roomId); }
+        else toast('\u274C ' + (r.reason === 'insufficient' ? 'Opponent has insufficient coins' : 'Challenge declined'));
     }
 
     function updateSearchUI() {
@@ -8498,9 +8579,9 @@ window.LudoOnline = (function () {
         // players (bot) ke saath match start.
         if (!B() || !B().getUid()) { toast('\u23F3 Connecting\u2026'); return; }
         const bet = betVal();
-        if (myCoins() < bet) { toast('\u274C Entry fee ke ' + bet + ' coins nahi hain — pehle coins badhao'); return; }
+        if (myCoins() < bet) { toast('\u274C Not enough coins for the entry fee (' + bet + ')'); return; }
         const s = document.getElementById('online-search-status');
-        if (s) s.textContent = '\uD83E\uDD16 Random players join ho rahe hain\u2026';
+        if (s) s.textContent = '\uD83E\uDD16 Joining random players\u2026';
         B().callApi('botMatchStake', { bet: bet, playerCount: count }).then(res => {
             if (res && res.ok) {
                 if (typeof res.newBalance === 'number' && window.LudoEngine && window.LudoEngine.applyRemoteCoinBalance) {
@@ -8509,11 +8590,11 @@ window.LudoOnline = (function () {
                 if (window.LudoEngine && window.LudoEngine.startBotMatch) window.LudoEngine.startBotMatch(bet, count);
             } else {
                 if (s) s.textContent = '';
-                toast(res && res.reason === 'insufficient-funds' ? '\u274C Entry fee ke coins nahi hain' : '\u274C Match start nahi hua — dobara try karo');
+                toast(res && res.reason === 'insufficient-funds' ? '\u274C Not enough coins for the entry fee' : '\u274C Could not start the match — please try again');
             }
         }).catch(() => {
             if (s) s.textContent = '';
-            toast('\u274C Server error — kya botMatchStake.js deploy hai?');
+            toast('\u274C Server error — is botMatchStake.js deployed?');
         });
     }
     function cancelSearch() {
@@ -8524,7 +8605,7 @@ window.LudoOnline = (function () {
     }
 
     function stopRoomWatch() { roomUnsubs.forEach(u => { try { u(); } catch (e) {} }); roomUnsubs = []; }
-    function cleanupOnline() { stopRoomWatch(); searching = false; if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } updateSearchUI(); }
+    function cleanupOnline() { stopRoomWatch(); searching = false; if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } updateSearchUI(); hideRematchBar(); }
 
     function allPaid(room) {
         const pu = room.paidUids || {};
@@ -8532,20 +8613,27 @@ window.LudoOnline = (function () {
     }
 
     function joinRoom(roomId) {
+        activeRoomId = roomId;
+        hideRematchBar();
         stopRoomWatch();
         roomUnsubs.push(B().watch('lm_online/rooms/' + roomId, (room) => onRoom(roomId, room)));
         roomUnsubs.push(B().watch('lm_online/rooms/' + roomId + '/state', (s) => {
             if (s && core() && core().isActive() && !core().isHost()) core().applyState(s);
         }));
-        toast('\uD83C\uDFAE Room join ho gaya — entry fee process ho rahi hai\u2026');
+        toast('\uD83C\uDFAE Room joined — processing entry fee\u2026');
     }
 
     function onRoom(roomId, room) {
-        if (!room) { toast('\u274C Room cancel ho gaya'); cleanupOnline(); return; }
+        if (!room) { toast('\u274C Room was closed'); cleanupOnline(); return; }
+        // ADDED: 2P me jo exit kar chuka hai (menu pe wapas) — use bhi
+        // rematch bar dikhao, taaki wo wapas accept kar sake
+        if (room.status === 'forfeit' && room.forfeitedBy === myUid()) {
+            showRematchBar();
+        }
         if (room.status === 'cancelled') {
             B().callApi('settleMatchRefund', { roomId: roomId }).catch(() => {});
             if (core()) core().abandon();
-            toast(room.reason === 'insufficient' ? '\u274C Kisi player ke paas coins kam the — match cancel, fee refund' : '\u274C Match cancel — entry fee refund ho gayi');
+            toast(room.reason === 'insufficient' ? '\u274C A player had insufficient coins — match cancelled, fee refunded' : '\u274C Match cancelled — entry fee refunded');
             cleanupOnline(); return;
         }
         if (room.status === 'finished' && room.winnerUid && core() && core().isActive()) {
@@ -8561,6 +8649,52 @@ window.LudoOnline = (function () {
         if (room.status === 'player-exit' && core() && core().isActive()) {
             core().handlePlayerExit(room);
             return;
+        }
+
+        // ── ADDED: REMATCH — dono ready → naya room; decline → menu ──
+        if (room.rematchRoomId) {
+            toast('\uD83D\uDD01 Rematch starting\u2026');
+            if (core()) core().cleanupSilent();
+            hideRematchBar();
+            joinRoom(room.rematchRoomId);
+            return;
+        }
+        if (room.rematch) {
+            const entries = Object.values(room.players || {});
+            let need;
+            if (room.status === 'forfeit') {
+                need = entries.map(e => e.uid); // forfeiter bhi wapas aa sakta hai
+            } else if (core() && core().remainingUids) {
+                need = core().remainingUids().filter(u => u !== room.forfeitedBy);
+            } else { need = []; }
+            const rem = room.rematch || {};
+            if (need.some(u => rem[u] === false)) {
+                toast('Opponent left \u2014 back to menu');
+                if (core()) core().cleanupSilent();
+                hideRematchBar();
+                cleanupOnline();
+                if (window.LudoEngine && window.LudoEngine.goToMenu) window.LudoEngine.goToMenu();
+                return;
+            }
+            const accepted = need.filter(u => rem[u] === true);
+            if (need.length && accepted.length >= need.length) {
+                const stEl = document.getElementById('rematch-status');
+                if (stEl) stEl.textContent = 'Starting rematch\u2026';
+                const CO = { Red: 0, Green: 1, Yellow: 2, Blue: 3 };
+                const needColors = need.map(u => ((entries.find(e => e.uid === u) || {}).color)).filter(Boolean);
+                needColors.sort((a, b) => CO[a] - CO[b]);
+                const myColorNow = (entries.find(e => e.uid === myUid()) || {}).color;
+                if (needColors[0] === myColorNow) {
+                    const newId = 'room_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+                    const playersObj2 = {};
+                    need.forEach(u => { playersObj2[u] = room.players[u]; });
+                    B().setData('lm_online/rooms/' + newId, { roomId: newId, bet: room.bet || 0, playerCount: need.length, createdAt: Date.now(), status: 'paying', players: playersObj2 });
+                    B().updateData('lm_online/rooms/' + roomId, { rematchRoomId: newId, status: 'rematched' });
+                }
+            } else if (accepted.length > 0) {
+                const stEl = document.getElementById('rematch-status');
+                if (stEl) stEl.textContent = 'Waiting for opponent\u2026';
+            }
         }
         const me = myUid();
         const entries = Object.values(room.players || {});
@@ -8579,7 +8713,7 @@ window.LudoOnline = (function () {
                     B().callApi('settleMatchRefund', { roomId: roomId }).catch(() => {});
                     B().updateData('lm_online/rooms/' + roomId, { status: 'cancelled', reason: 'insufficient' });
                     c.abandon(); cleanupOnline();
-                    toast('\u274C Aapke paas entry fee ke coins nahi — match cancel');
+                    toast('\u274C You lack coins for the entry fee — match cancelled');
                 }
             }).catch(() => {});
         }
@@ -8590,11 +8724,11 @@ window.LudoOnline = (function () {
         }
         if (room.status === 'playing' && mine.color !== 'Red' && !sess.boardReady) {
             c.markInMatch(room);
-            toast('\u23F3 Host match start kar raha hai\u2026');
+            toast('\u23F3 Host is starting the match\u2026');
         }
     }
 
-    return { openArena: openArena, closeArena: closeArena, setCount: setCount, findMatch: findMatch, cancelSearch: cancelSearch, challenge: challenge, acceptReq: acceptReq, declineReq: declineReq, toast: toast };
+    return { openArena: openArena, closeArena: closeArena, setCount: setCount, findMatch: findMatch, cancelSearch: cancelSearch, challenge: challenge, acceptReq: acceptReq, declineReq: declineReq, toast: toast, showRematchBar: showRematchBar, hideRematchBar: hideRematchBar, requestRematch: requestRematch, exitToMenu: exitToMenu };
 })();
 </script>
 
