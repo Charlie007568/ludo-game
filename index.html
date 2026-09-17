@@ -8732,5 +8732,37 @@ window.LudoOnline = (function () {
 })();
 </script>
 
+<script>
+// ADDED: Loader handshake — Back/Exit flow ke liye. Game apni current
+// screen (board/menu) loader ko postMessage se batata hai, aur loader ke
+// 'go-menu' message pe main menu me wapas jaata hai. Isse:
+//   board pe Back  -> "Exit to Menu?" -> Yes = game ka menu (app band nahi)
+//   menu me Back   -> "Exit Game?"   -> Yes = poora app band
+(function () {
+    function reportScreen() {
+        const gs = document.getElementById('game-screen');
+        const inGame = gs && gs.style.display !== 'none';
+        try {
+            window.parent.postMessage({ type: 'rbe-game', screen: inGame ? 'game' : 'menu' }, '*');
+        } catch (e) {}
+    }
+    window.addEventListener('message', function (ev) {
+        const d = ev.data || {};
+        if (d.type !== 'rbe-loader') return;
+        if (d.action === 'go-menu' && window.LudoEngine && window.LudoEngine.goToMenu) {
+            try { window.LudoEngine.goToMenu(); } catch (e) {}
+        }
+        if (d.action === 'get-state') reportScreen();
+    });
+    const gs = document.getElementById('game-screen');
+    if (gs) {
+        try { new MutationObserver(reportScreen).observe(gs, { attributes: true, attributeFilter: ['style'] }); } catch (e) {}
+    }
+    window.addEventListener('load', reportScreen);
+    setTimeout(reportScreen, 600);
+    setTimeout(reportScreen, 2000);
+})();
+</script>
+
 </body>
 </html>
