@@ -8207,24 +8207,34 @@ window.LudoOnline = (function () {
         searching = true; updateSearchUI();
         const s = document.getElementById('online-search-status');
         if (s) s.textContent = '\uD83D\uDD0D Searching ' + count + 'P match \u2022 Entry ' + bet + ' coins\u2026';
-        try {
-            const res = await B().callApi('joinQueue', { action: 'join', playerCount: count, bet: bet, deviceId: B().getDeviceId(), name: myName() });
-            if (res && res.reason === 'insufficient-funds') { searching = false; updateSearchUI(); toast('\u274C Coins kam hain'); return; }
-            if (res && res.status === 'matched' && res.roomId) { searching = false; updateSearchUI(); joinRoom(res.roomId); return; }
-        } catch (e) {}
+        // FIXED: endpoint ka naam file ke naam se match karta hai — onlineQueue
+        let res = null;
+        try { res = await B().callApi('onlineQueue', { action: 'join', playerCount: count, bet: bet, deviceId: B().getDeviceId(), name: myName() }); } catch (e) {}
+        if (!res) {
+            searching = false; updateSearchUI();
+            toast('\u274C Server error — kya functions/api/onlineQueue.js deploy hai?');
+            return;
+        }
+        if (res.reason === 'insufficient-funds') { searching = false; updateSearchUI(); toast('\u274C Coins kam hain'); return; }
+        if (res.status === 'matched' && res.roomId) { searching = false; updateSearchUI(); joinRoom(res.roomId); return; }
+        let fails = 0;
         pollTimer = setInterval(async () => {
             if (!searching) return;
             try {
-                const r = await B().callApi('joinQueue', { action: 'join', playerCount: count, bet: bet, deviceId: B().getDeviceId(), name: myName() });
+                const r = await B().callApi('onlineQueue', { action: 'join', playerCount: count, bet: bet, deviceId: B().getDeviceId(), name: myName() });
+                fails = 0;
                 if (r && r.status === 'matched' && r.roomId) { searching = false; updateSearchUI(); joinRoom(r.roomId); }
-            } catch (e) {}
+            } catch (e) {
+                fails++;
+                if (fails >= 5) { searching = false; updateSearchUI(); toast('\u274C Server se connection fail — thodi der baad try karo'); }
+            }
         }, 3000);
     }
     async function cancelSearch() {
         searching = false;
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
         updateSearchUI();
-        if (B()) B().callApi('joinQueue', { action: 'leave' }).catch(() => {});
+        if (B()) B().callApi('onlineQueue', { action: 'leave' }).catch(() => {});
     }
 
     function stopRoomWatch() { roomUnsubs.forEach(u => { try { u(); } catch (e) {} }); roomUnsubs = []; }
