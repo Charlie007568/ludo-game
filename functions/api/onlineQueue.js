@@ -60,7 +60,8 @@ export async function onRequestPost(context) {
             const me = { uid: auth.uid, deviceId, name, playerCount, bet, at: now };
             const team = [me, ...peers];
             const roomId = 'room_' + now.toString(36) + Math.random().toString(36).slice(2, 6);
-            const SEATS = ['Red', 'Green', 'Yellow', 'Blue'];
+            // 2P = Red vs Yellow (opposite seats), 3P = Red/Green/Yellow
+            const SEATS = playerCount === 2 ? ['Red', 'Yellow'] : playerCount === 3 ? ['Red', 'Green', 'Yellow'] : ['Red', 'Green', 'Yellow', 'Blue'];
             const players = {};
             team.forEach((p, i) => { players[p.uid] = { uid: p.uid, deviceId: p.deviceId, name: p.name, color: SEATS[i] }; });
             await rtdbPatch(env, `${ONLINE_ROOT}/rooms/${roomId}`, {
