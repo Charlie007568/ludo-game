@@ -621,6 +621,9 @@ body {
     animation: none !important;
 }
 .dice-box-tag.dice-locked .dice3d { animation: none !important; }
+/* ADDED: opponent ka dice LOCKED rehta hai (tap nahi kar sakte) lekin
+   remote spin animation dikhe — isliye spinning ko locked pe bhi override */
+.dice-box-tag.spinning .dice3d { animation: diceSpinLoop 0.17s linear infinite !important; }
 
 .dice3d {
     position: relative;
@@ -3959,6 +3962,23 @@ body {
     function onlineApplyRemoteState(s) {
         if (!onlineSession || !onlineSession.active || onlineSession.isHost || !s || !s.players) return;
         const prevRoll = currentRoll, prevGs = gameState, prevCpi = currentPlayerIndex;
+        // ADDED: pichli state se compare karke kaunsi goti chali — remote
+        // pe bhi GLIDE/SPAWN animation dikhe (host har step broadcast karta hai)
+        const prevTokens = onlineSession.prevTokens || {};
+        const nowTokens = s.tokens || {};
+        let moveHint = null;
+        Object.keys(nowTokens).forEach(col => {
+            (nowTokens[col] || []).forEach(t => {
+                const p = ((prevTokens[col]) || []).find(x => x.id === t.id);
+                if (!p) return;
+                if (t.status === 'PATH' && p.status === 'PATH' && (t.pos[0] !== p.pos[0] || t.pos[1] !== p.pos[1])) {
+                    moveHint = { tokenId: t.id, type: 'GLIDE', prevPos: [p.pos[0], p.pos[1]], isLast: false };
+                } else if (t.status === 'PATH' && p.status === 'BASE') {
+                    moveHint = { tokenId: t.id, type: 'SPAWN' };
+                }
+            });
+        });
+        onlineSession.prevTokens = nowTokens;
         players = s.players; tokens = s.tokens || {};
         currentPlayerIndex = s.cpi || 0; winnersList = s.winners || [];
         consecutiveSixes = s.sixes || 0; currentRoll = s.roll || 0;
@@ -3970,22 +3990,33 @@ body {
         onlineEnsureBoard();
         renderScoreboard(); updateTurnUI();
         const dv = s.diceVals || {};
+        const prevDv = onlineSession.seenDiceVals || {};
         Object.keys(dv).forEach(col => {
             const box = document.getElementById('dice-' + col);
             const cube = box ? box.querySelector('.dice3d') : null;
             const rot = DICE_FACE_ROTATION[dv[col]];
-            if (cube && rot) {
+            if (!cube || !rot) return;
+            if (dv[col] !== prevDv[col]) {
+                // ADDED: naya roll — pehle 3D spin dikhao, phir face settle
+                box.classList.add('spinning');
+                setTimeout(() => {
+                    box.classList.remove('spinning');
+                    cube.style.transition = 'transform 180ms cubic-bezier(0.2, 0.8, 0.25, 1)';
+                    cube.style.transform = 'rotateX(' + rot.x + 'deg) rotateY(' + rot.y + 'deg)';
+                }, 620);
+            } else {
                 cube.style.transition = 'transform 200ms cubic-bezier(0.2, 0.8, 0.25, 1)';
                 cube.style.transform = 'rotateX(' + rot.x + 'deg) rotateY(' + rot.y + 'deg)';
             }
         });
+        onlineSession.seenDiceVals = dv;
         gameState = s.gs;
         onlineSession.syncActive = true; onlineSession.boardReady = true;
         if (gameState === 'AWAITING_MOVE') {
             const cp = getEffectiveCurrentPlayer();
             if (cp) currentMovableTokens = computeMovableForTurn(cp.color, currentRoll);
         } else { currentMovableTokens = []; }
-        renderTokens();
+        renderTokens(moveHint);
         const cpNow = getEffectiveCurrentPlayer();
         if (s.gs === 'AWAITING_MOVE' && s.roll !== prevRoll) {
             playSound('roll');
@@ -4019,6 +4050,44 @@ body {
         if (!onlineSession || !onlineSession.active) return;
         const b = window.__ludoFirebaseBridge; if (!b) return;
         b.pushChild('lm_online/rooms/' + onlineSession.roomId + '/intents', Object.assign({ from: onlineSession.myUid, at: Date.now() }, obj));
+    }
+
+    // FIXED: remote dice tap pe — (1) turant LOCAL spin feedback, (2) intent
+    // RETRY (agar host pe momentarily IDLE nahi tha to request drop nahi
+    // hoti). Yehi "tap karo → freeze → 10s timeout → saamne wala jeet jata"
+    // wala bug fix karta hai.
+    let onlineRollRetry = null;
+    let onlineMoveRetry = null;
+    function onlineClearRollRetry() { if (onlineRollRetry) { clearTimeout(onlineRollRetry); onlineRollRetry = null; } }
+    function onlineClearMoveRetry() { if (onlineMoveRetry) { clearTimeout(onlineMoveRetry); onlineMoveRetry = null; } }
+
+    function onlineSendRollIntent(color) {
+        if (!onlineSession || onlineSession.isHost) return;
+        onlineClearRollRetry();
+        const box = document.getElementById('dice-' + color);
+        if (box) { box.classList.add('spinning'); setTimeout(() => box.classList.remove('spinning'), 650); }
+        document.getElementById('msg-log').innerText = '\u23F3 Roll bheja ja raha hai\u2026';
+        let tries = 0;
+        const attempt = () => {
+            if (!onlineSession || onlineSession.isHost || gameState !== 'IDLE') return; // ho gaya / turn gaya
+            onlineSendIntent({ type: 'roll', color });
+            tries++;
+            if (tries < 5) onlineRollRetry = setTimeout(attempt, 900);
+        };
+        attempt();
+    }
+
+    function onlineSendMoveIntent(tokenId) {
+        if (!onlineSession || onlineSession.isHost) return;
+        onlineClearMoveRetry();
+        let tries = 0;
+        const attempt = () => {
+            if (!onlineSession || onlineSession.isHost || gameState !== 'AWAITING_MOVE') return;
+            onlineSendIntent({ type: 'move', tokenId });
+            tries++;
+            if (tries < 5) onlineMoveRetry = setTimeout(attempt, 900);
+        };
+        attempt();
     }
 
     function onlineHostWatchIntents() {
@@ -4125,6 +4194,10 @@ body {
         if (gameState === 'GAMEOVER') return;
         const cp = getEffectiveCurrentPlayer();
         if (!cp || cp.isBot || winnersList.includes(cp.color) || cp.exited) return;
+        // FIXED: pehli turn me 25s grace — remote ka board load hone me time
+        // lag sakta hai; baad ki har turn 10s (user rule).
+        const dur = ((onlineSession.turnCount || 0) === 0) ? 25000 : 10000;
+        onlineSession.turnCount = (onlineSession.turnCount || 0) + 1;
         onlineTurnTimer = setTimeout(() => {
             onlineTurnTimer = null;
             if (!onlineSession || !onlineSession.active || !onlineSession.isHost) return;
@@ -4138,7 +4211,7 @@ body {
             } else {
                 b.updateData('lm_online/rooms/' + onlineSession.roomId, { status: 'player-exit', exitedUid: uid, at: Date.now(), reason: 'timeout' });
             }
-        }, 10000);
+        }, dur);
     }
 
     // FIXED: koi player exit kare → bache hue players me se sabse aage
@@ -4147,6 +4220,8 @@ body {
     function onlineHandleForfeit(room) {
         if (!onlineSession || !onlineSession.active) return;
         onlineClearTurnTimer();
+        onlineClearRollRetry();
+        onlineClearMoveRetry();
         const sess = onlineSession;
         const entries = Object.values(room.players || {});
         const remaining = entries.filter(e => e.uid !== room.forfeitedBy);
@@ -4186,6 +4261,8 @@ body {
     // players me continue. Host turn aage badhata hai, sabko broadcast.
     function onlineHandlePlayerExit(room) {
         if (!onlineSession || !onlineSession.active) return;
+        onlineClearRollRetry();
+        onlineClearMoveRetry();
         const entries = Object.values(room.players || {});
         const exitedEntry = entries.find(e => e.uid === room.exitedUid);
         onlineClearTurnTimer();
@@ -4227,6 +4304,8 @@ body {
     function onlineAbandonMatch() {
         if (!onlineSession || !onlineSession.active) return;
         onlineClearTurnTimer();
+        onlineClearRollRetry();
+        onlineClearMoveRetry();
         const s = onlineSession;
         if (s.intentUnsub) { try { s.intentUnsub(); } catch (e) {} }
         if (s.oppWatchers) s.oppWatchers.forEach(u => { try { u(); } catch (e) {} });
@@ -6525,7 +6604,7 @@ body {
         const cp = getEffectiveCurrentPlayer();
         // ADDED: online remote player — roll host pe bhejo, khud roll mat karo
         if (onlineSession && onlineSession.active && !onlineSession.isHost) {
-            if (cp && cp.color === color) onlineSendIntent({ type: 'roll', color });
+            if (cp && cp.color === color) onlineSendRollIntent(color);
             return;
         }
         // ADDED FEATURE (hard guard): sirf WOH player dice roll kar sakta
@@ -6714,7 +6793,7 @@ body {
         if (gameState !== 'AWAITING_MOVE') return;
         // ADDED: online remote — move intent host ko bhejo
         if (onlineSession && onlineSession.active && !onlineSession.isHost) {
-            onlineSendIntent({ type: 'move', tokenId: token.id });
+            onlineSendMoveIntent(token.id);
             return;
         }
         clearAutoMove(); // player ne khud tap kiya — auto-move cancel
@@ -8324,7 +8403,11 @@ window.LudoOnline = (function () {
         const badge = document.getElementById('online-players-count');
         if (!list) return;
         const me = B() ? B().getDeviceId() : null;
-        const entries = Object.values(obj || {}).filter(e => e && e.deviceId && e.deviceId !== me && e.online !== false);
+        // FIXED: lastSeen 60s se purana = band app — ab wo "online" nahi dikhegi.
+        // (Har client har 25s me ping karta hai, to fresh record ka lastSeen
+        // hamesha recent hota hai.)
+        const nowTs = Date.now();
+        const entries = Object.values(obj || {}).filter(e => e && e.deviceId && e.deviceId !== me && e.online !== false && (nowTs - (e.lastSeen || 0)) < 60000);
         if (badge) badge.textContent = entries.length + ' online';
         if (!entries.length) { list.innerHTML = '<div style="text-align:center;font-size:0.75rem;color:#888;padding:10px 0;">Koi player online nahi — Random Match try karo!</div>'; return; }
         entries.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
