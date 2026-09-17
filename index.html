@@ -2843,6 +2843,7 @@ body {
 
         let uid = null;
         let coinsSeenOnce = false;
+        let lastCoins = null; // ADDED: presence ping ke liye
 
         // ─── ADDED: Device identity, live presence & real-time block ───
         // Writes this device's record to the Realtime Database `devices/`
@@ -3135,6 +3136,15 @@ body {
             const opRef = ref(rtdb, 'onlinePlayers/' + deviceId);
             update(opRef, { uid: uid, deviceId: deviceId, deviceName: deviceName, online: true, inMatch: '', lastSeen: serverTimestamp() }).catch(() => {});
             onDisconnect(opRef).update({ online: false, lastSeen: serverTimestamp() }).catch(() => {});
+            // ADDED: presence keep-alive — har 25s me khud ko online assert
+            // karo, taaki dusre players ko DONO taraf ek dusra hamesha
+            // dikhe (initial write fail/timing/network issue self-heal).
+            setInterval(() => {
+                if (!uid) return;
+                const patch = { online: true, lastSeen: Date.now() };
+                if (typeof lastCoins === 'number') patch.coins = lastCoins;
+                update(ref(rtdb, 'onlinePlayers/' + deviceId), patch).catch(() => {});
+            }, 25000);
             // Safe no-op server-side if this uid already has a coins value —
             // only ever seeds the starting balance on a genuinely new user.
             callFn('initAccount', { publicId, name }).catch(() => {});
@@ -3145,7 +3155,7 @@ body {
                 if (typeof val === 'number' && window.LudoEngine && window.LudoEngine.applyRemoteCoinBalance) {
                     window.LudoEngine.applyRemoteCoinBalance(val);
                 }
-                if (typeof val === 'number') update(ref(rtdb, 'onlinePlayers/' + deviceId), { coins: val }).catch(() => {});
+                if (typeof val === 'number') { lastCoins = val; update(ref(rtdb, 'onlinePlayers/' + deviceId), { coins: val }).catch(() => {}); }
             }, () => {});
 
             onValue(ref(rtdb, `${ONLINE_ROOT}/users/${uid}/lastDailyBonusAt`), (snap) => {
@@ -3921,12 +3931,14 @@ body {
 
     function onlineStartHost(room, myUid) {
         const entries = Object.values(room.players || {});
-        const byColor = c => entries.find(e => e.color === c);
-        const seatColors = ONLINE_SEAT_COLORS.slice(0, Math.max(2, room.playerCount || entries.length));
-        players = seatColors.map(c => {
-            const e = byColor(c) || {};
-            const hexObj = colors.find(x => x.name === c);
-            return { name: e.name || c, color: c, hex: hexObj ? hexObj.hex : '#ffffff', isBot: false };
+        // FIXED: 2P me hamesha Red vs Yellow (opposite seats) — room banate
+        // waqt assign hue colors yahan same-to-same use hote hain
+        // (2P = Red/Yellow, 3P = Red/Green/Yellow, 4P = all four).
+        const COLOR_ORDER = { Red: 0, Green: 1, Yellow: 2, Blue: 3 };
+        entries.sort((a, b) => (COLOR_ORDER[a.color] || 0) - (COLOR_ORDER[b.color] || 0));
+        players = entries.map(e => {
+            const hexObj = colors.find(x => x.name === e.color);
+            return { name: e.name || e.color, color: e.color, hex: hexObj ? hexObj.hex : '#ffffff', isBot: false };
         });
         onlineSession = {
             active: true, isHost: true, roomId: room.roomId, myUid: myUid,
@@ -4098,6 +4110,46 @@ body {
         botMatch = { bet: bet, playerCount: count };
     }
 
+    // FIXED: koi player exit kare → bache hue players me se sabse aage
+    // wale (zyada HOME goti, tie → zyada total steps) ko INSTANT winner
+    // declare karo — koi wait nahi. Pot winner ko milta hai (bet × N).
+    function onlineHandleForfeit(room) {
+        if (!onlineSession || !onlineSession.active) return;
+        const sess = onlineSession;
+        const entries = Object.values(room.players || {});
+        const remaining = entries.filter(e => e.uid !== room.forfeitedBy);
+        const COLOR_ORDER = { Red: 0, Green: 1, Yellow: 2, Blue: 3 };
+        if (!remaining.length) {
+            onlineSession = null;
+            onlineClearInMatchMark();
+            return;
+        }
+        let best = remaining[0], bestScore = -1;
+        remaining.forEach(e => {
+            const list = tokens[e.color] || [];
+            const home = list.filter(t => t.status === 'HOME').length;
+            const steps = list.reduce((sm, t) => sm + Math.max(0, t.step || 0), 0);
+            const score = home * 1000 + steps;
+            if (score > bestScore) { bestScore = score; best = e; }
+        });
+        const others = remaining.filter(e => e.uid !== best.uid)
+            .sort((a, b) => COLOR_ORDER[a.color] - COLOR_ORDER[b.color]);
+        winnersList = [best.color].concat(others.map(o => o.color));
+        const forfeitedName = (entries.find(e => e.uid === room.forfeitedBy) || {}).name || 'Opponent';
+        gameState = 'GAMEOVER';
+        onlineShowRemoteGameOver();
+        playSound('match_fanfare');
+        setTimeout(() => { document.getElementById('winner-modal').style.display = 'flex'; }, 500);
+        onlineSettleWinner(best.uid);
+        if (window.LudoOnline && window.LudoOnline.toast) {
+            window.LudoOnline.toast(best.uid === sess.myUid
+                ? '\uD83C\uDFC6 Jeet gaye! ' + forfeitedName + ' ne match chhod diya — pot aapka!'
+                : '\uD83D\uDEAA ' + forfeitedName + ' ne exit kiya — winner: ' + best.name);
+        }
+        onlineSession = null;
+        onlineClearInMatchMark();
+    }
+
     function onlineFinishMatch() {
         if (!onlineSession || !onlineSession.active || !onlineSession.isHost) return;
         const winnerColor = winnersList[0] || null;
@@ -4117,8 +4169,9 @@ body {
         onlineSession = null;
         const b = window.__ludoFirebaseBridge;
         if (b) {
-            b.callApi('settleMatchRefund', { roomId: s.roomId }).catch(() => {});
-            b.updateData('lm_online/rooms/' + s.roomId, { status: 'cancelled', cancelledAt: Date.now() });
+            // FIXED: exit = forfeit — jo bacha hai use INSTANT win milna
+            // chahiye. Leaver ki fee forfeit hoti hai (refund nahi).
+            b.updateData('lm_online/rooms/' + s.roomId, { status: 'forfeit', forfeitedBy: s.myUid, at: Date.now() });
         }
         onlineClearInMatchMark();
     }
@@ -4132,6 +4185,7 @@ body {
         isHost: () => !!(onlineSession && onlineSession.isHost),
         markInMatch: (room) => onlineMarkInMatch(room),
         settleWinner: (wuid) => onlineSettleWinner(wuid),
+        handleForfeit: (room) => onlineHandleForfeit(room),
         abandon: () => { if (onlineSession && onlineSession.active) onlineAbandonMatch(); }
     };
 
@@ -8151,6 +8205,8 @@ window.LudoOnline = (function () {
     function openArena() {
         const card = document.getElementById('online-arena-card');
         if (card) { card.style.display = 'block'; card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+        // ADDED: arena kholte hi turant apni presence assert karo
+        if (B() && B().getUid()) B().updateData('onlinePlayers/' + B().getDeviceId(), { online: true, lastSeen: Date.now() });
         startWatchers();
     }
     function closeArena() { const c = document.getElementById('online-arena-card'); if (c) c.style.display = 'none'; }
@@ -8171,7 +8227,7 @@ window.LudoOnline = (function () {
         const badge = document.getElementById('online-players-count');
         if (!list) return;
         const me = B() ? B().getDeviceId() : null;
-        const entries = Object.values(obj || {}).filter(e => e && e.uid && e.deviceId && e.deviceId !== me && e.online !== false);
+        const entries = Object.values(obj || {}).filter(e => e && e.deviceId && e.deviceId !== me && e.online !== false);
         if (badge) badge.textContent = entries.length + ' online';
         if (!entries.length) { list.innerHTML = '<div style="text-align:center;font-size:0.75rem;color:#888;padding:10px 0;">Koi player online nahi — Random Match try karo!</div>'; return; }
         entries.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
@@ -8182,7 +8238,7 @@ window.LudoOnline = (function () {
                 '<div style="flex:1;min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(e.deviceName || 'Player') +
                 (inMatch ? ' <span style="font-size:0.58rem;font-weight:800;color:#ffd54f;border:1px solid rgba(255,213,79,0.4);border-radius:8px;padding:1px 6px;">IN MATCH</span>' : '') + '</div>' +
                 '<div style="font-size:0.64rem;color:#999;">\uD83E\uDE99 ' + (typeof e.coins === 'number' ? e.coins.toLocaleString('en-IN') : '—') + (e.inMatch ? ' \u00B7 ' + esc(e.inMatch) : '') + '</div></div>' +
-                '<button ' + (inMatch ? 'disabled style="opacity:0.45;cursor:not-allowed;"' : '') + ' onclick="window.LudoOnline.challenge(\'' + esc(e.uid) + '\',\'' + esc(String(e.deviceName || 'Player')) + '\')" ' +
+                '<button ' + (inMatch || !e.uid ? 'disabled style="opacity:0.45;cursor:not-allowed;"' : '') + ' onclick="window.LudoOnline.challenge(\'' + esc(e.uid) + '\',\'' + esc(String(e.deviceName || 'Player')) + '\')" ' +
                 'style="flex-shrink:0;font-size:0.64rem;font-weight:800;padding:6px 12px;border-radius:16px;border:1px solid rgba(100,255,218,0.4);background:rgba(100,255,218,0.10);color:#64ffda;cursor:pointer;">\u2694\uFE0F Challenge</button></div>';
         }).join('');
     }
@@ -8314,6 +8370,12 @@ window.LudoOnline = (function () {
         }
         if (room.status === 'finished' && room.winnerUid && core() && core().isActive()) {
             core().settleWinner(room.winnerUid);
+        }
+        // FIXED: koi exit kiya → bache players ko INSTANT win dikhao
+        if (room.status === 'forfeit' && core() && core().isActive()) {
+            core().handleForfeit(room);
+            cleanupOnline();
+            return;
         }
         const me = myUid();
         const entries = Object.values(room.players || {});
