@@ -2,7 +2,7 @@
 // Online random matchmaking: same playerCount + same bet wale players ko
 // atomically pair karke lm_online/rooms/{roomId} bana deta hai.
 // Game call karta hai: POST /api/onlineQueue { action:'join'|'leave', playerCount, bet, deviceId, name }
-import { requireAuth, rtdbGet, rtdbPatch, rtdbPut, rtdbTransaction, jsonResponse, optionsResponse } from '../_firebaseAdmin.js';
+import { requireAuth, rtdbGet, rtdbPatch, rtdbPut, rtdbDelete, rtdbTransaction, jsonResponse, optionsResponse } from '../_firebaseAdmin.js';
 
 const ONLINE_ROOT = 'lm_online';
 const MIN_BET = 100;
@@ -28,7 +28,7 @@ export async function onRequestPost(context) {
     const name = String(data.name || 'Player').slice(0, 60);
 
     if (action === 'leave') {
-        await rtdbPatch(env, `${ONLINE_ROOT}/queue/${auth.uid}`, null).catch(() => {});
+        await rtdbDelete(env, `${ONLINE_ROOT}/queue/${auth.uid}`).catch(() => {});
         return jsonResponse(200, { ok: true, status: 'left' });
     }
 
