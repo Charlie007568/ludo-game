@@ -4110,11 +4110,43 @@ body {
         botMatch = { bet: bet, playerCount: count };
     }
 
+    // ══ ADDED: 10 SECOND TURN RULE ══
+    // Turn start (ya roll) ke 10 second me player ne chaal nahi chali to:
+    //   2P   → opponent INSTANT jeet jata hai (forfeit)
+    //   3P/4P → wo player ELIMINATE ho jata hai, match continue rehta hai
+    // Timer sirf HOST chalata hai (wo authoritative hai).
+    let onlineTurnTimer = null;
+    function onlineClearTurnTimer() {
+        if (onlineTurnTimer) { clearTimeout(onlineTurnTimer); onlineTurnTimer = null; }
+    }
+    function onlineResetTurnTimer() {
+        onlineClearTurnTimer();
+        if (!onlineSession || !onlineSession.active || !onlineSession.isHost) return;
+        if (gameState === 'GAMEOVER') return;
+        const cp = getEffectiveCurrentPlayer();
+        if (!cp || cp.isBot || winnersList.includes(cp.color) || cp.exited) return;
+        onlineTurnTimer = setTimeout(() => {
+            onlineTurnTimer = null;
+            if (!onlineSession || !onlineSession.active || !onlineSession.isHost) return;
+            const cp2 = getEffectiveCurrentPlayer();
+            if (!cp2 || winnersList.includes(cp2.color) || cp2.exited) return;
+            const uid = onlineSession.roomPlayers[cp2.color];
+            const b = window.__ludoFirebaseBridge;
+            if (!b || !uid) return;
+            if ((onlineSession.playerCount || 2) <= 2) {
+                b.updateData('lm_online/rooms/' + onlineSession.roomId, { status: 'forfeit', forfeitedBy: uid, at: Date.now(), reason: 'timeout' });
+            } else {
+                b.updateData('lm_online/rooms/' + onlineSession.roomId, { status: 'player-exit', exitedUid: uid, at: Date.now(), reason: 'timeout' });
+            }
+        }, 10000);
+    }
+
     // FIXED: koi player exit kare → bache hue players me se sabse aage
     // wale (zyada HOME goti, tie → zyada total steps) ko INSTANT winner
     // declare karo — koi wait nahi. Pot winner ko milta hai (bet × N).
     function onlineHandleForfeit(room) {
         if (!onlineSession || !onlineSession.active) return;
+        onlineClearTurnTimer();
         const sess = onlineSession;
         const entries = Object.values(room.players || {});
         const remaining = entries.filter(e => e.uid !== room.forfeitedBy);
@@ -4150,8 +4182,39 @@ body {
         onlineClearInMatchMark();
     }
 
+    // ADDED: 3P/4P me koi exit/timeout → uska DICE HIDE + match bache
+    // players me continue. Host turn aage badhata hai, sabko broadcast.
+    function onlineHandlePlayerExit(room) {
+        if (!onlineSession || !onlineSession.active) return;
+        const entries = Object.values(room.players || {});
+        const exitedEntry = entries.find(e => e.uid === room.exitedUid);
+        onlineClearTurnTimer();
+        if (!exitedEntry) return;
+        const p = players.find(pl => pl.color === exitedEntry.color);
+        if (p) p.exited = true;
+        tokens[exitedEntry.color] = []; // uski gotiyan board se hat jati hain
+        if (onlineSession.isHost) {
+            const cp = getEffectiveCurrentPlayer();
+            if (cp && cp.color === exitedEntry.color) nextTurn(); // turn skip karke aage
+            else { renderScoreboard(); updateTurnUI(); }
+        } else {
+            renderScoreboard(); updateTurnUI();
+        }
+        renderTokens();
+        // in-match mark bache players ke saath refresh
+        const remainingEntries = entries.filter(e => e.uid !== room.exitedUid);
+        onlineMarkInMatch({
+            players: remainingEntries.reduce((o, e) => { o[e.uid] = e; return o; }, {}),
+            bet: onlineSession.bet
+        });
+        if (window.LudoOnline && window.LudoOnline.toast) {
+            window.LudoOnline.toast('\uD83D\uDEAA ' + (exitedEntry.name || 'Player') + ' exit — match bache players me continue');
+        }
+    }
+
     function onlineFinishMatch() {
         if (!onlineSession || !onlineSession.active || !onlineSession.isHost) return;
+        onlineClearTurnTimer();
         const winnerColor = winnersList[0] || null;
         const winnerUid = winnerColor ? onlineSession.roomPlayers[winnerColor] : null;
         const b = window.__ludoFirebaseBridge;
@@ -4163,15 +4226,20 @@ body {
 
     function onlineAbandonMatch() {
         if (!onlineSession || !onlineSession.active) return;
+        onlineClearTurnTimer();
         const s = onlineSession;
         if (s.intentUnsub) { try { s.intentUnsub(); } catch (e) {} }
         if (s.oppWatchers) s.oppWatchers.forEach(u => { try { u(); } catch (e) {} });
         onlineSession = null;
         const b = window.__ludoFirebaseBridge;
         if (b) {
-            // FIXED: exit = forfeit — jo bacha hai use INSTANT win milna
-            // chahiye. Leaver ki fee forfeit hoti hai (refund nahi).
-            b.updateData('lm_online/rooms/' + s.roomId, { status: 'forfeit', forfeitedBy: s.myUid, at: Date.now() });
+            // FIXED: 2P exit → opponent INSTANT win (forfeit); 3P/4P exit →
+            // player eliminate, match continue. Leaver ki fee forfeit hoti hai.
+            if ((s.playerCount || 2) <= 2) {
+                b.updateData('lm_online/rooms/' + s.roomId, { status: 'forfeit', forfeitedBy: s.myUid, at: Date.now() });
+            } else {
+                b.updateData('lm_online/rooms/' + s.roomId, { status: 'player-exit', exitedUid: s.myUid, at: Date.now() });
+            }
         }
         onlineClearInMatchMark();
     }
@@ -4186,6 +4254,7 @@ body {
         markInMatch: (room) => onlineMarkInMatch(room),
         settleWinner: (wuid) => onlineSettleWinner(wuid),
         handleForfeit: (room) => onlineHandleForfeit(room),
+        handlePlayerExit: (room) => onlineHandlePlayerExit(room),
         abandon: () => { if (onlineSession && onlineSession.active) onlineAbandonMatch(); }
     };
 
@@ -6266,6 +6335,18 @@ body {
             if (!tag) return;
             const p = players.find(pl => pl.color === c.name);
             if (p) {
+                if (p.exited) {
+                    // ADDED: exit kiya player — dice/tag poori tarah hide
+                    tag.style.display = 'flex';
+                    tag.style.visibility = 'hidden';
+                    tag.style.opacity = '0';
+                    tag.style.pointerEvents = 'none';
+                    tag.innerHTML = '';
+                    if (baseLabel) baseLabel.innerHTML = '';
+                    tag.classList.remove('active');
+                    baseQuad?.classList.remove('base-active-turn');
+                    return;
+                }
                 tag.style.display = 'flex';
                 tag.style.visibility = 'visible';
                 tag.style.opacity = '1';
@@ -6287,7 +6368,8 @@ body {
                     tag.style.pointerEvents = 'auto';
                     tag.innerHTML = `<div class="dice-box-tag" id="dice-${c.name}" onpointerdown="window.LudoEngine.onDiceClick('${c.name}')">${dice3dHTML()}</div>`;
                     const diceEl = document.getElementById(`dice-${c.name}`);
-                    const isActiveTurn = cpNow && cpNow.color === c.name && gameState === 'IDLE';
+                    const myColor2 = (onlineSession && onlineSession.active) ? onlineSession.myColor : null;
+                    const isActiveTurn = cpNow && cpNow.color === c.name && gameState === 'IDLE' && (!myColor2 || cpNow.color === myColor2);
                     tag.classList.toggle('active', isActiveTurn);
                     if (diceEl) {
                         diceEl.classList.toggle('active-roll', isActiveTurn);
@@ -6316,10 +6398,12 @@ body {
             const tag = document.getElementById(`tag-${c.name}`);
             const dice = document.getElementById(`dice-${c.name}`);
             const baseQuad = document.querySelector(`.base-quadrant-${c.name.toLowerCase()}`);
+            const pObj = players.find(pl => pl.color === c.name) || {};
             const isFinished = winnersList.includes(c.name);
+            const isExited = !!pObj.exited;
 
             if (tag && dice) {
-                if (isFinished) {
+                if (isFinished || isExited) {
                     tag.classList.remove('active');
                     dice.classList.remove('active-roll');
                     dice.classList.add('dice-locked'); // ADDED: finished player ka dice hamesha locked
@@ -6327,10 +6411,20 @@ body {
                     dice.style.pointerEvents = 'none';
                 } else if (c.name === cp.color) {
                     tag.classList.add('active');
-                    dice.classList.add('active-roll');
-                    dice.classList.remove('dice-locked'); // ADDED: sirf active player ka dice unlocked
                     baseQuad?.classList.add('base-active-turn');
-                    dice.style.pointerEvents = 'auto';
+                    // ONLINE FIX: har device pe sirf APNI dice tappable hai —
+                    // doosre player ki dice uske turn pe bhi is device pe
+                    // locked rehti hai (wo apne device se intent bhejta hai).
+                    const myColor = (onlineSession && onlineSession.active) ? onlineSession.myColor : null;
+                    if (!myColor || cp.color === myColor) {
+                        dice.classList.add('active-roll');
+                        dice.classList.remove('dice-locked');
+                        dice.style.pointerEvents = 'auto';
+                    } else {
+                        dice.classList.remove('active-roll');
+                        dice.classList.add('dice-locked');
+                        dice.style.pointerEvents = 'none';
+                    }
                 } else {
                     tag.classList.remove('active');
                     dice.classList.remove('active-roll');
@@ -6345,6 +6439,7 @@ body {
         if (cp.isBot && !winnersList.includes(cp.color)) {
             botMoveTimeoutId = setTimeout(() => onDiceClick(cp.color), 650);
         }
+        onlineResetTurnTimer(); // ADDED: 10s turn rule — har turn start pe timer
         maybeSyncState();
     }
 
@@ -6442,6 +6537,7 @@ body {
         if (!cp || cp.color !== color || gameState !== 'IDLE') return;
         clearAutoMove(); // purane roll ka koi pending auto-move cancel
         gameState = 'ROLLING';
+        onlineResetTurnTimer(); // ADDED: roll ke baad move ke liye naya 10s
         currentRoll = rollDiceNumber(color);
         if (onlineSession && onlineSession.active && onlineSession.isHost) onlineSession.diceVals[color] = currentRoll;
         if (currentRoll === 6) consecutiveSixes++; else consecutiveSixes = 0;
@@ -6643,6 +6739,7 @@ body {
         if (gameState !== 'AWAITING_MOVE') return;
         clearAutoMove();
         gameState = 'MOVING';
+        onlineClearTurnTimer(); // ADDED: player ne chaal chala di — timeout cancel
         // ADDED: if this token is Barrier-locked with a partner, that partner
         // always shares the same step count, so it moves in perfect lockstep.
         const barrierMate = (activeBarrierMode === 'on' && token.barrierWith)
@@ -6797,8 +6894,8 @@ body {
             // 2nd aaye -> uske base pe '2nd' + dice hide, baaki khelte rahen.
             // 3rd aaye -> base pe '3rd' + dice hide, ab sirf 1 bacha ->
             // usse last rank milte hi GAME OVER.
-            const remainingPlayers = players.filter(p => !winnersList.includes(p.color));
-            if (remainingPlayers.length === 1 && players.length > 1) {
+            const remainingPlayers = players.filter(p => !winnersList.includes(p.color) && !p.exited);
+            if (remainingPlayers.length === 1 && players.filter(p => !p.exited).length > 1) {
                 // Aakhri bache player ko last rank mila -> game over
                 const lastColor = remainingPlayers[0].color;
                 winnersList.push(lastColor);
@@ -7145,7 +7242,7 @@ body {
         do {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
             count++;
-        } while (isSlotExhausted(players[currentPlayerIndex]) && count <= players.length * 2);
+        } while ((isSlotExhausted(players[currentPlayerIndex]) || players[currentPlayerIndex].exited) && count <= players.length * 2);
         updateTurnUI();
     }
 
@@ -8371,10 +8468,15 @@ window.LudoOnline = (function () {
         if (room.status === 'finished' && room.winnerUid && core() && core().isActive()) {
             core().settleWinner(room.winnerUid);
         }
-        // FIXED: koi exit kiya → bache players ko INSTANT win dikhao
+        // FIXED: 2P me exit/timeout → bache player ko INSTANT win dikhao
         if (room.status === 'forfeit' && core() && core().isActive()) {
             core().handleForfeit(room);
             cleanupOnline();
+            return;
+        }
+        // FIXED: 3P/4P me exit/timeout → player eliminate, match continue
+        if (room.status === 'player-exit' && core() && core().isActive()) {
+            core().handlePlayerExit(room);
             return;
         }
         const me = myUid();
