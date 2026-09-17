@@ -61,9 +61,6 @@ function pemToArrayBuffer(pem) {
 }
 
 // ─── Verify a Firebase ID token from the game client ──────────────────────
-// Uses Google's JWK endpoint (a plain JSON Web Key Set) rather than the
-// X.509 cert endpoint, since Web Crypto's importKey('jwk', ...) can use a
-// JWK directly — no certificate parsing needed.
 const GOOGLE_JWKS_URL = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 let _jwksCache = null;
 let _jwksCacheAt = 0;
@@ -199,6 +196,17 @@ export async function rtdbPut(env, path, value) {
         body: JSON.stringify(value)
     });
     if (!res.ok) throw new Error('rtdb-put-failed:' + res.status);
+    return true;
+}
+
+// ADDED: proper DELETE — PATCH/PUT with null pe bharosa nahi karna chahiye
+export async function rtdbDelete(env, path) {
+    const token = await _getAdminAccessToken(env);
+    const res = await fetch(`${DB_URL}/${path}.json`, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error('rtdb-delete-failed:' + res.status);
     return true;
 }
 
