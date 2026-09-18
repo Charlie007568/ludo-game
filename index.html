@@ -3321,6 +3321,7 @@ body {
                 <button class="topbar-pill" id="music-btn-menu" onclick="window.LudoEngine.toggleMusic()" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800; white-space: nowrap;">🎵 Music</button>
                 <button class="topbar-pill" id="sound-btn-menu" onclick="window.LudoEngine.toggleSound()" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800; white-space: nowrap;">🔊 SFX</button>
                 <button class="topbar-pill" onclick="window.LudoEngine.openBugReport('menu')" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800; white-space: nowrap;" title="Report a Bug">🐞 Report</button>
+                <button class="topbar-pill" onclick="window.LudoOnline.requestExit()" style="padding: 6px 11px; font-size: 0.72rem; font-weight: 800; white-space: nowrap;" title="Exit game">🚪 Exit</button>
                 <div class="topbar-pill topbar-coins" onclick="window.LudoEngine.openCoinsModal()" title="Coin Wallet — tap for more coins" style="white-space: nowrap;">
                     <span class="coin-balance-amount" id="menu-coin-balance">🪙 1,000</span>
                     <span class="coin-plus-badge">+</span>
@@ -8427,6 +8428,14 @@ window.LudoOnline = (function () {
         t.onclick = hideToast;
         t._h = setTimeout(hideToast, 3600);
     }
+
+    // ADDED: menu ka Exit button — loader se "Exit Game?" popup khulwata hai
+    // (app-exit confirm). Web directly native app ko band nahi kar sakta,
+    // isliye loader ke layered close (native bridge -> window.close -> blank)
+    // se hota hai.
+    function requestExit() {
+        try { window.parent.postMessage({ type: 'rbe-game', action: 'exit-request' }, '*'); } catch (e) {}
+    }
     function hideToast() {
         const t = document.getElementById('online-toast');
         if (!t || t.style.display === 'none') return;
@@ -8728,7 +8737,7 @@ window.LudoOnline = (function () {
         }
     }
 
-    return { openArena: openArena, closeArena: closeArena, setCount: setCount, findMatch: findMatch, cancelSearch: cancelSearch, challenge: challenge, acceptReq: acceptReq, declineReq: declineReq, toast: toast, showRematchBar: showRematchBar, hideRematchBar: hideRematchBar, requestRematch: requestRematch, exitToMenu: exitToMenu };
+    return { openArena: openArena, closeArena: closeArena, setCount: setCount, findMatch: findMatch, cancelSearch: cancelSearch, challenge: challenge, acceptReq: acceptReq, declineReq: declineReq, toast: toast, requestExit: requestExit, showRematchBar: showRematchBar, hideRematchBar: hideRematchBar, requestRematch: requestRematch, exitToMenu: exitToMenu };
 })();
 </script>
 
@@ -8754,6 +8763,7 @@ window.LudoOnline = (function () {
         try { history.pushState({ rbeGameGuard: true }, '', location.href); } catch (e) {}
     }
     pushGuard();
+    setTimeout(pushGuard, 1000); // ADDED: load-window ke baad dobara push
     window.addEventListener('popstate', function () {
         pushGuard(); // guard hamesha bana rahe
         try {
