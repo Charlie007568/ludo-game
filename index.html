@@ -8752,6 +8752,15 @@ window.LudoOnline = (function () {
 // Flow: board pe Back -> "Exit to Menu?" -> Yes = game menu (app band nahi)
 //       menu me Back -> "Exit Game?"   -> Yes = poora app band
 (function () {
+    // BUG FIX: yeh iframe apni khud ki guard history entries push karta
+    // hai, jo top-level loader wali joint back-stack me hi milti hain.
+    // Pehle jab loader "Yes, Exit" par apni entries unwind karta tha, is
+    // iframe ki push ki hui entries wahin padi reh jaati thi — isi wajah
+    // se ek Back press exit ki jagah is game page ko hi reload kar deta
+    // tha. Ab guardDepth track karte hain aur loader ke 'exit-unwind'
+    // signal par inhe bhi unwind kar dete hain.
+    let exiting    = false; // true jab loader poora app band kar raha ho
+    let guardDepth = 0;
     function currentScreen() {
         const gs = document.getElementById('game-screen');
         return (gs && gs.style.display !== 'none') ? 'game' : 'menu';
@@ -8760,11 +8769,13 @@ window.LudoOnline = (function () {
         try { window.parent.postMessage({ type: 'rbe-game', screen: currentScreen() }, '*'); } catch (e) {}
     }
     function pushGuard() {
-        try { history.pushState({ rbeGameGuard: true }, '', location.href); } catch (e) {}
+        if (exiting) return;
+        try { history.pushState({ rbeGameGuard: true }, '', location.href); guardDepth++; } catch (e) {}
     }
     pushGuard();
     setTimeout(pushGuard, 1000); // ADDED: load-window ke baad dobara push
     window.addEventListener('popstate', function () {
+        if (exiting) return;
         pushGuard(); // guard hamesha bana rahe
         try {
             window.parent.postMessage({ type: 'rbe-game', action: 'back-pressed', screen: currentScreen() }, '*');
@@ -8777,6 +8788,12 @@ window.LudoOnline = (function () {
             try { window.LudoEngine.goToMenu(); } catch (e) {}
         }
         if (d.action === 'get-state') reportScreen();
+        // BUG FIX: loader real app-exit kar raha hai — is iframe ki apni
+        // guard entries bhi yahin unwind karo (dekho comment upar).
+        if (d.action === 'exit-unwind') {
+            exiting = true;
+            try { if (guardDepth > 0) history.go(-guardDepth); } catch (e) {}
+        }
     });
     const gs = document.getElementById('game-screen');
     if (gs) {
