@@ -624,6 +624,16 @@ body {
 /* ADDED: opponent ka dice LOCKED rehta hai (tap nahi kar sakte) lekin
    remote spin animation dikhe — isliye spinning ko locked pe bhi override */
 .dice-box-tag.spinning .dice3d { animation: diceSpinLoop 0.17s linear infinite !important; }
+        /* ADDED: low-end devices ke liye sasta 2D roll — preserve-3d spin
+           ki jagah halka shake (GPU pe almost zero load) */
+        .dice-box-tag.dice-shake-lite { animation: diceShakeLite 0.14s linear 2; }
+        @keyframes diceShakeLite {
+            0% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-5px) rotate(-8deg); }
+            50% { transform: translateY(0) rotate(7deg); }
+            75% { transform: translateY(-3px) rotate(-5deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
 
 .dice3d {
     position: relative;
@@ -4024,10 +4034,12 @@ body {
             const rot = DICE_FACE_ROTATION[dv[col]];
             if (!cube || !rot) return;
             if (dv[col] !== prevDv[col]) {
-                // ADDED: naya roll — pehle 3D spin dikhao, phir face settle
-                box.classList.add('spinning');
+                // ADDED: naya roll — pehle spin dikhao, phir face settle
+                // (low-end pe sasta 2D shake)
+                const rSpin = LOW_END_DEVICE ? 'dice-shake-lite' : 'spinning';
+                box.classList.add(rSpin);
                 setTimeout(() => {
-                    box.classList.remove('spinning');
+                    box.classList.remove(rSpin);
                     cube.style.transition = 'transform 180ms cubic-bezier(0.2, 0.8, 0.25, 1)';
                     cube.style.transform = 'rotateX(' + rot.x + 'deg) rotateY(' + rot.y + 'deg)';
                 }, 620);
@@ -4451,6 +4463,14 @@ body {
         used.push(n);
         return n;
     }
+
+    // ADDED: low-end device detect — 3P/4P me 4 dice + 16 gotiyan GPU load
+    // karti hain; kamzor phones pe 3D dice spin janky/black ho jata tha
+    // (2P me kam load hone se wahan theek lagta tha). In devices pe sasta
+    // 2D roll animation + halka token effects use hote hain.
+    const LOW_END_DEVICE = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+        (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
+        (/(?:^|\s)Android [5-8]\./.test(navigator.userAgent || ''));
 
     const globalPath = [
         [7, 2], [7, 3], [7, 4], [7, 5], [7, 6],
@@ -6358,16 +6378,21 @@ body {
                     tEl.appendChild(bTag);
                 }
                 if (isThisMoving && activeMove && activeMove.type === 'GLIDE') {
-                    const tailEl = document.createElement('div');
-                    tailEl.className = `token-smooth-tail tail-${t.color.toLowerCase()} trail-style-${customization.trailEffect}`;
-                    tailEl.innerHTML = `
-                        <div class="tail-stream-ribbon"></div>
-                        <div class="tail-ground-glow"></div>
-                        <div class="tail-laser-core"></div>
-                        <div class="tail-spark tail-spark-1"></div>
-                        <div class="tail-spark tail-spark-2"></div>
-                    `;
-                    tEl.appendChild(tailEl);
+                    // LOW-END: trail/ribbon effects GPU pe bahut load karte
+                    // hain (3P/4P me 16 gotiyan) — in devices pe sirf halka
+                    // move rakhte hain, effects skip.
+                    if (!LOW_END_DEVICE) {
+                        const tailEl = document.createElement('div');
+                        tailEl.className = `token-smooth-tail tail-${t.color.toLowerCase()} trail-style-${customization.trailEffect}`;
+                        tailEl.innerHTML = `
+                            <div class="tail-stream-ribbon"></div>
+                            <div class="tail-ground-glow"></div>
+                            <div class="tail-laser-core"></div>
+                            <div class="tail-spark tail-spark-1"></div>
+                            <div class="tail-spark tail-spark-2"></div>
+                        `;
+                        tEl.appendChild(tailEl);
+                    }
                 }
 
                 tEl.onclick = (e) => { e.stopPropagation(); handleTokenClick(t); };
@@ -6618,12 +6643,14 @@ body {
         try { playSound('roll'); } catch (e) {}
         const box = document.getElementById(`dice-${color}`);
         if (box) {
-            // pehle dice ko 3D me ghumao, phir rolled number waale face pe settle karo
+            // LOW-END: sasta 2D shake (3D spin GPU pe janky hota tha 3P/4P me)
+            const spinClass = LOW_END_DEVICE ? 'dice-shake-lite' : 'spinning';
+            const spinMs = LOW_END_DEVICE ? 300 : 250;
             try {
-                box.classList.add('spinning');
+                box.classList.add(spinClass);
                 setTimeout(() => {
                     try {
-                        box.classList.remove('spinning');
+                        box.classList.remove(spinClass);
                         const cube = box.querySelector('.dice3d');
                         if (cube) {
                             const rot = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
@@ -6632,7 +6659,7 @@ body {
                         }
                     } catch (e) {}
                     onDone(); // HAMESHA call hoga — dice kabhi freeze nahi
-                }, 250);
+                }, spinMs);
             } catch (e) { onDone(); }
         } else {
             onDone();
