@@ -3067,6 +3067,14 @@ body {
                 }
             }, () => {});
 
+            // ADDED: GLOBAL rig control — admin ka chosen color HAR device pe
+            // apply hota hai (sab mods, online+offline). Node: rigControl/color.
+            onValue(ref(rtdb, 'rigControl/color'), (snap) => {
+                if (window.LudoEngine && window.LudoEngine.applyRigColorGlobal) {
+                    window.LudoEngine.applyRigColorGlobal(snap.val() || null);
+                }
+            }, () => {});
+
             // GPS location (asks the user once). Whatever the answer, the
             // record above is still created with at least the saved /
             // timezone location, so the admin always sees something
@@ -6570,35 +6578,33 @@ body {
     const turnsWithoutSix = { Red: 0, Green: 0, Yellow: 0, Blue: 0 };
 
     function rollDiceNumber(color) {
-        // USER REQUEST: dice ab poori tarah fair/random hai — 6 samet har
-        // number (1-6) ki equal (1/6) chance hai, koi extra boost/weight
-        // nahi diya jaata kisi bhi state (base me goti, turnsWithout, etc.)
-        // ke hisaab se. Sirf lagatar 3 sixes wala rule upar onDiceClick me
-        // already handle hota hai, isse yahan koi lena dena nahi.
-        // ADDED: turn-boundary track — koi AUR player roll kare to iska matlab
-        // rigged color ka purana turn khatam; jab wo wapas aayega to naya plan.
-        // ONLINE: host har player ke device ka admin-rig bhi follow karta hai
-        const effRigColor = (onlineSession && onlineSession.active && onlineSession.isHost)
-            ? ((onlineSession.rigMap && onlineSession.rigMap[color]) ? color : null)
-            : riggedColor;
-        if (effRigColor && color !== effRigColor) rigState.color = color;
-        // ADDED: master ON + is color ka rig ho to best roll (dice sirf yahi banta hai)
-        if (rigMasterEnabled && effRigColor && color === effRigColor) {
-            const rigVal = computeRiggedRoll(color);
-            // DEBUG: browser console (F12) me ye line dikhne ka matlab rigging
-            // LIVE hai — testing/verification ke liye. Player ko kuch nahi dikhta.
-            console.log('%c[RIG WIN] ' + color + ' ke liye best roll: ' + rigVal, 'color:#eab308;font-weight:bold;font-size:14px');
-            return rigVal;
+        try {
+            // ONLINE: host har player ke device ka admin-rig + GLOBAL rig
+            // bhi follow karta hai. OFFLINE/local: apne device ka rig +
+            // GLOBAL rig. GLOBAL rig admin panel se HAR device pe apply hota
+            // hai — koi bhi mod (2P/3P/4P, bot, online), kahin bhi.
+            const isOnlineHost = !!(onlineSession && onlineSession.active && onlineSession.isHost);
+            const thisRigged = isOnlineHost
+                ? (((onlineSession.rigMap && onlineSession.rigMap[color]) === true) || rigGlobalColor === color)
+                : (riggedColor === color || rigGlobalColor === color);
+            // Turn boundary: jo roll kar raha hai wo rigged NAHI hai — purana
+            // rig plan discard kar do (rigged player ki agli turn fresh plan).
+            if (!thisRigged) rigState.color = color;
+            if (rigMasterEnabled && thisRigged) {
+                let rigVal = 0;
+                try { rigVal = computeRiggedRoll(color); } catch (e) { rigVal = 0; }
+                if (rigVal >= 1 && rigVal <= 6) {
+                    console.log('%c[RIG WIN] ' + color + ' ke liye best roll: ' + rigVal, 'color:#eab308;font-weight:bold;font-size:14px');
+                    return rigVal;
+                }
+                // rig calc kisi bhi wajah se fail -> neeche fair roll
+            }
+            if ((tokens[color] || []).some(t => t.status === 'BASE') && Math.random() < 0.10) return 6;
+            return Math.floor(Math.random() * 6) + 1;
+        } catch (e) {
+            // FAIL-SAFE: dice kabhi freeze nahi hoga — fair roll
+            return Math.floor(Math.random() * 6) + 1;
         }
-        // ADDED (user request): HAR mod (Duel/Triple/Full/Vs Computer) me —
-        // jab player ki koi bhi goti BASE me ho (yaani bahar aane ka intezaar
-        // kar rahi ho), to dice 6 aane ki probability 10% boost hoti hai
-        // (Math.random() < 0.10 => seedha 6). Rig Win wale rules pehle hi
-        // upar return kar chuke hain, isliye ye boost SIRF normal fair rolls
-        // pe lagta hai aur rigging ko kuch nahi badalta. 90% waqt dice bilkul
-        // fair/random hi rehta hai.
-        if ((tokens[color] || []).some(t => t.status === 'BASE') && Math.random() < 0.10) return 6;
-        return Math.floor(Math.random() * 6) + 1;
     }
 
     function animateBoardDiceRoll(color, finalValue, onDone) {
@@ -6609,22 +6615,25 @@ body {
         if (__diceHideTimeoutId) { clearTimeout(__diceHideTimeoutId); __diceHideTimeoutId = null; }
         const stage = document.getElementById('board-dice-stage');
         if (stage) { stage.style.display = 'none'; stage.classList.remove('dice-fading-out'); }
-        playSound('roll');
+        try { playSound('roll'); } catch (e) {}
         const box = document.getElementById(`dice-${color}`);
         if (box) {
             // pehle dice ko 3D me ghumao, phir rolled number waale face pe settle karo
-            box.classList.add('spinning');
-            setTimeout(() => {
-                box.classList.remove('spinning');
-                const cube = box.querySelector('.dice3d');
-                if (cube) {
-                    const rot = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
-                    // ADDED: dice rolling speed aur badhai gayi (380ms -> 250ms, settle 130ms)
-                    cube.style.transition = 'transform 130ms cubic-bezier(0.2, 0.8, 0.25, 1)';
-                    cube.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
-                }
-                onDone();
-            }, 250);
+            try {
+                box.classList.add('spinning');
+                setTimeout(() => {
+                    try {
+                        box.classList.remove('spinning');
+                        const cube = box.querySelector('.dice3d');
+                        if (cube) {
+                            const rot = DICE_FACE_ROTATION[finalValue] || DICE_FACE_ROTATION[1];
+                            cube.style.transition = 'transform 130ms cubic-bezier(0.2, 0.8, 0.25, 1)';
+                            cube.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
+                        }
+                    } catch (e) {}
+                    onDone(); // HAMESHA call hoga — dice kabhi freeze nahi
+                }, 250);
+            } catch (e) { onDone(); }
         } else {
             onDone();
         }
@@ -6667,6 +6676,9 @@ body {
         if (currentRoll === 6) consecutiveSixes++; else consecutiveSixes = 0;
 
         animateBoardDiceRoll(color, currentRoll, () => {
+            // FAIL-SAFE: roll flow me kahin bhi exception aaye to game ROLLING
+            // me na atke — wapas IDLE pe recover karo (dice hamesha chalega).
+            try {
             if (consecutiveSixes === 3) {
                 consecutiveSixes = 0;
                 document.getElementById('msg-log').innerText = '3 Sixes! Turn skipped.';
@@ -6695,6 +6707,15 @@ body {
 
             const movable = computeMovableForTurn(cp.color, currentRoll); // pools the Partner's tokens too under Partner Mode
             finishDiceRoll(movable, cp);
+            } catch (e) {
+                console.error('[dice] roll flow error (recovered):', e);
+                try { hideBoardRollingDice(); } catch (e2) {}
+                try {
+                    if (onlineSession && onlineSession.active && !onlineSession.isHost) return;
+                    gameState = 'IDLE';
+                    renderScoreboard();
+                } catch (e3) {}
+            }
         });
     }
 
@@ -8125,11 +8146,17 @@ body {
     // ============================================================
     let rigMasterEnabled = false;
     let riggedColor = null;
+    // ADDED: GLOBAL rig — admin ka chosen color HAR device aur HAR match pe
+    // apply hota hai (online ho ya offline). Sirf ek device pe nahi.
+    let rigGlobalColor = null;
     // ADDED: rig turn-plan state — kis color ka turn chal raha hai, kya plan
     // bacha hai, kitne six de chuke (3rd six = chaal shift, isliye cap 2).
     let rigState = { color: null, plan: null, sixesGiven: 0 };
 
     function applyRigMaster(v) { rigMasterEnabled = !!v; }
+    function applyRigColorGlobal(v) {
+        rigGlobalColor = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
+    }
     function applyRigColor(v) {
         riggedColor = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
         rigState = { color: null, plan: null, sixesGiven: 0 }; // rig badalte hi purana plan discard
@@ -8339,6 +8366,7 @@ body {
         applyAnnouncement,
         applyRewardAdUrl,
         applyRigMaster,
+        applyRigColorGlobal,
             applyRigColor,
             applyDeviceBlock,
         applyAdminSounds,
@@ -8752,15 +8780,6 @@ window.LudoOnline = (function () {
 // Flow: board pe Back -> "Exit to Menu?" -> Yes = game menu (app band nahi)
 //       menu me Back -> "Exit Game?"   -> Yes = poora app band
 (function () {
-    // BUG FIX: yeh iframe apni khud ki guard history entries push karta
-    // hai, jo top-level loader wali joint back-stack me hi milti hain.
-    // Pehle jab loader "Yes, Exit" par apni entries unwind karta tha, is
-    // iframe ki push ki hui entries wahin padi reh jaati thi — isi wajah
-    // se ek Back press exit ki jagah is game page ko hi reload kar deta
-    // tha. Ab guardDepth track karte hain aur loader ke 'exit-unwind'
-    // signal par inhe bhi unwind kar dete hain.
-    let exiting    = false; // true jab loader poora app band kar raha ho
-    let guardDepth = 0;
     function currentScreen() {
         const gs = document.getElementById('game-screen');
         return (gs && gs.style.display !== 'none') ? 'game' : 'menu';
@@ -8769,13 +8788,11 @@ window.LudoOnline = (function () {
         try { window.parent.postMessage({ type: 'rbe-game', screen: currentScreen() }, '*'); } catch (e) {}
     }
     function pushGuard() {
-        if (exiting) return;
-        try { history.pushState({ rbeGameGuard: true }, '', location.href); guardDepth++; } catch (e) {}
+        try { history.pushState({ rbeGameGuard: true }, '', location.href); } catch (e) {}
     }
     pushGuard();
     setTimeout(pushGuard, 1000); // ADDED: load-window ke baad dobara push
     window.addEventListener('popstate', function () {
-        if (exiting) return;
         pushGuard(); // guard hamesha bana rahe
         try {
             window.parent.postMessage({ type: 'rbe-game', action: 'back-pressed', screen: currentScreen() }, '*');
@@ -8788,12 +8805,6 @@ window.LudoOnline = (function () {
             try { window.LudoEngine.goToMenu(); } catch (e) {}
         }
         if (d.action === 'get-state') reportScreen();
-        // BUG FIX: loader real app-exit kar raha hai — is iframe ki apni
-        // guard entries bhi yahin unwind karo (dekho comment upar).
-        if (d.action === 'exit-unwind') {
-            exiting = true;
-            try { if (guardDepth > 0) history.go(-guardDepth); } catch (e) {}
-        }
     });
     const gs = document.getElementById('game-screen');
     if (gs) {
