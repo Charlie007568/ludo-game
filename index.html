@@ -932,29 +932,21 @@ body {
     grid-row: 1 / 7;
     grid-column: 1 / 7;
     background: var(--base-red); /* FLAT LOOK (image-1 match): plain solid color */
-    border-right: 2px solid #1e293b;
-    border-bottom: 2px solid #1e293b;
 }
 .base-quadrant-green {
     grid-row: 1 / 7;
     grid-column: 10 / 16;
     background: var(--base-green); /* FLAT LOOK (image-1 match): plain solid color */
-    border-left: 2px solid #1e293b;
-    border-bottom: 2px solid #1e293b;
 }
 .base-quadrant-blue {
     grid-row: 10 / 16;
     grid-column: 1 / 7;
     background: var(--base-blue); /* FLAT LOOK (image-1 match): plain solid color */
-    border-right: 2px solid #1e293b;
-    border-top: 2px solid #1e293b;
 }
 .base-quadrant-yellow {
     grid-row: 10 / 16;
     grid-column: 10 / 16;
     background: var(--base-yellow); /* FLAT LOOK (image-1 match): plain solid color */
-    border-left: 2px solid #1e293b;
-    border-top: 2px solid #1e293b;
 }
 
 .base-white-tray {
@@ -962,7 +954,6 @@ body {
     height: 82%;
     background: #ffffff;
     border-radius: 0; /* SQUARE (reference image-2): sharp corners, no rounding */
-    border: 2px solid rgba(15, 23, 42, 0.55);
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
@@ -6036,8 +6027,6 @@ body {
                 <polygon points="100,0 100,100 50,50" fill="#eab308"/>
                 <polygon points="100,100 0,100 50,50" fill="#3b82f6"/>
                 <polygon points="0,100 0,0 50,50" fill="#ef4444"/>
-                <line x1="0" y1="0" x2="100" y2="100" stroke="#1e293b" stroke-width="2"/>
-                <line x1="100" y1="0" x2="0" y2="100" stroke="#1e293b" stroke-width="2"/>
             </svg>
         `;
         board.appendChild(centerHome);
