@@ -1002,7 +1002,7 @@ body {
 /* Track Cells - FLAT LOOK (image-1 match): plain flat colors, no gradients */
 .cell {
     background-color: #ffffff; /* FLAT WHITE (reference image) */
-    border: 0.6px solid #1e293b;
+    border: 0.6px solid #475569;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1011,22 +1011,21 @@ body {
     height: 100%;
     box-sizing: border-box;
 }
-.cell.cell-nb { border: none !important; }
 .cell-red-path    { 
     background: var(--red) !important;
-    border: 0.6px solid #1e293b !important;
+    border: 0.6px solid #475569 !important;
 }
 .cell-green-path  { 
     background: var(--green) !important;
-    border: 0.6px solid #1e293b !important;
+    border: 0.6px solid #475569 !important;
 }
 .cell-yellow-path { 
     background: var(--yellow) !important;
-    border: 0.6px solid #1e293b !important;
+    border: 0.6px solid #475569 !important;
 }
 .cell-blue-path   { 
     background: var(--blue) !important;
-    border: 0.6px solid #1e293b !important;
+    border: 0.6px solid #475569 !important;
 }
 
 .star-icon {
@@ -6041,11 +6040,6 @@ body {
 
                 const cell = document.createElement('div');
                 cell.className = 'cell';
-                // ADDED: center home ke bilkul aas-paas wali cells (jo uska
-                // black frame bana rahi thin) — unki border hata do.
-                if ((r >= 6 && r <= 10 && c >= 6 && c <= 10) && !(r >= 7 && r <= 9 && c >= 7 && c <= 9)) {
-                    cell.classList.add('cell-nb');
-                }
                 cell.dataset.r = r; cell.dataset.c = c;
                 cell.style.gridRow = r; cell.style.gridColumn = c;
 
