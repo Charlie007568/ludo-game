@@ -4486,25 +4486,41 @@ body {
     function applyLiteMode(on) {
         LOW_END_DEVICE = !!on;
         try { document.body.classList.toggle('lite-mode', !!on); } catch (e) {}
-        try { localStorage.setItem('rbe_lite', on ? '1' : '0'); } catch (e) {}
+        try { localStorage.setItem('rbe_lite2', on ? '1' : '0'); } catch (e) {}
     }
+    // FIXED: pehla probe page-load ke beech measure ho raha tha — heavy init
+    // ke dauran FPS naturally gir jaata hai, to Samsung jaisa fast phone bhi
+    // galat tarah "slow" mark ho gaya tha (aur result permanent cache ho
+    // gaya tha). Ab: (1) purana cache key change — sab devices fresh start,
+    // (2) 4s baad, menu settle hone ke baad probe, (3) DO alag windows
+    // (2s gap) — sirf dono slow hon to hi lite, (4) 6GB+ RAM wale phones
+    // kabhi lite nahi hote.
     (function fpsProbe() {
         let cached = null;
-        try { cached = localStorage.getItem('rbe_lite'); } catch (e) {}
+        try { cached = localStorage.getItem('rbe_lite2'); } catch (e) {}
         if (cached === '1') { applyLiteMode(true); return; }
-        // page load settle hone ke baad probe karo
-        setTimeout(() => {
+        if (cached === '0') { applyLiteMode(false); return; }
+        if (navigator.deviceMemory && navigator.deviceMemory >= 6) { applyLiteMode(false); return; }
+        function measure(ms, cb) {
             let frames = 0;
             const t0 = performance.now();
             (function tick() {
                 frames++;
                 const el = performance.now() - t0;
-                if (el < 900) { requestAnimationFrame(tick); return; }
-                // 60fps screen pe ~54 frames aane chahiye; <50fps = lite mode
-                if (frames / (el / 1000) < 50) applyLiteMode(true);
-                else { try { localStorage.setItem('rbe_lite', '0'); } catch (e) {} }
+                if (el < ms) { requestAnimationFrame(tick); return; }
+                cb(frames / (el / 1000));
             })();
-        }, 1500);
+        }
+        setTimeout(() => {
+            measure(900, fps1 => {
+                setTimeout(() => {
+                    measure(900, fps2 => {
+                        if (fps1 < 45 && fps2 < 45) applyLiteMode(true);
+                        else { try { localStorage.setItem('rbe_lite2', '0'); } catch (e) {} }
+                    });
+                }, 2000);
+            });
+        }, 4000);
     })();
     if (LOW_END_DEVICE) { try { document.body.classList.add('lite-mode'); } catch (e) {} }
 
