@@ -979,8 +979,10 @@ body {
     grid-row: 7 / 10;
     grid-column: 7 / 10;
     position: relative;
-    border: 2.5px solid transparent; /* black border removed */
-    background: #0f172a;
+    /* FIXED: dark navy bg + triangle edge antialiasing milke black frame
+       bana rahe the — ab white bg hai aur triangles neeche extend hote
+       hain, to center bilkul seamless hai */
+    background: #ffffff;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -6024,10 +6026,10 @@ body {
         // just the 4 flat triangles crossed by two thin diagonal lines.
         centerHome.innerHTML = `
             <svg class="center-home-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <polygon points="0,0 100,0 50,50" fill="#22c55e"/>
-                <polygon points="100,0 100,100 50,50" fill="#eab308"/>
-                <polygon points="100,100 0,100 50,50" fill="#3b82f6"/>
-                <polygon points="0,100 0,0 50,50" fill="#ef4444"/>
+                <polygon points="-3,-3 103,-3 50,50" fill="#22c55e"/>
+                <polygon points="103,-3 103,103 50,50" fill="#eab308"/>
+                <polygon points="103,103 -3,103 50,50" fill="#3b82f6"/>
+                <polygon points="-3,103 -3,-3 50,50" fill="#ef4444"/>
             </svg>
         `;
         board.appendChild(centerHome);
