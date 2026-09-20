@@ -634,6 +634,16 @@ body {
             75% { transform: translateY(-3px) rotate(-5deg); }
             100% { transform: translateY(0) rotate(0deg); }
         }
+        /* ADDED: lite mode — low-end device pe hamesha chalne wali heavy
+           animations (16 gotiyon ke gears, cell glow, dice bounce, crown
+           float) band — GPU sirf zaroori cheezon pe lagta hai */
+        body.lite-mode .token-gear-spinner { animation: none !important; }
+        body.lite-mode .cell.stack-count-4 { animation: none !important; }
+        body.lite-mode .base-active-turn { box-shadow: none !important; }
+        body.lite-mode .dice-box-tag.active-roll { animation: none !important; }
+        body.lite-mode .crown-aura-glow,
+        body.lite-mode .crown-svg-wrapper { animation: none !important; }
+        body.lite-mode .token-movable { animation-duration: 0.7s !important; }
 
 .dice3d {
     position: relative;
@@ -4466,11 +4476,37 @@ body {
 
     // ADDED: low-end device detect — 3P/4P me 4 dice + 16 gotiyan GPU load
     // karti hain; kamzor phones pe 3D dice spin janky/black ho jata tha
-    // (2P me kam load hone se wahan theek lagta tha). In devices pe sasta
-    // 2D roll animation + halka token effects use hote hain.
-    const LOW_END_DEVICE = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+    // (2P me kam load hone se wahan theek lagta tha). Pehle rough guess,
+    // phir REAL FPS PROBE: 900ms me rAF frames count karke actual smoothness
+    // measure hoti hai (budget phones me 8 cores hone se sirf heuristic
+    // kaafi nahi tha). Result localStorage me cache hota hai.
+    let LOW_END_DEVICE = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
         (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
         (/(?:^|\s)Android [5-8]\./.test(navigator.userAgent || ''));
+    function applyLiteMode(on) {
+        LOW_END_DEVICE = !!on;
+        try { document.body.classList.toggle('lite-mode', !!on); } catch (e) {}
+        try { localStorage.setItem('rbe_lite', on ? '1' : '0'); } catch (e) {}
+    }
+    (function fpsProbe() {
+        let cached = null;
+        try { cached = localStorage.getItem('rbe_lite'); } catch (e) {}
+        if (cached === '1') { applyLiteMode(true); return; }
+        // page load settle hone ke baad probe karo
+        setTimeout(() => {
+            let frames = 0;
+            const t0 = performance.now();
+            (function tick() {
+                frames++;
+                const el = performance.now() - t0;
+                if (el < 900) { requestAnimationFrame(tick); return; }
+                // 60fps screen pe ~54 frames aane chahiye; <50fps = lite mode
+                if (frames / (el / 1000) < 50) applyLiteMode(true);
+                else { try { localStorage.setItem('rbe_lite', '0'); } catch (e) {} }
+            })();
+        }, 1500);
+    })();
+    if (LOW_END_DEVICE) { try { document.body.classList.add('lite-mode'); } catch (e) {} }
 
     const globalPath = [
         [7, 2], [7, 3], [7, 4], [7, 5], [7, 6],
