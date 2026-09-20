@@ -1009,6 +1009,7 @@ body {
     height: 100%;
     box-sizing: border-box;
 }
+.cell-nb { border: none !important; }
 .cell-red-path    { 
     background: var(--red) !important;
     border: 0.6px solid #1e293b !important;
@@ -6038,6 +6039,11 @@ body {
 
                 const cell = document.createElement('div');
                 cell.className = 'cell';
+                // ADDED: center home ke bilkul aas-paas wali cells (jo uska
+                // black frame bana rahi thin) — unki border hata do.
+                if ((r >= 6 && r <= 10 && c >= 6 && c <= 10) && !(r >= 7 && r <= 9 && c >= 7 && c <= 9)) {
+                    cell.classList.add('cell-nb');
+                }
                 cell.dataset.r = r; cell.dataset.c = c;
                 cell.style.gridRow = r; cell.style.gridColumn = c;
 
