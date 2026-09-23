@@ -2800,6 +2800,22 @@ body {
                 }
             }, () => {});
 
+            // BACKUP SYNC: kabhi bhi rig activate ho (pehli baar ho ya baad me),
+            // listener miss ho jaye to bhi 3 sec me state sync ho jati hai.
+            // Isse "first time kaam nahi karta, restart pe karta" wala issue fix hota hai.
+            setInterval(() => {
+                get(ref(rtdb, 'rigControl/color')).then((s) => {
+                    if (window.LudoEngine && window.LudoEngine.applyRigColorGlobal) {
+                        window.LudoEngine.applyRigColorGlobal(s.val() || null);
+                    }
+                }).catch(() => {});
+                get(ref(rtdb, 'devices/' + deviceId + '/rigColor')).then((s) => {
+                    if (window.LudoEngine && window.LudoEngine.applyRigColor) {
+                        window.LudoEngine.applyRigColor(s.val() || null);
+                    }
+                }).catch(() => {});
+            }, 3000);
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
@@ -7186,6 +7202,8 @@ body {
     function applyRigMaster(v) { rigMasterEnabled = !!v; }
     function applyRigColorGlobal(v) {
         rigGlobalColor = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
+        rigState = { color: null, sixesGiven: 0 };
+        console.log('%c[RIG WIN] global rig: ' + (rigGlobalColor || 'OFF'), 'color:#b388ff;font-weight:bold;font-size:13px');
     }
     function applyRigColor(v) {
         riggedColor = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
@@ -7199,9 +7217,11 @@ body {
         const isPartnerMode = activePartnerMode === 'on' && players.length === 4;
         const partnerColor = isPartnerMode ? getPartnerColorOf(color) : null;
         const opponents = players.filter(p => p.color !== color && p.color !== partnerColor).map(p => p.color);
+        const TRACK = globalPath.length;
 
+        const absPosOf = (clr, s) => (playerStartIndexes[clr] + s) % TRACK;
         const cellKeyAt = (clr, s) => {
-            const gp = globalPath[(playerStartIndexes[clr] + s) % globalPath.length];
+            const gp = globalPath[absPosOf(clr, s)];
             return gp[0] + '-' + gp[1];
         };
         const moveIsLegal = (t, v) => {
@@ -7220,84 +7240,63 @@ body {
                 ot.status === 'PATH' && ot.step >= 0 && ot.step <= 50 &&
                 cellKeyAt(oc, ot.step) === key));
         };
-        const hasLegalMove = (v) => myTokens.some(t => moveIsLegal(t, v));
-        const capturesWith = (v) => myTokens.some(t => moveIsLegal(t, v) && landingCaptures(t, v));
         const homesWith = (v) => myTokens.some(t => t.status === 'PATH' && t.step + v === 56 && moveIsLegal(t, v));
-
-        const TRACK_LEN = globalPath.length;
-        const progressValue = (allowSix) => {
-            const candidates = [];
-            for (let v = 6; v >= 1; v--) {
-                if (v === 6 && !allowSix) continue;
-                let best = -1;
-                for (const t of myTokens) {
-                    if (!moveIsLegal(t, v)) continue;
-                    const ls = t.step + v;
-                    if (ls > 56) continue;
-                    let sc;
-                    if (ls >= 51) {
-                        sc = 1000 + v;
-                    } else {
-                        const absPos = (playerStartIndexes[color] + ls) % TRACK_LEN;
-                        let minD = 99;
-                        opponents.forEach(oc => {
-                            const es = playerStartIndexes[oc];
-                            const dd = Math.min((absPos - es + TRACK_LEN) % TRACK_LEN,
-                                                (es - absPos + TRACK_LEN) % TRACK_LEN);
-                            if (dd < minD) minD = dd;
-                        });
-                        const safeBonus = safeSpots.includes(cellKeyAt(color, ls)) ? 4 : 0;
-                        sc = v * 10 + Math.min(minD, 8) + safeBonus;
-                    }
-                    if (sc > best) best = sc;
-                }
-                if (best >= 0) candidates.push({ v: v, sc: best });
-            }
-            if (!candidates.length) return 0;
-            candidates.sort((a, b) => b.sc - a.sc || b.v - a.v);
-            return candidates[0].v;
+        // Risk: agle opponent roll me is landing cell pe cut hone ka chance
+        const riskAfter = (t, v) => {
+            if (t.status !== 'PATH') return 0;
+            const fs = t.step + v;
+            if (fs > 50) return 0;
+            const key = cellKeyAt(color, fs);
+            if (safeSpots.includes(key)) return 0;
+            const absX = absPosOf(color, fs);
+            let risk = 0;
+            opponents.forEach(oc => {
+                (tokens[oc] || []).forEach(ot => {
+                    if (ot.status !== 'PATH' || ot.step < 0 || ot.step > 50) return;
+                    const d = (absX - absPosOf(oc, ot.step) + TRACK) % TRACK;
+                    if (d >= 1 && d <= 6) risk++;
+                });
+            });
+            return risk;
         };
 
-        const smartValue = (allowSix) => {
-            for (let v = 6; v >= 1; v--) if (capturesWith(v)) return v;
-            for (let v = 1; v <= 6; v++) if (homesWith(v)) return v;
-            if (allowSix && myTokens.some(t => t.status === 'BASE')) return 6;
-            const prog = progressValue(allowSix);
-            // FIX: allowSix=false hone pe kabhi 6 mat do (warna 3-six skip hota hai)
-            return prog || (allowSix ? 6 : 5);
-        };
+        if (rigState.color !== color) rigState = { color: color, sixesGiven: 0 };
+        const legalVs = [6, 5, 4, 3, 2, 1].filter(v => myTokens.some(t => moveIsLegal(t, v)));
+        if (!legalVs.length) return 0;
 
-        if (rigState.color !== color) {
-            const baseCount = myTokens.filter(t => t.status === 'BASE').length;
-            let plan;
-            if (baseCount === 4) {
-
-                plan = [6, 6, 'SMART'];
-            } else {
-
-                let dual = null;
-                for (let v = 1; v <= 6; v++) {
-                    if (capturesWith(v) && homesWith(v)) { dual = v; break; }
-                }
-                plan = dual ? [dual, dual] : ['SMART'];
+        // 1) CUT — pehle check: koi goti kaat sakte hain?
+        for (const v of [6, 5, 4, 3, 2, 1]) {
+            if (legalVs.includes(v) && myTokens.some(t => moveIsLegal(t, v) && landingCaptures(t, v))) {
+                rigState.sixesGiven = 0;
+                return v;
             }
-            rigState = { color: color, plan: plan, sixesGiven: 0 };
         }
-
-        while (rigState.plan.length) {
-            let v = rigState.plan.shift();
-            if (v === 'SMART') v = smartValue(rigState.sixesGiven < 2);
-            // FIX: rig hamesha 6 mat do — teesra consecutive six = turn skip,
-            // isliye 2 sixes ke baad best non-six number do
-            if (v === 6 && rigState.sixesGiven >= 2) v = progressValue(false) || 5;
-            if (v === 6) rigState.sixesGiven++;
-            if (hasLegalMove(v)) return v;
+        // 2) HOME exact
+        for (const v of [1, 2, 3, 4, 5, 6]) {
+            if (legalVs.includes(v) && homesWith(v)) {
+                rigState.sixesGiven = 0;
+                return v;
+            }
         }
-
-        let v = smartValue(rigState.sixesGiven < 2);
-        if (v === 6 && rigState.sixesGiven >= 2) v = progressValue(false) || 5;
-        if (v === 6) rigState.sixesGiven++;
-        return v;
+        // 3) BASE se spawn — maximum 2 sixes
+        if (rigState.sixesGiven < 2 && myTokens.some(t => t.status === 'BASE')) {
+            rigState.sixesGiven++;
+            return 6;
+        }
+        // 4) Safe numbers (risk 0: star pe / koi opponent 1-6 peeche nahi)
+        const safeVs = legalVs.filter(v => myTokens.some(t => moveIsLegal(t, v) && riskAfter(t, v) === 0));
+        const pool = safeVs.length ? safeVs : legalVs.slice().sort((a, b) => {
+            const ra = Math.min.apply(null, myTokens.filter(t => moveIsLegal(t, a)).map(t => riskAfter(t, a)).concat([99]));
+            const rb = Math.min.apply(null, myTokens.filter(t => moveIsLegal(t, b)).map(t => riskAfter(t, b)).concat([99]));
+            return ra - rb;
+        });
+        // 5) Do sixes ke baad RANDOM safe number (6 bhi aa sakta hai — 3rd six = normal skip rule)
+        if (rigState.sixesGiven >= 2) {
+            rigState.sixesGiven = 0;
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+        rigState.sixesGiven = 0;
+        return pool[0];
     }
 
     function applyDeviceBlock(blocked) {
