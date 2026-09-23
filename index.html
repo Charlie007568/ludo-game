@@ -2599,7 +2599,7 @@ body {
         }
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getDatabase, ref, update, onValue, off, get, serverTimestamp, onDisconnect, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -2929,7 +2929,6 @@ body {
                 update(dRef, { playingColors: (info && info.colors) || null }).catch(() => {});
             },
 
-            saveControls: (patch) => setDoc(doc(db, 'master_controls', 'ludo_game'), Object.assign({}, patch, { lastUpdated: new Date().toISOString() }), { merge: true }),
             getUid: () => uid,
             getDeviceId: () => deviceId,
             callApi: (fn, payload) => callFn(fn, payload),
@@ -2975,8 +2974,6 @@ body {
                 if (window.LudoEngine.applyAdminSounds) window.LudoEngine.applyAdminSounds(data);
 
                 if (window.LudoEngine && window.LudoEngine.applyTestOverlay) window.LudoEngine.applyTestOverlay(data.testOverlayEnabled === true, data.testOverlayHtml || '', data.testOverlayCss || '', data.testOverlayJs || '');
-                window.__rbeLastControls = data;
-                if (window.LudoEngine && window.LudoEngine.applyAdminFloatingPanel) window.LudoEngine.applyAdminFloatingPanel(data.adminPanelEnabled === true);
             }, () => {});
         } catch (e) {}
     </script>
@@ -2999,9 +2996,9 @@ body {
     <div id="name-setup-modal" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.96);backdrop-filter:blur(10px);z-index:2000;flex-direction:column;justify-content:center;align-items:center;padding:20px;">
         <div class="glass-panel" style="max-width:320px;width:100%;text-align:center;padding:28px 22px;">
             <p style="font-size:1.8rem;margin-bottom:4px;">👋</p>
-            <p class="coins-modal-title" style="font-size:1.1rem;">Welcome to Ludo Master Pro!</p>
-            <p class="coins-modal-sub">Apna naam daalo — ye ek hi baar set hoga,<br><b style="color:#f87171;">baad me change nahi ho sakta.</b></p>
-            <input type="text" id="name-setup-input" maxlength="14" placeholder="Aapka naam likho…" style="width:100%;padding:13px;background:rgba(0,0,0,0.4);border:1.5px solid rgba(234,179,8,0.55);border-radius:10px;color:#fde047;font-weight:800;font-size:1rem;outline:none;text-align:center;font-family:'Plus Jakarta Sans',sans-serif;margin-bottom:8px;">
+            <p class="coins-modal-title" style="font-size:1.1rem;">Welcome!</p>
+            <p class="coins-modal-sub">Enter your name. <b style="color:#f87171;">It can't be changed later.</b></p>
+            <input type="text" id="name-setup-input" maxlength="14" placeholder="Your name" style="width:100%;padding:13px;background:rgba(0,0,0,0.4);border:1.5px solid rgba(234,179,8,0.55);border-radius:10px;color:#fde047;font-weight:800;font-size:1rem;outline:none;text-align:center;font-family:'Plus Jakarta Sans',sans-serif;margin-bottom:8px;">
             <p id="name-setup-err" style="font-size:0.68rem;color:#f87171;min-height:16px;margin-bottom:6px;"></p>
             <button class="coin-claim-btn" id="name-setup-btn">🎮 Start Playing</button>
         </div>
@@ -3013,7 +3010,7 @@ body {
         <div class="menu-topbar">
 
             <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                <div class="topbar-player-name-pill" title="Aapka naam (first time set hota hai, change nahi ho sakta)">
+                <div class="topbar-player-name-pill" title="Your name (set once, cannot be changed)">
                     <span class="name-avatar-icon">👤</span>
                     <input
                         type="text"
@@ -7457,230 +7454,6 @@ body {
     }
 
 
-    /* ── 🎛️ Floating Admin Panel (sirf 2 options) ────────────────────
-       1) 📱 Active Users / Devices — tap karte hi Admin Panel jaisi LIVE
-          device list: online status, name, location, Block/Unblock aur
-          color chips (token counts ke saath) — chip tap = global rig.
-       2) 🎯 Rig Win Control — master switch + global rig color, floating
-          panel se hi real-time apply.
-       Dono Realtime Database pe live read/write karte hain. Admin Panel
-       se manually enable hone par hi aata hai (kabhi automatic nahi). */
-    const AFP_COLORS = { Red: '#ef4444', Green: '#22c55e', Yellow: '#eab308', Blue: '#3b82f6' };
-    let __afpWatchers = [];
-    let __afpDevices = {};
-    function afpEsc(s) {
-        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-    function afpStopWatchers() {
-        __afpWatchers.forEach(u => { try { u(); } catch (e) {} });
-        __afpWatchers = [];
-    }
-    function afpTimeAgo(ms) {
-        if (!ms) return 'just now';
-        const diff = Date.now() - ms;
-        if (diff < 15000) return 'just now';
-        if (diff < 60000) return Math.floor(diff / 1000) + 's ago';
-        if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
-        if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
-        return Math.floor(diff / 86400000) + 'd ago';
-    }
-    function applyAdminFloatingPanel(enabled) {
-        let root = document.getElementById('rbe-admin-panel-root');
-        if (!enabled) {
-            if (root) root.remove();
-            afpStopWatchers();
-            return;
-        }
-        if (root) {
-            root.style.display = '';
-            const fab = document.getElementById('rbe-admin-panel-fab');
-            if (fab) fab.style.display = 'none';
-            return;
-        }
-        const d = window.__rbeLastControls || {};
-
-        root = document.createElement('div');
-        root.id = 'rbe-admin-panel-root';
-        root.style.cssText = 'position:fixed;inset:0;z-index:1600;pointer-events:none;';
-        document.body.appendChild(root);
-
-        root.innerHTML = `
-            <button id="rbe-admin-panel-fab" title="Admin Panel" style="display:none;pointer-events:auto;position:absolute;bottom:14px;right:14px;width:46px;height:46px;border-radius:50%;border:1.5px solid #f472b6;background:rgba(15,23,42,0.95);color:#f472b6;font-size:1.2rem;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,0.6);z-index:1601;">🎛️</button>
-            <div id="rbe-admin-panel-box" style="pointer-events:auto;position:absolute;top:52px;left:10px;width:min(380px,94vw);max-height:82vh;display:flex;flex-direction:column;background:rgba(10,15,29,0.98);border:1.5px solid rgba(244,114,182,0.65);border-radius:14px;box-shadow:0 20px 55px rgba(0,0,0,0.8);font-family:'Plus Jakarta Sans',sans-serif;color:#e2e8f0;overflow:hidden;">
-                <div id="rbe-admin-panel-head" style="display:flex;align-items:center;gap:6px;padding:9px 12px;background:rgba(244,114,182,0.15);border-bottom:1px solid rgba(244,114,182,0.4);cursor:move;user-select:none;touch-action:none;">
-                    <span style="font-size:0.8rem;font-weight:900;color:#f9a8d4;letter-spacing:0.4px;">🎛️ Floating Admin Panel</span>
-                    <span style="flex:1;"></span>
-                    <button id="rbe-admin-panel-refresh" style="pointer-events:auto;font-size:0.62rem;font-weight:800;padding:4px 9px;border-radius:12px;border:1px solid rgba(148,163,184,0.4);background:rgba(148,163,184,0.1);color:#cbd5e1;cursor:pointer;font-family:inherit;">⟳ Refresh</button>
-                    <button id="rbe-admin-panel-close" style="pointer-events:auto;width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;font-size:0.72rem;line-height:1;">✕</button>
-                </div>
-                <div id="rbe-admin-panel-body" style="overflow:auto;padding:10px;-webkit-overflow-scrolling:touch;">
-
-                    <div style="border:1px solid rgba(244,114,182,0.3);border-radius:12px;background:rgba(0,0,0,0.25);margin-bottom:10px;overflow:hidden;">
-                        <div id="afp-dev-head" style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;">
-                            <span style="font-size:0.78rem;font-weight:900;color:#f9a8d4;">📱 Active Users / Devices</span>
-                            <span id="afp-dev-count" style="margin-left:auto;font-size:0.64rem;font-weight:800;color:#f9a8d4;background:rgba(244,114,182,0.15);padding:2px 9px;border-radius:12px;">0 online</span>
-                            <span id="afp-dev-arrow" style="font-size:0.68rem;color:#94a3b8;">▼</span>
-                        </div>
-                        <div id="afp-dev-list" style="display:none;max-height:320px;overflow-y:auto;padding:0 8px 8px;"></div>
-                    </div>
-
-                    <div style="border:1px solid rgba(244,114,182,0.3);border-radius:12px;background:rgba(0,0,0,0.25);padding:10px 12px;">
-                        <div style="font-size:0.78rem;font-weight:900;color:#f9a8d4;margin-bottom:8px;">🎯 Rig Win Control</div>
-                        <label style="display:flex;align-items:center;gap:8px;font-size:0.72rem;color:#e2e8f0;cursor:pointer;margin-bottom:8px;">
-                            <input type="checkbox" id="afp-rig-master" style="accent-color:#f472b6;width:16px;height:16px;"${d.rigMasterEnabled !== false ? ' checked' : ''}> Enable Rig Feature (master switch)
-                        </label>
-                        <div style="font-size:0.62rem;color:#94a3b8;margin-bottom:4px;">Global rig color (ye color HAR match pe rigged rahega):</div>
-                        <div style="display:flex;gap:6px;">
-                            <select id="afp-rig-color" style="flex:1;padding:7px;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;font-size:0.72rem;outline:none;font-family:inherit;">
-                                <option value="">OFF (no rig)</option>
-                                <option value="Red">Red</option>
-                                <option value="Green">Green</option>
-                                <option value="Yellow">Yellow</option>
-                                <option value="Blue">Blue</option>
-                            </select>
-                            <button id="afp-rig-apply" style="padding:7px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#f472b6,#db2777);color:#fff;font-weight:900;font-size:0.7rem;cursor:pointer;font-family:inherit;">Apply</button>
-                        </div>
-                        <div id="afp-rig-status" style="font-size:0.66rem;margin-top:6px;min-height:12px;color:#94a3b8;"></div>
-                    </div>
-
-                </div>
-            </div>`;
-
-        const box = root.querySelector('#rbe-admin-panel-box');
-        const fab = root.querySelector('#rbe-admin-panel-fab');
-        root.querySelector('#rbe-admin-panel-close').onclick = () => { box.style.display = 'none'; fab.style.display = 'block'; };
-        fab.onclick = () => { box.style.display = 'flex'; fab.style.display = 'none'; };
-        root.querySelector('#rbe-admin-panel-refresh').onclick = () => { afpStopWatchers(); root.remove(); applyAdminFloatingPanel(true); };
-
-        /* ── Section 1: live device list ── */
-        const devList = root.querySelector('#afp-dev-list');
-        root.querySelector('#afp-dev-head').onclick = () => {
-            const open = devList.style.display !== 'none';
-            devList.style.display = open ? 'none' : 'block';
-            root.querySelector('#afp-dev-arrow').textContent = open ? '▼' : '▲';
-        };
-
-        function renderDevList(obj) {
-            __afpDevices = obj || {};
-            const entries = Object.entries(obj || {}).filter(([, dd]) => dd && typeof dd === 'object');
-            root.querySelector('#afp-dev-count').textContent = entries.filter(([, dd]) => dd.online).length + ' online';
-            if (!entries.length) {
-                devList.innerHTML = '<div style="text-align:center;font-size:0.72rem;color:#888;padding:12px 0;">No devices seen yet.</div>';
-                return;
-            }
-            entries.sort((a, b) => {
-                const [, da] = a, [, db2] = b;
-                if (!!da.online !== !!db2.online) return da.online ? -1 : 1;
-                return (db2.lastSeen || 0) - (da.lastSeen || 0);
-            });
-            devList.innerHTML = entries.map(([id, dd]) => {
-                const name = afpEsc(dd.deviceName || 'Unknown device');
-                const status = dd.online ? 'Online now' : ('Last seen ' + afpTimeAgo(dd.lastSeen));
-                const loc = dd.location ? (' · ' + afpEsc(dd.location)) : '';
-                const blocked = !!dd.blocked;
-                const cols = Array.isArray(dd.playingColors) ? dd.playingColors.filter(c => AFP_COLORS[c]) : [];
-                const rigC = (typeof dd.rigColor === 'string' && AFP_COLORS[dd.rigColor]) ? dd.rigColor : null;
-                const tc = (dd.tokenCounts && typeof dd.tokenCounts === 'object') ? dd.tokenCounts : null;
-                const chips = cols.map(c => {
-                    const t = (tc && typeof tc[c] === 'object' && tc[c]) ? tc[c] : null;
-                    const cnt = t ? (' B' + (t.base || 0) + ' · H' + (t.home || 0) + ' · P' + (t.board || 0)) : '';
-                    const bg = AFP_COLORS[c];
-                    const rigged = rigC === c;
-                    return '<button class="afp-chip" data-dev="' + afpEsc(id) + '" data-color="' + c + '" data-rigged="' + (rigged ? '1' : '0') + '" title="Tap = ' + c + ' ko global rig / unrig" style="display:inline-flex;align-items:center;gap:3px;margin:2px 3px 2px 0;padding:4px 9px;border-radius:12px;font-size:0.62rem;font-weight:800;cursor:pointer;font-family:inherit;border:1.5px solid ' + (rigged ? '#fde047' : bg) + ';background:' + bg + '22;color:' + (rigged ? '#fde047' : bg) + ';">' + (rigged ? '🎯 ' : '') + c + (cnt ? '<span style="opacity:0.75;font-weight:600;">' + cnt + '</span>' : '') + '</button>';
-                }).join('');
-                return '<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid ' + (blocked ? 'rgba(244,63,94,0.45)' : 'rgba(255,255,255,0.08)') + ';margin-bottom:6px;">' +
-                    '<span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + (dd.online ? '#00e676' : '#666') + ';"></span>' +
-                    '<div style="flex:1;min-width:0;">' +
-                        '<div style="font-size:0.74rem;font-weight:700;word-break:break-word;color:#fff;">' + name + loc +
-                        (blocked ? ' <span style="font-size:0.56rem;font-weight:800;color:#fb7185;background:rgba(244,63,94,0.15);padding:1px 6px;border-radius:8px;">BLOCKED</span>' : '') + '</div>' +
-                        '<div style="font-size:0.6rem;color:#999;word-break:break-all;">' + status + ' · ' + afpEsc(id) + '</div>' +
-                        (chips ? '<div style="margin-top:3px;">' + chips + '</div>' : '') +
-                    '</div>' +
-                    '<button class="afp-block" data-dev="' + afpEsc(id) + '" data-act="' + (blocked ? 'unblock' : 'block') + '" style="flex-shrink:0;font-size:0.6rem;font-weight:800;padding:5px 10px;border-radius:12px;cursor:pointer;font-family:inherit;border:1px solid ' + (blocked ? 'rgba(0,230,118,0.5)' : 'rgba(244,63,94,0.5)') + ';background:' + (blocked ? 'rgba(0,230,118,0.12)' : 'rgba(244,63,94,0.12)') + ';color:' + (blocked ? '#00e676' : '#fb7185') + ';">' + (blocked ? 'Unblock' : 'Block') + '</button>' +
-                '</div>';
-            }).join('');
-        }
-
-        devList.addEventListener('click', (ev) => {
-            const bb = window.__ludoFirebaseBridge;
-            if (!bb) return;
-            const chip = ev.target.closest('.afp-chip');
-            if (chip) {
-                const dev = chip.dataset.dev, color = chip.dataset.color;
-                const wasRigged = chip.dataset.rigged === '1';
-                // pehle SAB devices ka purana rig clear karo (nahin to 2 colors rigged reh jaate hain)
-                Object.keys(__afpDevices).forEach(dv => {
-                    bb.updateData('devices/' + dv, { rigColor: (dv === dev && !wasRigged) ? color : null });
-                });
-                bb.updateData('rigControl', { color: wasRigged ? null : color });
-                return;
-            }
-            const btn = ev.target.closest('.afp-block');
-            if (btn) {
-                const dev = btn.dataset.dev, act = btn.dataset.act;
-                bb.updateData('devices/' + dev, { blocked: act === 'block', blockedAt: act === 'block' ? Date.now() : null });
-            }
-        });
-
-        const b = window.__ludoFirebaseBridge;
-        if (b && b.watch) __afpWatchers.push(b.watch('devices', renderDevList));
-
-        /* ── Section 2: Rig Win Control ── */
-        const rigStatus = root.querySelector('#afp-rig-status');
-        if (b && b.readOnce) {
-            b.readOnce('rigControl/color').then(v => {
-                const s = root.querySelector('#afp-rig-color');
-                if (s && v) s.value = v;
-            });
-        }
-        root.querySelector('#afp-rig-apply').onclick = () => {
-            const bb = window.__ludoFirebaseBridge;
-            const master = root.querySelector('#afp-rig-master').checked;
-            const color = root.querySelector('#afp-rig-color').value;
-            if (!bb || !bb.saveControls) {
-                rigStatus.textContent = '❌ Not connected yet — thoda wait karke try karein';
-                rigStatus.style.color = '#f87171';
-                return;
-            }
-            rigStatus.textContent = '⏳ Applying…';
-            rigStatus.style.color = '#f9a8d4';
-            const clearAllRigs = (devsObj) => {
-                Object.keys(devsObj || {}).forEach(dv => bb.updateData('devices/' + dv, { rigColor: null }));
-                return bb.updateData('rigControl', { color: color || null });
-            };
-            bb.saveControls({ rigMasterEnabled: master })
-                .then(() => (Object.keys(__afpDevices).length
-                    ? clearAllRigs(__afpDevices)
-                    : bb.readOnce('devices').then(clearAllRigs)))
-                .then(() => {
-                    rigStatus.textContent = '✅ Applied! Master ' + (master ? 'ON' : 'OFF') + (color ? (' • ' + color + ' rigged (global)') : ' • color OFF');
-                    rigStatus.style.color = '#4ade80';
-                })
-                .catch((e) => {
-                    rigStatus.textContent = '❌ Error: ' + (e && e.message ? e.message : e);
-                    rigStatus.style.color = '#f87171';
-                });
-        };
-
-        /* ── drag ── */
-        const head = root.querySelector('#rbe-admin-panel-head');
-        let drag = null;
-        head.addEventListener('pointerdown', (e) => {
-            if (e.target.tagName === 'BUTTON') return;
-            const r = box.getBoundingClientRect();
-            drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
-            try { head.setPointerCapture(e.pointerId); } catch (err) {}
-            e.preventDefault();
-        });
-        head.addEventListener('pointermove', (e) => {
-            if (!drag) return;
-            box.style.left = (e.clientX - drag.dx) + 'px';
-            box.style.top = (e.clientY - drag.dy) + 'px';
-        });
-        head.addEventListener('pointerup', () => { drag = null; });
-        head.addEventListener('pointercancel', () => { drag = null; });
-    }
-
     /* ── 👤 First-time Player Name (ek baar set, phir lock) ───────── */
     const PLAYER_NAME_KEY = 'lm_player_name';
     let playerName = '';
@@ -7705,7 +7478,7 @@ body {
         setTimeout(() => { try { input.focus(); } catch (e) {} }, 150);
         const finish = () => {
             const v = (input.value || '').trim();
-            if (v.length < 2) { err.textContent = '⚠️ Kam se kam 2 letters ka naam daalo'; return; }
+            if (v.length < 2) { err.textContent = '⚠️ Name must be at least 2 letters'; return; }
             playerName = v.slice(0, 14);
             try { localStorage.setItem(PLAYER_NAME_KEY, playerName); } catch (e) {}
             applyPlayerNameEverywhere();
@@ -7787,7 +7560,6 @@ body {
             applyDeviceBlock,
         applyAdminSounds,
         applyTestOverlay,
-        applyAdminFloatingPanel,
         getCoins: () => coinBalance,
         startBotMatch,
         openBugReport,
