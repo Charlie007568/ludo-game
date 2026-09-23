@@ -7297,10 +7297,14 @@ body {
             const rb = Math.min.apply(null, myTokens.filter(t => moveIsLegal(t, b)).map(t => riskAfter(t, b)).concat([99]));
             return ra - rb;
         });
-        // 5) Do sixes ke baad RANDOM safe number (6 bhi aa sakta hai — 3rd six = normal skip rule)
+        // 5) Do sixes ke baad RANDOM safe number 1-5 — 6 KABHI nahi (triple six avoid).
+        //    Number smart hai: pehle se hi cut/home check ho chuka hai; yahan
+        //    pool me safe (star/peeche) numbers hain — random pick 1-5 ke bich.
         if (rigState.sixesGiven >= 2) {
             rigState.sixesGiven = 0;
-            return pool[Math.floor(Math.random() * pool.length)];
+            const noSix = pool.filter(v => v !== 6);
+            if (noSix.length) return noSix[Math.floor(Math.random() * noSix.length)];
+            return pool[0]; // rare: sirf 6 legal ho to
         }
         rigState.sixesGiven = 0;
         return pool[0];
