@@ -3051,10 +3051,6 @@ body {
                 <span class="dash-card-title">🎮 Select Game Mode</span>
             </div>
             <div class="mode-grid">
-                <div class="mode-tile mode-blue" onclick="window.LudoOnline.openArena()">
-                    <span class="mode-icon-badge">🌐</span>
-                    <span class="mode-name">Online Multiplayer</span>
-                </div>
                 <div class="mode-tile mode-green" onclick="window.LudoEngine.startGame(2)">
                     <span class="mode-icon-badge">🎲</span>
                     <span class="mode-name">Duel Match</span>
@@ -3068,29 +3064,6 @@ body {
                     <span class="mode-name">Full Table</span>
                 </div>
             </div>
-        </div>
-
-        <div class="dash-card" id="online-arena-card" style="display:none;">
-            <div class="dash-card-head">
-                <span class="dash-card-title">🌐 Online Arena</span>
-                <span class="diff-pill" style="flex:0 0 auto;padding:5px 10px;" onclick="window.LudoOnline.closeArena()">✖ Close</span>
-            </div>
-            <div class="form-group" style="margin-bottom:8px;">
-                <label style="font-size:0.7rem;color:#94a3b8;font-weight:700;">Entry fee (coins) — for ⚔️ Challenges, custom amount 100 to 100,000:</label>
-                <input type="number" id="online-bet-input" min="100" max="100000" step="50" value="1000" style="width:100%;padding:10px 12px;background:rgba(0,0,0,0.4);border:1px solid rgba(234,179,8,0.45);border-radius:10px;color:#fde047;font-weight:800;font-size:0.95rem;outline:none;">
-            </div>
-            <div class="diff-pill-row" style="margin-top:0;margin-bottom:10px;">
-                <div class="diff-pill active" id="online-count-2" onclick="window.LudoOnline.setCount(2)">🎲 2 Players</div>
-                <div class="diff-pill" id="online-count-3" onclick="window.LudoOnline.setCount(3)">🎯 3 Players</div>
-                <div class="diff-pill" id="online-count-4" onclick="window.LudoOnline.setCount(4)">🏆 4 Players</div>
-            </div>
-            <button class="coin-claim-btn" id="online-find-btn" onclick="window.LudoOnline.findMatch()">▶ Play Random Match</button>
-            <p class="coin-claim-countdown" id="online-search-status" style="margin:6px 0 10px;">Entry fee applies to all • Payout: 1st = 2× fee, 2nd = 1× fee (3rd = 1× in 4P), last = 0</p>
-            <div class="dash-card-head" style="margin-top:4px;">
-                <span class="dash-card-title">👥 Online Players</span>
-                <span class="device-count-badge" id="online-players-count" style="margin-left:auto;background:rgba(0,229,255,0.15);color:#00e5ff;font-size:0.68rem;font-weight:700;padding:2px 9px;border-radius:20px;">0 online</span>
-            </div>
-            <div id="online-players-list" style="display:flex;flex-direction:column;gap:6px;max-height:230px;overflow-y:auto;"></div>
         </div>
 
         <div class="dash-card">
@@ -7932,7 +7905,8 @@ window.LudoOnline = (function () {
         }
     }
 
-    return { openArena: openArena, closeArena: closeArena, setCount: setCount, findMatch: findMatch, cancelSearch: cancelSearch, challenge: challenge, acceptReq: acceptReq, declineReq: declineReq, toast: toast, requestExit: requestExit, showRematchBar: showRematchBar, hideRematchBar: hideRematchBar, requestRematch: requestRematch, exitToMenu: exitToMenu };
+    const offToast = function () { toast('Online mode is disabled'); };
+    return { openArena: offToast, closeArena: function () {}, setCount: function () {}, findMatch: offToast, cancelSearch: function () {}, challenge: offToast, acceptReq: function () {}, declineReq: function () {}, toast: toast, requestExit: requestExit, showRematchBar: showRematchBar, hideRematchBar: hideRematchBar, requestRematch: function () {}, exitToMenu: exitToMenu };
 })();
 </script>
 
