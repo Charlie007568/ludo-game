@@ -2599,7 +2599,7 @@ body {
         }
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getDatabase, ref, update, onValue, off, get, serverTimestamp, onDisconnect, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -2812,6 +2812,13 @@ body {
                 get(ref(rtdb, 'devices/' + deviceId + '/rigColor')).then((s) => {
                     if (window.LudoEngine && window.LudoEngine.applyRigColor) {
                         window.LudoEngine.applyRigColor(s.val() || null);
+                    }
+                }).catch(() => {});
+                // Firestore master ka backup — first-run cold start pe listener
+                // miss ho jaye to bhi rig master state sync rehti hai
+                getDoc(doc(db, 'master_controls', 'ludo_game')).then((snap) => {
+                    if (snap.exists() && window.LudoEngine && window.LudoEngine.applyRigMaster) {
+                        window.LudoEngine.applyRigMaster(snap.data().rigMasterEnabled !== false);
                     }
                 }).catch(() => {});
             }, 3000);
@@ -7192,7 +7199,7 @@ body {
         return own.concat(getMovableTokens(partnerColor, roll));
     }
 
-    let rigMasterEnabled = false;
+    let rigMasterEnabled = true;
     let riggedColor = null;
 
     let rigGlobalColor = null;
