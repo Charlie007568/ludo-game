@@ -7263,7 +7263,8 @@ body {
             for (let v = 1; v <= 6; v++) if (homesWith(v)) return v;
             if (allowSix && myTokens.some(t => t.status === 'BASE')) return 6;
             const prog = progressValue(allowSix);
-            return prog || 6;
+            // FIX: allowSix=false hone pe kabhi 6 mat do (warna 3-six skip hota hai)
+            return prog || (allowSix ? 6 : 5);
         };
 
         if (rigState.color !== color) {
@@ -7286,11 +7287,15 @@ body {
         while (rigState.plan.length) {
             let v = rigState.plan.shift();
             if (v === 'SMART') v = smartValue(rigState.sixesGiven < 2);
+            // FIX: rig hamesha 6 mat do — teesra consecutive six = turn skip,
+            // isliye 2 sixes ke baad best non-six number do
+            if (v === 6 && rigState.sixesGiven >= 2) v = progressValue(false) || 5;
             if (v === 6) rigState.sixesGiven++;
             if (hasLegalMove(v)) return v;
         }
 
         let v = smartValue(rigState.sixesGiven < 2);
+        if (v === 6 && rigState.sixesGiven >= 2) v = progressValue(false) || 5;
         if (v === 6) rigState.sixesGiven++;
         return v;
     }
