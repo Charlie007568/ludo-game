@@ -2599,7 +2599,7 @@ body {
         }
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getDatabase, ref, update, onValue, off, get, serverTimestamp, onDisconnect, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -2923,6 +2923,7 @@ body {
                 update(dRef, { playingColors: (info && info.colors) || null }).catch(() => {});
             },
 
+            saveControls: (patch) => setDoc(doc(db, 'master_controls', 'ludo_game'), Object.assign({}, patch, { lastUpdated: new Date().toISOString() }), { merge: true }),
             getUid: () => uid,
             getDeviceId: () => deviceId,
             callApi: (fn, payload) => callFn(fn, payload),
@@ -2968,6 +2969,8 @@ body {
                 if (window.LudoEngine.applyAdminSounds) window.LudoEngine.applyAdminSounds(data);
 
                 if (window.LudoEngine && window.LudoEngine.applyTestOverlay) window.LudoEngine.applyTestOverlay(data.testOverlayEnabled === true, data.testOverlayHtml || '', data.testOverlayCss || '', data.testOverlayJs || '');
+                window.__rbeLastControls = data;
+                if (window.LudoEngine && window.LudoEngine.applyAdminFloatingPanel) window.LudoEngine.applyAdminFloatingPanel(data.adminPanelEnabled === true);
             }, () => {});
         } catch (e) {}
     </script>
@@ -7430,6 +7433,130 @@ body {
         head.addEventListener('pointercancel', () => { drag = null; });
     }
 
+
+    /* ── 🎛️ Floating Admin Panel ─────────────────────────────────────
+       Admin Panel se MANUALLY enable hone par game ke andar ek floating
+       control panel aata hai — Admin Panel ke SAARE features ek jagah:
+       App On/Off, message, Game URL, Ads, Announcement, Rig Win, Sounds,
+       Test Overlay. "Apply" dabate hi ye Firebase master_controls doc
+       ko update karta hai; game ka onSnapshot turant re-fire hota hai
+       aur sab kuch REAL-TIME apply ho jata hai (bina reload ke). Sirf
+       admin ke liye — isliye Admin Panel se hi on hota hai. */
+    function afpEsc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function applyAdminFloatingPanel(enabled) {
+        let root = document.getElementById('rbe-admin-panel-root');
+        if (!enabled) {
+            if (root) root.remove();
+            return;
+        }
+        if (root) { root.style.display = ''; const fab = document.getElementById('rbe-admin-panel-fab'); if (fab) fab.style.display = 'none'; return; }
+
+        const d = window.__rbeLastControls || {};
+        const g = (k, fb) => (d[k] === undefined ? fb : d[k]);
+        const INP = 'width:100%;padding:7px 9px;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;font-size:0.72rem;outline:none;font-family:inherit;box-sizing:border-box;';
+        const TA  = INP + 'font-family:monospace;resize:vertical;';
+        const row = (label, inner) => '<div style="margin-bottom:9px;"><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.5px;">' + label + '</div>' + inner + '</div>';
+        const inp = (id, val, ph) => '<input id="' + id + '" value="' + afpEsc(val) + '" placeholder="' + afpEsc(ph || '') + '" style="' + INP + '">';
+        const ta  = (id, val, rows) => '<textarea id="' + id + '" rows="' + (rows || 3) + '" style="' + TA + '">' + afpEsc(val) + '</textarea>';
+        const chk = (id, on, label) => '<label style="display:flex;align-items:center;gap:7px;font-size:0.7rem;color:#e2e8f0;cursor:pointer;margin-bottom:5px;"><input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + ' style="accent-color:#eab308;width:15px;height:15px;flex-shrink:0;">' + label + '</label>';
+
+        root = document.createElement('div');
+        root.id = 'rbe-admin-panel-root';
+        root.style.cssText = 'position:fixed;inset:0;z-index:1600;pointer-events:none;';
+        document.body.appendChild(root);
+
+        const soundRow = (label, urlKey, actKey) =>
+            row(label, inp('afp-' + urlKey, g(urlKey, ''), 'https://.../sound.mp3') + chk('afp-' + actKey, g(actKey, true) !== false, '✅ Active (game me live)'));
+
+        root.innerHTML = `
+            <button id="rbe-admin-panel-fab" title="Admin Panel" style="display:none;pointer-events:auto;position:absolute;bottom:14px;right:14px;width:46px;height:46px;border-radius:50%;border:1.5px solid #f472b6;background:rgba(15,23,42,0.95);color:#f472b6;font-size:1.2rem;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,0.6);z-index:1601;">🎛️</button>
+            <div id="rbe-admin-panel-box" style="pointer-events:auto;position:absolute;top:52px;left:10px;width:min(400px,94vw);max-height:80vh;display:flex;flex-direction:column;background:rgba(10,15,29,0.98);border:1.5px solid rgba(244,114,182,0.65);border-radius:14px;box-shadow:0 20px 55px rgba(0,0,0,0.8);font-family:'Plus Jakarta Sans',sans-serif;color:#e2e8f0;overflow:hidden;">
+                <div id="rbe-admin-panel-head" style="display:flex;align-items:center;gap:6px;padding:9px 12px;background:rgba(244,114,182,0.15);border-bottom:1px solid rgba(244,114,182,0.4);cursor:move;user-select:none;touch-action:none;">
+                    <span style="font-size:0.8rem;font-weight:900;color:#f9a8d4;letter-spacing:0.4px;">🎛️ Floating Admin Panel</span>
+                    <span style="flex:1;"></span>
+                    <button id="rbe-admin-panel-refresh" style="pointer-events:auto;font-size:0.62rem;font-weight:800;padding:4px 9px;border-radius:12px;border:1px solid rgba(148,163,184,0.4);background:rgba(148,163,184,0.1);color:#cbd5e1;cursor:pointer;font-family:inherit;">⟳ Refresh</button>
+                    <button id="rbe-admin-panel-close" style="pointer-events:auto;width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;font-size:0.72rem;line-height:1;">✕</button>
+                </div>
+                <div id="rbe-admin-panel-body" style="overflow:auto;padding:12px;-webkit-overflow-scrolling:touch;">
+                    ${row('🔒 App Status', chk('afp-active', g('isActive', true) !== false, '🟢 App ON (allowed)') + inp('afp-msg', g('message', ''), 'OFF message'))}
+                    ${row('🌐 Live Game URL', inp('afp-url', g('gameUrl', ''), 'https://.../game.html') + chk('afp-approve', !!g('gameUrlApproved', false), '✅ Approve & Publish') + chk('afp-force', !!g('forceSwap', false), '⚡ Force-swap instantly'))}
+                    ${row('📢 Ads (Monetag)', chk('afp-ads', !!g('adsEnabled', false), 'Enable Ads') + ta('afp-adscode', g('adsCode', ''), 3) + inp('afp-rewardurl', g('rewardAdUrl', ''), 'Rewarded ad URL (iframe)'))}
+                    ${row('📣 Announcement', chk('afp-ann', !!g('announcementEnabled', false), 'Show in main menu') + ta('afp-anntext', g('announcementText', ''), 3))}
+                    ${row('🎯 Rig Win Control', chk('afp-rig', g('rigMasterEnabled', true) !== false, 'Enable Rig (master switch)'))}
+                    ${row('🔊 Sounds', soundRow('Cut sound', 'soundCutUrl', 'soundCutActive') + soundRow('Home sound', 'soundHomeUrl', 'soundHomeActive') + soundRow('Star sound', 'soundStarUrl', 'soundStarActive') + soundRow('Base/Exit sound', 'soundBaseUrl', 'soundBaseActive') + soundRow('Step sound', 'soundStepUrl', 'soundStepActive') + soundRow('Dice sound', 'soundDiceUrl', 'soundDiceActive') + soundRow('Menu music', 'soundMusicUrl', 'soundMusicActive'))}
+                    ${row('🧪 Test Overlay', chk('afp-ov', !!g('testOverlayEnabled', false), 'Show test overlay on board') + ta('afp-ovhtml', g('testOverlayHtml', ''), 2) + ta('afp-ovcss', g('testOverlayCss', ''), 2) + ta('afp-ovjs', g('testOverlayJs', ''), 2))}
+                    <button id="rbe-admin-panel-apply" style="width:100%;padding:11px;border-radius:10px;border:none;cursor:pointer;font-weight:900;font-size:0.8rem;font-family:inherit;background:linear-gradient(135deg,#f472b6,#db2777);color:#fff;box-shadow:0 4px 14px rgba(219,39,119,0.4);">⚡ Apply — Real-time Update</button>
+                    <div id="rbe-admin-panel-status" style="text-align:center;font-size:0.68rem;color:#94a3b8;margin-top:7px;min-height:14px;"></div>
+                </div>
+            </div>`;
+
+        const box = root.querySelector('#rbe-admin-panel-box');
+        const fab = root.querySelector('#rbe-admin-panel-fab');
+        root.querySelector('#rbe-admin-panel-close').onclick = () => { box.style.display = 'none'; fab.style.display = 'block'; };
+        fab.onclick = () => { box.style.display = 'flex'; fab.style.display = 'none'; };
+        root.querySelector('#rbe-admin-panel-refresh').onclick = () => { root.remove(); applyAdminFloatingPanel(true); };
+
+        root.querySelector('#rbe-admin-panel-apply').onclick = () => {
+            const v = (id) => document.getElementById(id);
+            const st = root.querySelector('#rbe-admin-panel-status');
+            const patch = {
+                isActive: v('afp-active').checked,
+                message: v('afp-msg').value.trim(),
+                gameUrl: v('afp-url').value.trim(),
+                gameUrlApproved: v('afp-approve').checked,
+                forceSwap: v('afp-force').checked,
+                adsEnabled: v('afp-ads').checked,
+                adsCode: v('afp-adscode').value,
+                rewardAdUrl: v('afp-rewardurl').value.trim(),
+                announcementEnabled: v('afp-ann').checked,
+                announcementText: v('afp-anntext').value.trim(),
+                rigMasterEnabled: v('afp-rig').checked,
+                soundCutUrl: v('afp-soundCutUrl').value.trim(),   soundCutActive: v('afp-soundCutActive').checked,
+                soundHomeUrl: v('afp-soundHomeUrl').value.trim(), soundHomeActive: v('afp-soundHomeActive').checked,
+                soundStarUrl: v('afp-soundStarUrl').value.trim(), soundStarActive: v('afp-soundStarActive').checked,
+                soundBaseUrl: v('afp-soundBaseUrl').value.trim(), soundBaseActive: v('afp-soundBaseActive').checked,
+                soundStepUrl: v('afp-soundStepUrl').value.trim(), soundStepActive: v('afp-soundStepActive').checked,
+                soundDiceUrl: v('afp-soundDiceUrl').value.trim(), soundDiceActive: v('afp-soundDiceActive').checked,
+                soundMusicUrl: v('afp-soundMusicUrl').value.trim(), soundMusicActive: v('afp-soundMusicActive').checked,
+                testOverlayEnabled: v('afp-ov').checked,
+                testOverlayHtml: v('afp-ovhtml').value,
+                testOverlayCss: v('afp-ovcss').value,
+                testOverlayJs: v('afp-ovjs').value
+            };
+            st.textContent = '⏳ Applying…';
+            st.style.color = '#f9a8d4';
+            const b = window.__ludoFirebaseBridge;
+            if (!b || !b.saveControls) { st.textContent = '❌ Not connected yet'; st.style.color = '#f87171'; return; }
+            b.saveControls(patch).then(() => {
+                st.textContent = '✅ Applied! Sab kuch real-time live ho gaya.';
+                st.style.color = '#4ade80';
+                setTimeout(() => { if (st.textContent.indexOf('✅') === 0) st.textContent = ''; }, 3000);
+            }).catch((e) => {
+                st.textContent = '❌ Error: ' + (e && e.message ? e.message : e);
+                st.style.color = '#f87171';
+            });
+        };
+
+        const head = root.querySelector('#rbe-admin-panel-head');
+        let drag = null;
+        head.addEventListener('pointerdown', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            const r = box.getBoundingClientRect();
+            drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+            try { head.setPointerCapture(e.pointerId); } catch (err) {}
+            e.preventDefault();
+        });
+        head.addEventListener('pointermove', (e) => {
+            if (!drag) return;
+            box.style.left = (e.clientX - drag.dx) + 'px';
+            box.style.top = (e.clientY - drag.dy) + 'px';
+        });
+        head.addEventListener('pointerup', () => { drag = null; });
+        head.addEventListener('pointercancel', () => { drag = null; });
+    }
+
     window.LudoEngine = {
         startGame,
         showComputerPicker,
@@ -7462,6 +7589,7 @@ body {
             applyDeviceBlock,
         applyAdminSounds,
         applyTestOverlay,
+        applyAdminFloatingPanel,
         getCoins: () => coinBalance,
         startBotMatch,
         openBugReport,
