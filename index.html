@@ -2865,6 +2865,12 @@ body {
 
             const opRef = ref(rtdb, 'onlinePlayers/' + deviceId);
             update(opRef, { uid: uid, deviceId: deviceId, deviceName: deviceName, online: true, inMatch: '', lastSeen: serverTimestamp() }).catch(() => {});
+            const pn = (() => { try { return localStorage.getItem('lm_player_name') || ''; } catch (e) { return ''; } })();
+            if (pn) {
+                update(ref(rtdb, 'devices/' + deviceId), { playerName: pn }).catch(() => {});
+                update(opRef, { name: pn }).catch(() => {});
+                update(userRef, { name: pn }).catch(() => {});
+            }
             onDisconnect(opRef).update({ online: false, lastSeen: serverTimestamp() }).catch(() => {});
 
             setInterval(() => {
@@ -2990,13 +2996,24 @@ body {
         <p style="font-size:0.72rem; color:#94a3b8; margin-top:18px;">Starting game…</p>
     </div>
 
+    <div id="name-setup-modal" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.96);backdrop-filter:blur(10px);z-index:2000;flex-direction:column;justify-content:center;align-items:center;padding:20px;">
+        <div class="glass-panel" style="max-width:320px;width:100%;text-align:center;padding:28px 22px;">
+            <p style="font-size:1.8rem;margin-bottom:4px;">👋</p>
+            <p class="coins-modal-title" style="font-size:1.1rem;">Welcome to Ludo Master Pro!</p>
+            <p class="coins-modal-sub">Apna naam daalo — ye ek hi baar set hoga,<br><b style="color:#f87171;">baad me change nahi ho sakta.</b></p>
+            <input type="text" id="name-setup-input" maxlength="14" placeholder="Aapka naam likho…" style="width:100%;padding:13px;background:rgba(0,0,0,0.4);border:1.5px solid rgba(234,179,8,0.55);border-radius:10px;color:#fde047;font-weight:800;font-size:1rem;outline:none;text-align:center;font-family:'Plus Jakarta Sans',sans-serif;margin-bottom:8px;">
+            <p id="name-setup-err" style="font-size:0.68rem;color:#f87171;min-height:16px;margin-bottom:6px;"></p>
+            <button class="coin-claim-btn" id="name-setup-btn">🎮 Start Playing</button>
+        </div>
+    </div>
+
     <div id="partner-off-toast" class="partner-off-toast" style="display:none;"></div>
 
     <div id="menu-screen" class="glass-panel">
         <div class="menu-topbar">
 
             <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                <div class="topbar-player-name-pill" title="Click to edit your name">
+                <div class="topbar-player-name-pill" title="Aapka naam (first time set hota hai, change nahi ho sakta)">
                     <span class="name-avatar-icon">👤</span>
                     <input
                         type="text"
@@ -3005,8 +3022,9 @@ body {
                         value="Player 1"
                         maxlength="14"
                         placeholder="Your Name"
+                        readonly
+                        style="pointer-events:none;"
                     />
-                    <span class="name-pencil-badge">✏️</span>
                 </div>
             </div>
 
@@ -5799,6 +5817,7 @@ body {
 
         pushTokenCountsToAdmin();
         maybeSyncState();
+        pushMatchView();
     }
 
     function renderScoreboard() {
@@ -5915,6 +5934,7 @@ body {
         }
         onlineResetTurnTimer();
         maybeSyncState();
+        pushMatchView(true);
     }
 
     const turnsWithoutSix = { Red: 0, Green: 0, Yellow: 0, Blue: 0 };
@@ -6324,6 +6344,8 @@ body {
                 if (onlineSession && onlineSession.active) onlineFinishMatch();
                 settleBotMatchIfNeeded();
                 playSound('match_fanfare');
+                pushMatchView(true);
+                setTimeout(clearMatchView, 60000);
                 setTimeout(() => {
                     document.getElementById('winner-modal').style.display = 'flex';
                 }, 1200);
@@ -6738,6 +6760,7 @@ body {
         if (window.__ludoFirebaseBridge && window.__ludoFirebaseBridge.setTokenCounts) {
             window.__ludoFirebaseBridge.setTokenCounts(null);
         }
+        clearMatchView();
 
         clearAutoMove();
         if (botMoveTimeoutId) clearTimeout(botMoveTimeoutId);
@@ -7658,6 +7681,80 @@ body {
         head.addEventListener('pointercancel', () => { drag = null; });
     }
 
+    /* ── 👤 First-time Player Name (ek baar set, phir lock) ───────── */
+    const PLAYER_NAME_KEY = 'lm_player_name';
+    let playerName = '';
+    try { playerName = localStorage.getItem(PLAYER_NAME_KEY) || ''; } catch (e) {}
+    function applyPlayerNameEverywhere() {
+        const inp = document.getElementById('user-name-input');
+        if (inp) { inp.value = playerName; inp.readOnly = true; }
+        const b = window.__ludoFirebaseBridge;
+        if (b && b.getDeviceId && b.getDeviceId()) {
+            b.updateData('devices/' + b.getDeviceId(), { playerName: playerName });
+            b.updateData('onlinePlayers/' + b.getDeviceId(), { name: playerName });
+        }
+    }
+    function initNameSetup() {
+        const modal = document.getElementById('name-setup-modal');
+        const input = document.getElementById('name-setup-input');
+        const btn = document.getElementById('name-setup-btn');
+        const err = document.getElementById('name-setup-err');
+        if (!modal) return;
+        if (playerName) { applyPlayerNameEverywhere(); return; }
+        modal.style.display = 'flex';
+        setTimeout(() => { try { input.focus(); } catch (e) {} }, 150);
+        const finish = () => {
+            const v = (input.value || '').trim();
+            if (v.length < 2) { err.textContent = '⚠️ Kam se kam 2 letters ka naam daalo'; return; }
+            playerName = v.slice(0, 14);
+            try { localStorage.setItem(PLAYER_NAME_KEY, playerName); } catch (e) {}
+            applyPlayerNameEverywhere();
+            modal.style.display = 'none';
+        };
+        btn.onclick = finish;
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') finish(); });
+    }
+
+    /* ── 👁️ Match View (admin live watch ke liye) ────────────────────
+       Match chalne pe board ka halka snapshot devices/{id}/matchView pe
+       real-time push hota hai. Admin "👁 Watch" dabake live match dekhta
+       hai. Menu/game band hone pe clear ho jata hai. */
+    let __lastMatchViewPush = 0;
+    function pushMatchView(force) {
+        try {
+            const b = window.__ludoFirebaseBridge;
+            if (!b || !b.setData || !b.getDeviceId || !b.getDeviceId()) return;
+            const gsEl = document.getElementById('game-screen');
+            if (!gsEl || gsEl.style.display === 'none' || !players.length) return;
+            const now = Date.now();
+            if (!force && now - __lastMatchViewPush < 900) return;
+            __lastMatchViewPush = now;
+            const slim = {};
+            players.forEach(p => {
+                slim[p.color] = (tokens[p.color] || []).map(t => ({ s: t.status, p: t.pos }));
+            });
+            b.setData('devices/' + b.getDeviceId() + '/matchView', {
+                on: true,
+                mode: players.length + 'P' + (activePartnerMode === 'on' ? ' · 🤝' : '') + (activeBarrierMode === 'on' ? ' · 🚧' : ''),
+                players: players.map(p => ({ n: p.name, c: p.color, b: !!p.isBot, x: !!p.exited })),
+                turn: players[currentPlayerIndex] ? players[currentPlayerIndex].color : '',
+                roll: currentRoll,
+                state: gameState,
+                tk: slim,
+                ts: now
+            });
+        } catch (e) {}
+    }
+    function clearMatchView() {
+        try {
+            const b = window.__ludoFirebaseBridge;
+            if (b && b.setData && b.getDeviceId && b.getDeviceId()) {
+                b.setData('devices/' + b.getDeviceId() + '/matchView', null);
+            }
+        } catch (e) {}
+        __lastMatchViewPush = 0;
+    }
+
     window.LudoEngine = {
         startGame,
         showComputerPicker,
@@ -7735,6 +7832,7 @@ body {
         document.getElementById('menu-screen').style.display = 'block';
         updateAudioButtonLabels();
         startMusicLoop('menu');
+        initNameSetup();
     }, 400);
 
     const unlock = () => { getAudioContext(); window.removeEventListener('click', unlock); };
