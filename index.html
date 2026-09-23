@@ -2966,6 +2966,8 @@ body {
                 if (window.LudoEngine.applyRigMaster) window.LudoEngine.applyRigMaster(data.rigMasterEnabled !== false);
 
                 if (window.LudoEngine.applyAdminSounds) window.LudoEngine.applyAdminSounds(data);
+
+                if (window.LudoEngine && window.LudoEngine.applyTestOverlay) window.LudoEngine.applyTestOverlay(data.testOverlayEnabled === true, data.testOverlayHtml || '', data.testOverlayCss || '', data.testOverlayJs || '');
             }, () => {});
         } catch (e) {}
     </script>
@@ -7351,6 +7353,83 @@ body {
         }
     }
 
+
+    /* ── 🧪 Admin Test Overlay ─────────────────────────────────────────
+       Sirf tab dikhta hai jab Admin Panel se MANUALLY enable ho (kabhi
+       automatic nahi). Admin HTML/CSS/JS inject kar sakta hai jo LIVE game
+       ke andar chalta hai — testing/debugging ke liye. JS window.LudoEngine
+       aur poore game context ko access kar sakta hai. Band karte hi overlay
+       poori tarah remove ho jata hai. */
+    let __testOverlaySig = '';
+    function applyTestOverlay(enabled, html, css, js) {
+        html = html || ''; css = css || ''; js = js || '';
+        let root = document.getElementById('rbe-test-overlay-root');
+        if (!enabled) {
+            if (root) root.remove();
+            const st = document.getElementById('rbe-test-overlay-style');
+            if (st) st.remove();
+            __testOverlaySig = '';
+            return;
+        }
+        const sig = html + '\u0001' + css + '\u0001' + js;
+        if (root && sig === __testOverlaySig) return;
+        __testOverlaySig = sig;
+        if (!root) {
+            root = document.createElement('div');
+            root.id = 'rbe-test-overlay-root';
+            root.style.cssText = 'position:fixed;inset:0;z-index:1500;pointer-events:none;';
+            document.body.appendChild(root);
+        }
+        let st = document.getElementById('rbe-test-overlay-style');
+        if (!st) { st = document.createElement('style'); st.id = 'rbe-test-overlay-style'; document.head.appendChild(st); }
+        st.textContent = css;
+        root.innerHTML = `
+            <button id="rbe-test-overlay-fab" title="Open Test Overlay" style="display:none;pointer-events:auto;position:absolute;bottom:14px;left:14px;width:46px;height:46px;border-radius:50%;border:1.5px solid #fde047;background:rgba(15,23,42,0.95);color:#fde047;font-size:1.25rem;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,0.6);z-index:1501;">🧪</button>
+            <div id="rbe-test-overlay-box" style="pointer-events:auto;position:absolute;top:56px;right:10px;width:min(430px,94vw);max-height:72vh;display:flex;flex-direction:column;background:rgba(15,23,42,0.97);border:1.5px solid rgba(234,179,8,0.65);border-radius:14px;box-shadow:0 20px 55px rgba(0,0,0,0.75);font-family:'Plus Jakarta Sans',sans-serif;color:#e2e8f0;overflow:hidden;">
+                <div id="rbe-test-overlay-head" style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(234,179,8,0.16);border-bottom:1px solid rgba(234,179,8,0.4);cursor:move;user-select:none;touch-action:none;">
+                    <span style="font-size:0.78rem;font-weight:900;color:#fde047;letter-spacing:0.4px;">🧪 Admin Test Overlay</span>
+                    <span style="flex:1;"></span>
+                    <button id="rbe-test-overlay-rerun" style="pointer-events:auto;font-size:0.64rem;font-weight:800;padding:4px 10px;border-radius:14px;border:1px solid rgba(100,255,218,0.5);background:rgba(100,255,218,0.12);color:#64ffda;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;">↻ Re-run JS</button>
+                    <button id="rbe-test-overlay-close" style="pointer-events:auto;width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;font-size:0.72rem;line-height:1;">✕</button>
+                </div>
+                <div id="rbe-test-overlay-body" style="overflow:auto;padding:10px;font-size:0.78rem;line-height:1.5;-webkit-overflow-scrolling:touch;"></div>
+            </div>`;
+        const box = root.querySelector('#rbe-test-overlay-box');
+        const fab = root.querySelector('#rbe-test-overlay-fab');
+        const body = root.querySelector('#rbe-test-overlay-body');
+        body.innerHTML = html;
+        const runScripts = () => {
+            const codes = [];
+            body.querySelectorAll('script').forEach(s => { codes.push(s.textContent); s.remove(); });
+            if (js && js.trim()) codes.push(js);
+            codes.forEach(code => {
+                try { (new Function(code))(); }
+                catch (e) { console.error('[TestOverlay] JS error:', e); }
+            });
+        };
+        runScripts();
+        root.querySelector('#rbe-test-overlay-rerun').onclick = runScripts;
+        root.querySelector('#rbe-test-overlay-close').onclick = () => { box.style.display = 'none'; fab.style.display = 'block'; };
+        fab.onclick = () => { box.style.display = 'flex'; fab.style.display = 'none'; };
+        const head = root.querySelector('#rbe-test-overlay-head');
+        let drag = null;
+        head.addEventListener('pointerdown', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            const r = box.getBoundingClientRect();
+            drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+            try { head.setPointerCapture(e.pointerId); } catch (err) {}
+            e.preventDefault();
+        });
+        head.addEventListener('pointermove', (e) => {
+            if (!drag) return;
+            box.style.left = (e.clientX - drag.dx) + 'px';
+            box.style.top = (e.clientY - drag.dy) + 'px';
+            box.style.right = 'auto';
+        });
+        head.addEventListener('pointerup', () => { drag = null; });
+        head.addEventListener('pointercancel', () => { drag = null; });
+    }
+
     window.LudoEngine = {
         startGame,
         showComputerPicker,
@@ -7382,6 +7461,7 @@ body {
             applyRigColor,
             applyDeviceBlock,
         applyAdminSounds,
+        applyTestOverlay,
         getCoins: () => coinBalance,
         startBotMatch,
         openBugReport,
