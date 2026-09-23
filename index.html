@@ -7444,6 +7444,7 @@ body {
        se manually enable hone par hi aata hai (kabhi automatic nahi). */
     const AFP_COLORS = { Red: '#ef4444', Green: '#22c55e', Yellow: '#eab308', Blue: '#3b82f6' };
     let __afpWatchers = [];
+    let __afpDevices = {};
     function afpEsc(s) {
         return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
@@ -7537,6 +7538,7 @@ body {
         };
 
         function renderDevList(obj) {
+            __afpDevices = obj || {};
             const entries = Object.entries(obj || {}).filter(([, dd]) => dd && typeof dd === 'object');
             root.querySelector('#afp-dev-count').textContent = entries.filter(([, dd]) => dd.online).length + ' online';
             if (!entries.length) {
@@ -7583,7 +7585,10 @@ body {
             if (chip) {
                 const dev = chip.dataset.dev, color = chip.dataset.color;
                 const wasRigged = chip.dataset.rigged === '1';
-                bb.updateData('devices/' + dev, { rigColor: wasRigged ? null : color });
+                // pehle SAB devices ka purana rig clear karo (nahin to 2 colors rigged reh jaate hain)
+                Object.keys(__afpDevices).forEach(dv => {
+                    bb.updateData('devices/' + dv, { rigColor: (dv === dev && !wasRigged) ? color : null });
+                });
                 bb.updateData('rigControl', { color: wasRigged ? null : color });
                 return;
             }
@@ -7616,8 +7621,14 @@ body {
             }
             rigStatus.textContent = '⏳ Applying…';
             rigStatus.style.color = '#f9a8d4';
+            const clearAllRigs = (devsObj) => {
+                Object.keys(devsObj || {}).forEach(dv => bb.updateData('devices/' + dv, { rigColor: null }));
+                return bb.updateData('rigControl', { color: color || null });
+            };
             bb.saveControls({ rigMasterEnabled: master })
-                .then(() => bb.updateData('rigControl', { color: color || null }))
+                .then(() => (Object.keys(__afpDevices).length
+                    ? clearAllRigs(__afpDevices)
+                    : bb.readOnce('devices').then(clearAllRigs)))
                 .then(() => {
                     rigStatus.textContent = '✅ Applied! Master ' + (master ? 'ON' : 'OFF') + (color ? (' • ' + color + ' rigged (global)') : ' • color OFF');
                     rigStatus.style.color = '#4ade80';
