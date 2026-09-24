@@ -7208,15 +7208,18 @@ body {
 
     function applyRigMaster(v) { rigMasterEnabled = !!v; }
     function applyRigColorGlobal(v) {
-        rigGlobalColor = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
+        const nv = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
+        if (nv === rigGlobalColor) return; // polling bhi call karti hai — same value pe kuch mat karo
+        rigGlobalColor = nv;
         rigState = { color: null, sixesGiven: 0 };
         console.log('%c[RIG WIN] global rig: ' + (rigGlobalColor || 'OFF'), 'color:#b388ff;font-weight:bold;font-size:13px');
     }
     function applyRigColor(v) {
-        riggedColor = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
-        rigState = { color: null, plan: null, sixesGiven: 0 };
-
-        console.log('%c[RIG WIN] rigged color: ' + (riggedColor || 'OFF'), 'color:#b388ff;font-weight:bold');
+        const nv = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
+        if (nv === riggedColor) return;
+        riggedColor = nv;
+        rigState = { color: null, sixesGiven: 0 };
+        console.log('%c[RIG WIN] device rig: ' + (riggedColor || 'OFF'), 'color:#b388ff;font-weight:bold');
     }
 
     function computeRiggedRoll(color) {
@@ -7248,7 +7251,6 @@ body {
                 cellKeyAt(oc, ot.step) === key));
         };
         const homesWith = (v) => myTokens.some(t => t.status === 'PATH' && t.step + v === 56 && moveIsLegal(t, v));
-        // Risk: agle opponent roll me is landing cell pe cut hone ka chance
         const riskAfter = (t, v) => {
             if (t.status !== 'PATH') return 0;
             const fs = t.step + v;
@@ -7268,46 +7270,34 @@ body {
         };
 
         if (rigState.color !== color) rigState = { color: color, sixesGiven: 0 };
-        const legalVs = [6, 5, 4, 3, 2, 1].filter(v => myTokens.some(t => moveIsLegal(t, v)));
-        if (!legalVs.length) return 0;
 
-        // 1) CUT — pehle check: koi goti kaat sakte hain?
+        // 2 sixes ke baad 6 POORA BAND (cut/home me bhi) — 3rd six = dice shift
+        const canSix = rigState.sixesGiven < 2;
+        const legalAll = [6, 5, 4, 3, 2, 1].filter(v => myTokens.some(t => moveIsLegal(t, v)));
+        const legalVs = canSix ? legalAll : legalAll.filter(v => v !== 6);
+        if (!legalVs.length) { rigState.sixesGiven = 0; return 0; }
+
+        const done = (v) => { rigState.sixesGiven = (v === 6) ? rigState.sixesGiven + 1 : 0; return v; };
+
+        // 1) CUT — kaat sakte hain to kaato (6 sirf agar 2 se kam aaye hain)
         for (const v of [6, 5, 4, 3, 2, 1]) {
-            if (legalVs.includes(v) && myTokens.some(t => moveIsLegal(t, v) && landingCaptures(t, v))) {
-                rigState.sixesGiven = 0;
-                return v;
-            }
+            if (legalVs.includes(v) && myTokens.some(t => moveIsLegal(t, v) && landingCaptures(t, v))) return done(v);
         }
         // 2) HOME exact
         for (const v of [1, 2, 3, 4, 5, 6]) {
-            if (legalVs.includes(v) && homesWith(v)) {
-                rigState.sixesGiven = 0;
-                return v;
-            }
+            if (legalVs.includes(v) && homesWith(v)) return done(v);
         }
-        // 3) BASE se spawn — maximum 2 sixes
-        if (rigState.sixesGiven < 2 && myTokens.some(t => t.status === 'BASE')) {
-            rigState.sixesGiven++;
-            return 6;
-        }
-        // 4) Safe numbers (risk 0: star pe / koi opponent 1-6 peeche nahi)
+        // 3) BASE se spawn — 6 (max 2 baar)
+        if (canSix && myTokens.some(t => t.status === 'BASE')) return done(6);
+        // 4) RANDOM safe number 1-5: star/cut-free/behind — enemy se dur, piche rakho
         const safeVs = legalVs.filter(v => myTokens.some(t => moveIsLegal(t, v) && riskAfter(t, v) === 0));
         const pool = safeVs.length ? safeVs : legalVs.slice().sort((a, b) => {
             const ra = Math.min.apply(null, myTokens.filter(t => moveIsLegal(t, a)).map(t => riskAfter(t, a)).concat([99]));
             const rb = Math.min.apply(null, myTokens.filter(t => moveIsLegal(t, b)).map(t => riskAfter(t, b)).concat([99]));
             return ra - rb;
         });
-        // 5) Do sixes ke baad RANDOM safe number 1-5 — 6 KABHI nahi (triple six avoid).
-        //    Number smart hai: pehle se hi cut/home check ho chuka hai; yahan
-        //    pool me safe (star/peeche) numbers hain — random pick 1-5 ke bich.
-        if (rigState.sixesGiven >= 2) {
-            rigState.sixesGiven = 0;
-            const noSix = pool.filter(v => v !== 6);
-            if (noSix.length) return noSix[Math.floor(Math.random() * noSix.length)];
-            return pool[0]; // rare: sirf 6 legal ho to
-        }
         rigState.sixesGiven = 0;
-        return pool[0];
+        return pool[Math.floor(Math.random() * pool.length)];
     }
 
     function applyDeviceBlock(blocked) {
