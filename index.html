@@ -5949,7 +5949,7 @@ body {
                 ? (((onlineSession.rigMap && onlineSession.rigMap[color]) === true) || rigGlobalColor === color)
                 : (riggedColor === color || rigGlobalColor === color);
 
-            if (!thisRigged) rigState = { color: color, sixesGiven: 0, spawnSixDone: false };
+            if (!thisRigged) rigState = { color: color, sixesGiven: 0 };
             if (rigMasterEnabled && thisRigged) {
                 let rigVal = 0;
                 try { rigVal = computeRiggedRoll(color); } catch (e) { rigVal = 0; }
@@ -7213,21 +7213,21 @@ body {
 
     let rigGlobalColor = null;
 
-    let rigState = { color: null, sixesGiven: 0, spawnSixDone: false };
+    let rigState = { color: null, sixesGiven: 0 };
 
     function applyRigMaster(v) { rigMasterEnabled = !!v; }
     function applyRigColorGlobal(v) {
         const nv = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
         if (nv === rigGlobalColor) return; // polling bhi call karti hai — same value pe kuch mat karo
         rigGlobalColor = nv;
-        rigState = { color: null, sixesGiven: 0, spawnSixDone: false };
+        rigState = { color: null, sixesGiven: 0 };
         console.log('%c[RIG WIN] global rig: ' + (rigGlobalColor || 'OFF'), 'color:#b388ff;font-weight:bold;font-size:13px');
     }
     function applyRigColor(v) {
         const nv = (typeof v === 'string' && ['Red', 'Green', 'Yellow', 'Blue'].includes(v)) ? v : null;
         if (nv === riggedColor) return;
         riggedColor = nv;
-        rigState = { color: null, sixesGiven: 0, spawnSixDone: false };
+        rigState = { color: null, sixesGiven: 0 };
         console.log('%c[RIG WIN] device rig: ' + (riggedColor || 'OFF'), 'color:#b388ff;font-weight:bold');
     }
 
@@ -7260,12 +7260,6 @@ body {
                 cellKeyAt(oc, ot.step) === key));
         };
         const homesWith = (v) => myTokens.some(t => t.status === 'PATH' && t.step + v === 56 && moveIsLegal(t, v));
-        const landsOnStar = (t, v) => {
-            if (t.status !== 'PATH') return false;
-            const fs = t.step + v;
-            if (fs > 50) return false;
-            return safeSpots.includes(cellKeyAt(color, fs));
-        };
         const riskAfter = (t, v) => {
             if (t.status !== 'PATH') return 0;
             const fs = t.step + v;
@@ -7284,38 +7278,19 @@ body {
             return risk;
         };
 
-        if (rigState.color !== color) rigState = { color: color, sixesGiven: 0, spawnSixDone: false };
+        if (rigState.color !== color) rigState = { color: color, sixesGiven: 0 };
+
+        // kabhi bhi 3 six lagataar nahi — 2 six ke baad hamesha random
         const canSix = rigState.sixesGiven < 2;
         const legalAll = [6, 5, 4, 3, 2, 1].filter(v => myTokens.some(t => moveIsLegal(t, v)));
         if (!legalAll.length) { rigState.sixesGiven = 0; return 0; }
         const legalVs = canSix ? legalAll : legalAll.filter(v => v !== 6);
-        if (!legalVs.length) { rigState.sixesGiven = 0; return 0; }
 
-        const done = (v) => { rigState.sixesGiven = (v === 6) ? rigState.sixesGiven + 1 : 0; return v; };
-
-        // 1) CUT — goti kaat sakte hain to BADA number
-        for (const v of [6, 5, 4, 3, 2, 1]) {
-            if (legalVs.includes(v) && myTokens.some(t => moveIsLegal(t, v) && landingCaptures(t, v))) return done(v);
-        }
-        // 2) HOME exact
-        for (const v of [1, 2, 3, 4, 5, 6]) {
-            if (legalVs.includes(v) && homesWith(v)) return done(v);
-        }
-        // 3) STAR paas me ho to baitha do
-        for (const v of [6, 5, 4, 3, 2, 1]) {
-            if (legalVs.includes(v) && myTokens.some(t => moveIsLegal(t, v) && landsOnStar(t, v))) return done(v);
-        }
-        // 4) SPAWN — base me goti hai: turn me sirf EK six, phir random
-        //    (4 goti nikaalne ke liye 4 round lagenge)
-        if (!rigState.spawnSixDone && canSix && myTokens.some(t => t.status === 'BASE')) {
-            rigState.spawnSixDone = true;
-            rigState.sixesGiven++;
-            return 6;
-        }
-        // Random 1-5 safe pick helper
+        // random 1-5 safe pick — kabhi 6 nahi (star rule hata diya hai;
+        // safety ab bhi hai: risk 0 cells pe hi random jaata hai)
         const pickRandom = () => {
-            const noSix = legalVs.filter(v => v !== 6);
-            const base = noSix.length ? noSix : legalVs;
+            const noSix = (legalVs.length ? legalVs : legalAll).filter(v => v !== 6);
+            const base = noSix.length ? noSix : legalAll;
             const safe = base.filter(v => myTokens.some(t => moveIsLegal(t, v) && riskAfter(t, v) === 0));
             const pool = safe.length ? safe : base.slice().sort((a, b) => {
                 const ra = Math.min.apply(null, myTokens.filter(t => moveIsLegal(t, a)).map(t => riskAfter(t, a)).concat([99]));
@@ -7325,10 +7300,21 @@ body {
             rigState.sixesGiven = 0;
             return pool[Math.floor(Math.random() * pool.length)];
         };
-        // 5) Base me ab bhi goti hai (spawn ho chuka is turn) → random, six NAHI
-        if (myTokens.some(t => t.status === 'BASE')) return pickRandom();
-        // 6) Warna double-six pattern: 6, 6, phir random (3rd six kabhi nahi)
-        if (canSix) { rigState.sixesGiven++; return 6; }
+
+        // 1) CUT — kisi ki goti cell pe hai to pehle BADA number se kaat do
+        for (const v of [6, 5, 4, 3, 2, 1]) {
+            if (legalVs.includes(v) && myTokens.some(t => moveIsLegal(t, v) && landingCaptures(t, v))) {
+                rigState.sixesGiven = (v === 6) ? rigState.sixesGiven + 1 : 0;
+                return v;
+            }
+        }
+        // 2) HOME exact
+        for (const v of [1, 2, 3, 4, 5, 6]) {
+            if (legalVs.includes(v) && homesWith(v)) { rigState.sixesGiven = 0; return v; }
+        }
+        // 3) DOUBLE SIX + RANDOM — base ho ya board:
+        //    6, 6, random (2 goti ek turn me bahar; cut/home ke bonus me bhi six)
+        if (canSix && legalAll.includes(6)) { rigState.sixesGiven++; return 6; }
         return pickRandom();
     }
 
