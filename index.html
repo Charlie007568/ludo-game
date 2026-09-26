@@ -2775,7 +2775,8 @@ body {
                 deviceName: deviceName,
                 location: deviceLocation,
                 online: true,
-                lastSeen: serverTimestamp()
+                lastSeen: serverTimestamp(),
+                uid: uid
             }).catch(() => {});
             onDisconnect(devRef).update({
                 online: false,
