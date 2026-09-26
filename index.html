@@ -2822,6 +2822,14 @@ body {
                         window.LudoEngine.applyRigMaster(snap.data().rigMasterEnabled !== false);
                     }
                 }).catch(() => {});
+                // RTDB master mirror (rigControl/master) — admin Watch/panel dono
+                // yahan likhte hain; Firestore rules issue ho to bhi master chale
+                get(ref(rtdb, 'rigControl/master')).then((s) => {
+                    const mv = s.val();
+                    if (typeof mv === 'boolean' && window.LudoEngine && window.LudoEngine.applyRigMaster) {
+                        window.LudoEngine.applyRigMaster(mv);
+                    }
+                }).catch(() => {});
             }, 3000);
 
             if (navigator.geolocation) {
